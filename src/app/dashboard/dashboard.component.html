@@ -1,0 +1,122 @@
+<main class="dashboard">
+  <header class="dashboard-header">
+    <h1>Dormitory Management Dashboard</h1>
+    <p class="subtitle">Welcome back! Here's an overview of your dormitory.</p>
+  </header>
+
+  <!-- Summary Cards -->
+  <section class="summary-cards">
+    <div class="card total-rooms">
+      <div class="card-icon">🏢</div>
+      <div class="card-content">
+        <span class="card-value">{{ summary().totalRooms }}</span>
+        <span class="card-label">Total Rooms</span>
+      </div>
+    </div>
+
+    <div class="card occupied">
+      <div class="card-icon">🛏️</div>
+      <div class="card-content">
+        <span class="card-value">{{ summary().occupiedRooms }}</span>
+        <span class="card-label">Occupied Rooms</span>
+      </div>
+    </div>
+
+    <div class="card available">
+      <div class="card-icon">✅</div>
+      <div class="card-content">
+        <span class="card-value">{{ summary().availableRooms }}</span>
+        <span class="card-label">Available Rooms</span>
+      </div>
+    </div>
+
+    <div class="card residents">
+      <div class="card-icon">👥</div>
+      <div class="card-content">
+        <span class="card-value">{{ summary().totalResidents }}</span>
+        <span class="card-label">Total Residents</span>
+      </div>
+    </div>
+
+    <div class="card pending">
+      <div class="card-icon">📋</div>
+      <div class="card-content">
+        <span class="card-value">{{ summary().pendingRequests }}</span>
+        <span class="card-label">Pending Requests</span>
+      </div>
+    </div>
+
+    <div class="card maintenance">
+      <div class="card-icon">🔧</div>
+      <div class="card-content">
+        <span class="card-value">{{ summary().maintenanceIssues }}</span>
+        <span class="card-label">Maintenance Issues</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="dashboard-grid">
+    <!-- Occupancy Rate -->
+    <section class="occupancy-section">
+      <h2>Occupancy Rate</h2>
+      <div class="occupancy-chart">
+        <div class="progress-ring">
+          <svg viewBox="0 0 100 100">
+            <circle class="progress-bg" cx="50" cy="50" r="45" />
+            <circle
+              class="progress-bar"
+              cx="50"
+              cy="50"
+              r="45"
+              [style.strokeDasharray]="'282.7'"
+              [style.strokeDashoffset]="282.7 - (282.7 * occupancyRate()) / 100"
+            />
+          </svg>
+          <div class="progress-text">
+            <span class="percentage">{{ occupancyRate() }}%</span>
+            <span class="label">Occupied</span>
+          </div>
+        </div>
+      </div>
+      <div class="occupancy-details">
+        <div class="detail">
+          <span class="dot occupied"></span>
+          <span>Occupied: {{ summary().occupiedRooms }}</span>
+        </div>
+        <div class="detail">
+          <span class="dot available"></span>
+          <span>Available: {{ summary().availableRooms }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions-section">
+      <h2>Quick Actions</h2>
+      <div class="actions-grid">
+        @for (action of quickActions; track action.label) {
+          <button class="action-btn">
+            <span class="action-icon">{{ action.icon }}</span>
+            <span class="action-label">{{ action.label }}</span>
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- Recent Activity -->
+    <section class="recent-activity-section">
+      <h2>Recent Activity</h2>
+      <ul class="activity-list">
+        @for (activity of recentActivities(); track activity.id) {
+          <li class="activity-item" [class]="activity.type">
+            <span class="activity-icon">{{ activity.icon }}</span>
+            <div class="activity-details">
+              <p class="activity-description">{{ activity.description }}</p>
+              <span class="activity-time">{{ activity.timestamp | date:'short' }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</main>

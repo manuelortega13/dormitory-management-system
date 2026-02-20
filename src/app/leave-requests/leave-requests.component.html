@@ -1,0 +1,207 @@
+<main class="leave-requests-page">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Leave Requests</h1>
+      <p class="subtitle">Review and manage occupant leave requests</p>
+    </div>
+  </header>
+
+  <!-- Stats Cards -->
+  <section class="stats-bar">
+    <div class="stat-item total">
+      <span class="stat-icon">📋</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().total }}</span>
+        <span class="stat-label">Total Requests</span>
+      </div>
+    </div>
+    <div class="stat-item pending">
+      <span class="stat-icon">⏳</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-item approved">
+      <span class="stat-icon">✅</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().approved }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+    </div>
+    <div class="stat-item declined">
+      <span class="stat-icon">❌</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().declined }}</span>
+        <span class="stat-label">Declined</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <section class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by name, room number, or email..."
+        [value]="searchQuery()"
+        (input)="updateSearch($event)"
+      />
+    </div>
+
+    <div class="filter-group">
+      <select (change)="updateFilter($event)">
+        <option value="all">All Requests</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="declined">Declined</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Requests List -->
+  <section class="requests-list">
+    @for (request of filteredRequests(); track request.id) {
+      <article class="request-card" [class]="request.status">
+        <div class="occupant-info">
+          <div
+            class="avatar"
+            [style.background]="getAvatarColor(request.occupant.name)"
+          >
+            {{ request.occupant.avatar }}
+          </div>
+          <div class="details">
+            <h3 class="name">{{ request.occupant.name }}</h3>
+            <p class="room">Room {{ request.occupant.roomNumber }} • Floor {{ request.occupant.floor }}</p>
+            <p class="contact">{{ request.occupant.email }}</p>
+          </div>
+        </div>
+
+        <div class="request-details">
+          <div class="detail-row">
+            <span class="label">Request Date:</span>
+            <span class="value">{{ request.requestDate | date:'mediumDate' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Expected Leave:</span>
+            <span class="value highlight">{{ request.expectedLeaveDate | date:'mediumDate' }}</span>
+          </div>
+          @if (request.status === 'pending') {
+            <div class="detail-row">
+              <span class="label">Days Until Leave:</span>
+              <span class="value days" [class.urgent]="getDaysUntilLeave(request.expectedLeaveDate) <= 7">
+                {{ getDaysUntilLeave(request.expectedLeaveDate) }} days
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="reason-section">
+          <span class="reason-label">Reason:</span>
+          <p class="reason-text">{{ request.reason }}</p>
+        </div>
+
+        <div class="card-footer">
+          <span class="status-badge" [class]="request.status">
+            @if (request.status === 'pending') {
+              ⏳ Pending Review
+            } @else if (request.status === 'approved') {
+              ✅ Approved
+            } @else {
+              ❌ Declined
+            }
+          </span>
+
+          @if (request.status === 'pending') {
+            <div class="action-buttons">
+              <button class="btn-approve" (click)="openRequestDetails(request)">
+                Review & Approve
+              </button>
+              <button class="btn-decline" (click)="openRequestDetails(request)">
+                Decline
+              </button>
+            </div>
+          } @else {
+            <div class="processed-info">
+              <span>Processed on {{ request.processedDate | date:'shortDate' }}</span>
+              @if (request.notes) {
+                <p class="admin-notes">{{ request.notes }}</p>
+              }
+            </div>
+          }
+        </div>
+      </article>
+    } @empty {
+      <div class="no-results">
+        <span class="icon">📭</span>
+        <h3>No Leave Requests Found</h3>
+        <p>There are no leave requests matching your criteria.</p>
+      </div>
+    }
+  </section>
+
+  <!-- Modal for Review -->
+  @if (selectedRequest()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Review Leave Request</h2>
+          <button class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="occupant-summary">
+            <div
+              class="avatar large"
+              [style.background]="getAvatarColor(selectedRequest()!.occupant.name)"
+            >
+              {{ selectedRequest()!.occupant.avatar }}
+            </div>
+            <div class="info">
+              <h3>{{ selectedRequest()!.occupant.name }}</h3>
+              <p>Room {{ selectedRequest()!.occupant.roomNumber }} • {{ selectedRequest()!.occupant.email }}</p>
+              <p>{{ selectedRequest()!.occupant.phone }}</p>
+            </div>
+          </div>
+
+          <div class="request-summary">
+            <div class="summary-row">
+              <span class="label">Request Date:</span>
+              <span class="value">{{ selectedRequest()!.requestDate | date:'fullDate' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="label">Expected Leave Date:</span>
+              <span class="value">{{ selectedRequest()!.expectedLeaveDate | date:'fullDate' }}</span>
+            </div>
+            <div class="summary-row full">
+              <span class="label">Reason for Leaving:</span>
+              <p class="reason">{{ selectedRequest()!.reason }}</p>
+            </div>
+          </div>
+
+          <div class="notes-section">
+            <label for="adminNotes">Admin Notes (optional):</label>
+            <textarea
+              id="adminNotes"
+              placeholder="Add any notes regarding this decision..."
+              [value]="actionNotes()"
+              (input)="updateNotes($event)"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+          <button class="btn-decline" (click)="declineRequest(selectedRequest()!)">
+            ❌ Decline Request
+          </button>
+          <button class="btn-approve" (click)="approveRequest(selectedRequest()!)">
+            ✅ Approve Request
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

@@ -1,0 +1,160 @@
+<main class="rooms-page">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Rooms Management</h1>
+      <p class="subtitle">Manage dormitory rooms and view occupant details</p>
+    </div>
+    <button class="btn-primary">
+      <span>➕</span> Add New Room
+    </button>
+  </header>
+
+  <!-- Stats Overview -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value">{{ stats().total }}</span>
+      <span class="stat-label">Total Rooms</span>
+    </div>
+    <div class="stat-item occupied">
+      <span class="stat-value">{{ stats().occupied }}</span>
+      <span class="stat-label">Occupied</span>
+    </div>
+    <div class="stat-item available">
+      <span class="stat-value">{{ stats().available }}</span>
+      <span class="stat-label">Available</span>
+    </div>
+    <div class="stat-item maintenance">
+      <span class="stat-value">{{ stats().maintenance }}</span>
+      <span class="stat-label">Maintenance</span>
+    </div>
+    <div class="stat-item reserved">
+      <span class="stat-value">{{ stats().reserved }}</span>
+      <span class="stat-label">Reserved</span>
+    </div>
+  </section>
+
+  <!-- Filters & Search -->
+  <section class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by room number or occupant name..."
+        [value]="searchQuery()"
+        (input)="updateSearch($event)"
+      />
+    </div>
+
+    <div class="filter-group">
+      <select (change)="updateStatus($event)">
+        <option value="all">All Status</option>
+        <option value="occupied">Occupied</option>
+        <option value="available">Available</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="reserved">Reserved</option>
+      </select>
+
+      <select (change)="updateFloor($event)">
+        <option value="all">All Floors</option>
+        @for (floor of floors(); track floor) {
+          <option [value]="floor">Floor {{ floor }}</option>
+        }
+      </select>
+
+      <div class="view-toggle">
+        <button
+          [class.active]="viewMode() === 'grid'"
+          (click)="setViewMode('grid')"
+          title="Grid View"
+        >
+          ▦
+        </button>
+        <button
+          [class.active]="viewMode() === 'list'"
+          (click)="setViewMode('list')"
+          title="List View"
+        >
+          ☰
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rooms Grid/List -->
+  <section class="rooms-container" [class]="viewMode()">
+    @for (room of filteredRooms(); track room.id) {
+      <article class="room-card" [class]="getStatusClass(room.status)">
+        <div class="room-header">
+          <div class="room-number">
+            <span class="number">{{ room.roomNumber }}</span>
+            <span class="floor">Floor {{ room.floor }}</span>
+          </div>
+          <span class="status-badge" [class]="room.status">{{ room.status }}</span>
+        </div>
+
+        <div class="room-info">
+          <div class="info-row">
+            <span class="label">Type:</span>
+            <span class="value">{{ getRoomTypeLabel(room.type) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Capacity:</span>
+            <span class="value">{{ room.occupants.length }}/{{ room.capacity }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Rent:</span>
+            <span class="value rent">${{ room.monthlyRent }}/mo</span>
+          </div>
+        </div>
+
+        <div class="amenities">
+          @for (amenity of room.amenities; track amenity) {
+            <span class="amenity-tag">{{ amenity }}</span>
+          }
+        </div>
+
+        @if (room.occupants.length > 0) {
+          <div class="occupants-section">
+            <h4>Occupants</h4>
+            <ul class="occupants-list">
+              @for (occupant of room.occupants; track occupant.id) {
+                <li class="occupant-item">
+                  <div class="occupant-avatar">{{ occupant.name.charAt(0) }}</div>
+                  <div class="occupant-details">
+                    <span class="occupant-name">{{ occupant.name }}</span>
+                    <span class="occupant-contact">{{ occupant.email }}</span>
+                    <span class="occupant-dates">
+                      Check-in: {{ occupant.checkInDate | date:'mediumDate' }}
+                    </span>
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <div class="no-occupants">
+            @if (room.status === 'available') {
+              <span>🛏️ Room is available for booking</span>
+            } @else if (room.status === 'maintenance') {
+              <span>🔧 Under maintenance</span>
+            } @else if (room.status === 'reserved') {
+              <span>📅 Reserved for upcoming check-in</span>
+            }
+          </div>
+        }
+
+        <div class="room-actions">
+          <button class="btn-secondary">View Details</button>
+          @if (room.status === 'available') {
+            <button class="btn-primary">Assign</button>
+          }
+        </div>
+      </article>
+    } @empty {
+      <div class="no-results">
+        <span class="no-results-icon">🔍</span>
+        <p>No rooms found matching your criteria</p>
+      </div>
+    }
+  </section>
+</main>

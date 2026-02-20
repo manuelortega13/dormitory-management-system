@@ -1,0 +1,56 @@
+<aside class="sidebar" [class.collapsed]="isCollapsed()">
+  <div class="sidebar-header">
+    <div class="logo">
+      @if (!isCollapsed()) {
+        <span class="logo-icon">🏠</span>
+        <span class="logo-text">DormHub</span>
+      } @else {
+        <span class="logo-icon">🏠</span>
+      }
+    </div>
+    <button class="toggle-btn" (click)="toggleSidebar()">
+      @if (isCollapsed()) {
+        <span>▶</span>
+      } @else {
+        <span>◀</span>
+      }
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    @for (section of menuSections; track section.title) {
+      <div class="menu-section">
+        @if (!isCollapsed()) {
+          <span class="section-title">{{ section.title }}</span>
+        }
+        <ul class="menu-list">
+          @for (item of section.items; track item.route) {
+            <li>
+              <a [routerLink]="item.route" routerLinkActive="active" class="menu-item">
+                <span class="menu-icon">{{ item.icon }}</span>
+                @if (!isCollapsed()) {
+                  <span class="menu-label">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="menu-badge">{{ item.badge }}</span>
+                  }
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar">👤</div>
+      @if (!isCollapsed()) {
+        <div class="user-details">
+          <span class="user-name">Admin User</span>
+          <span class="user-role">Administrator</span>
+        </div>
+      }
+    </div>
+  </div>
+</aside>
