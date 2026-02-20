@@ -1,0 +1,307 @@
+<main class="residents-page">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Residents Management</h1>
+      <p class="subtitle">Manage dormitory residents and their information</p>
+    </div>
+    <button class="btn-primary" (click)="openAddModal()">
+      <span>➕</span> Add New Resident
+    </button>
+  </header>
+
+  <!-- Stats Overview -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value">{{ stats().total }}</span>
+      <span class="stat-label">Total Residents</span>
+    </div>
+    <div class="stat-item active">
+      <span class="stat-value">{{ stats().active }}</span>
+      <span class="stat-label">Active</span>
+    </div>
+    <div class="stat-item pending">
+      <span class="stat-value">{{ stats().pending }}</span>
+      <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-item inactive">
+      <span class="stat-value">{{ stats().inactive }}</span>
+      <span class="stat-label">Inactive</span>
+    </div>
+    <div class="stat-item suspended">
+      <span class="stat-value">{{ stats().suspended }}</span>
+      <span class="stat-label">Suspended</span>
+    </div>
+  </section>
+
+  <!-- Filters & Search -->
+  <section class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by name, email, room, or student ID..."
+        [value]="searchQuery()"
+        (input)="updateSearch($event)"
+      />
+    </div>
+
+    <div class="filter-group">
+      <select (change)="updateStatus($event)">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="pending">Pending</option>
+        <option value="inactive">Inactive</option>
+        <option value="suspended">Suspended</option>
+      </select>
+
+      <select (change)="updateFloor($event)">
+        <option value="all">All Floors</option>
+        @for (floor of floors(); track floor) {
+          <option [value]="floor">Floor {{ floor }}</option>
+        }
+      </select>
+
+      <div class="view-toggle">
+        <button
+          [class.active]="viewMode() === 'grid'"
+          (click)="setViewMode('grid')"
+          title="Grid View"
+        >
+          ▦
+        </button>
+        <button
+          [class.active]="viewMode() === 'list'"
+          (click)="setViewMode('list')"
+          title="List View"
+        >
+          ☰
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Residents List View -->
+  @if (viewMode() === 'list') {
+    <section class="residents-table">
+      <div class="table-header">
+        <span class="col-name">Name</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-room">Room</span>
+        <span class="col-status">Status</span>
+        <span class="col-dates">Check-in / Check-out</span>
+        <span class="col-actions">Actions</span>
+      </div>
+      @for (resident of filteredResidents(); track resident.id) {
+        <div class="table-row" [class]="getStatusClass(resident.status)">
+          <div class="col-name">
+            <div 
+              class="resident-avatar" 
+              [style.background]="getAvatarColor(resident.first_name)"
+            >
+              {{ getInitials(resident) }}
+            </div>
+            <div class="resident-info">
+              <span class="name">{{ getFullName(resident) }}</span>
+              <span class="student-id">ID: {{ resident.id }}</span>
+            </div>
+          </div>
+          <div class="col-contact">
+            <span class="email">{{ resident.email }}</span>
+            <span class="phone">{{ resident.phone }}</span>
+          </div>
+          <div class="col-room">
+            @if (resident.room_number) {
+              <span class="room-number">Room {{ resident.room_number }}</span>
+              <span class="floor">Floor {{ resident.floor }}</span>
+            } @else {
+              <span class="no-room">Not Assigned</span>
+            }
+          </div>
+          <div class="col-status">
+            <span class="status-badge" [class]="resident.status">
+              {{ resident.status | titlecase }}
+            </span>
+          </div>
+          <div class="col-dates">
+            @if (resident.check_in_date) {
+              <span class="date-in">{{ resident.check_in_date | date:'mediumDate' }}</span>
+              <span class="date-out">{{ resident.check_out_date | date:'mediumDate' }}</span>
+            } @else {
+              <span class="no-dates">—</span>
+            }
+          </div>
+          <div class="col-actions">
+            <button class="btn-icon" title="View" (click)="viewResident(resident)">👁️</button>
+            <button class="btn-icon" title="Edit" (click)="editResident(resident)">✏️</button>
+            @if (!resident.room_number) {
+              <button class="btn-icon assign" title="Assign Room" (click)="assignRoom(resident)">🛏️</button>
+            }
+            <button class="btn-icon delete" title="Delete" (click)="deleteResident(resident)">🗑️</button>
+          </div>
+        </div>
+      }
+      @if (filteredResidents().length === 0) {
+        <div class="no-results">
+          <span class="icon">🔍</span>
+          <p>No residents found matching your criteria</p>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Residents Grid View -->
+  @if (viewMode() === 'grid') {
+    <section class="residents-grid">
+      @for (resident of filteredResidents(); track resident.id) {
+        <article class="resident-card" [class]="getStatusClass(resident.status)">
+          <div class="card-header">
+            <div 
+              class="resident-avatar large" 
+              [style.background]="getAvatarColor(resident.first_name)"
+            >
+              {{ getInitials(resident) }}
+            </div>
+            <span class="status-badge" [class]="resident.status">
+              {{ resident.status | titlecase }}
+            </span>
+          </div>
+
+          <div class="card-body">
+            <h3 class="resident-name">{{ getFullName(resident) }}</h3>
+            <p class="resident-id">ID: {{ resident.id }}</p>
+            
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">📧 Email</span>
+                <span class="value">{{ resident.email }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">📱 Phone</span>
+                <span class="value">{{ resident.phone }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">🏠 Room</span>
+                <span class="value">
+                  @if (resident.room_number) {
+                    {{ resident.room_number }} (Floor {{ resident.floor }})
+                  } @else {
+                    Not Assigned
+                  }
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="label">📅 Joined</span>
+                <span class="value">{{ resident.created_at | date:'mediumDate' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button class="btn-secondary" (click)="viewResident(resident)">View Details</button>
+            @if (!resident.room_number) {
+              <button class="btn-primary" (click)="assignRoom(resident)">Assign Room</button>
+            }
+          </div>
+        </article>
+      }
+      @if (filteredResidents().length === 0) {
+        <div class="no-results">
+          <span class="icon">🔍</span>
+          <p>No residents found matching your criteria</p>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Resident Detail Modal -->
+  @if (selectedResident()) {
+    <div class="modal-overlay" (click)="closeResidentDetail()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeResidentDetail()">✕</button>
+        
+        <div class="modal-header">
+          <div 
+            class="resident-avatar xlarge" 
+            [style.background]="getAvatarColor(selectedResident()!.first_name)"
+          >
+            {{ getInitials(selectedResident()!) }}
+          </div>
+          <div class="resident-title">
+            <h2>{{ getFullName(selectedResident()!) }}</h2>
+            <p class="resident-id">ID: {{ selectedResident()!.id }}</p>
+            <span class="status-badge" [class]="selectedResident()!.status">
+              {{ selectedResident()!.status | titlecase }}
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <div class="detail-section">
+            <h4>Personal Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Email</span>
+                <span class="value">{{ selectedResident()!.email }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Phone</span>
+                <span class="value">{{ selectedResident()!.phone }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Status</span>
+                <span class="value">{{ selectedResident()!.status | titlecase }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Registered</span>
+                <span class="value">{{ selectedResident()!.created_at | date:'mediumDate' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Room Assignment</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Room Number</span>
+                <span class="value">{{ selectedResident()!.room_number || 'Not Assigned' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Floor</span>
+                <span class="value">{{ selectedResident()!.floor || '—' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Room Type</span>
+                <span class="value">{{ selectedResident()!.room_type || '—' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Check-in Date</span>
+                <span class="value">
+                  @if (selectedResident()!.check_in_date) {
+                    {{ selectedResident()!.check_in_date | date:'mediumDate' }}
+                  } @else {
+                    —
+                  }
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Check-out Date</span>
+                <span class="value">
+                  @if (selectedResident()!.check_out_date) {
+                    {{ selectedResident()!.check_out_date | date:'mediumDate' }}
+                  } @else {
+                    —
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeResidentDetail()">Close</button>
+          <button class="btn-primary" (click)="editResident(selectedResident()!)">Edit Resident</button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

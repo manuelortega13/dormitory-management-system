@@ -1,0 +1,215 @@
+<main class="check-in-out-page">
+  <header class="page-header">
+    <h1>Check In / Check Out</h1>
+    <p class="subtitle">Scan QR code or enter ID manually to record entry/exit</p>
+  </header>
+
+  <!-- Today's Stats -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-icon">📊</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ todayStats().total }}</span>
+        <span class="stat-label">Total Today</span>
+      </div>
+    </div>
+    <div class="stat-item check-in">
+      <span class="stat-icon">🟢</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ todayStats().checkIns }}</span>
+        <span class="stat-label">Check-ins</span>
+      </div>
+    </div>
+    <div class="stat-item check-out">
+      <span class="stat-icon">🔴</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ todayStats().checkOuts }}</span>
+        <span class="stat-label">Check-outs</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="main-content">
+    <!-- Scanner Section -->
+    <section class="scanner-section">
+      <!-- Mode Toggle -->
+      <div class="mode-toggle">
+        <button
+          [class.active]="scanMode() === 'check-in'"
+          (click)="setScanMode('check-in')"
+        >
+          <span class="mode-icon">🟢</span>
+          Check In
+        </button>
+        <button
+          [class.active]="scanMode() === 'check-out'"
+          (click)="setScanMode('check-out')"
+        >
+          <span class="mode-icon">🔴</span>
+          Check Out
+        </button>
+      </div>
+
+      <!-- QR Scanner Area -->
+      <div class="scanner-area" [class]="scanStatus()">
+        @if (scanStatus() === 'idle') {
+          <div class="scanner-placeholder">
+            <div class="qr-icon">📷</div>
+            <h3>Ready to Scan</h3>
+            <p>Position the QR code within the camera frame</p>
+            <button class="btn-scan" (click)="startScanning()">
+              <span class="icon">📱</span>
+              Start Camera & Scan
+            </button>
+          </div>
+        }
+
+        @if (scanStatus() === 'scanning') {
+          <div class="scanner-active">
+            <div class="camera-frame" [style.transform]="'scale(' + zoomLevel() + ')'">
+              <video #videoElement autoplay playsinline muted class="camera-video"></video>
+              <div class="scan-line"></div>
+              <div class="corner top-left"></div>
+              <div class="corner top-right"></div>
+              <div class="corner bottom-left"></div>
+              <div class="corner bottom-right"></div>
+            </div>
+            @if (cameraError()) {
+              <p class="camera-error">{{ cameraError() }}</p>
+            }
+            <p class="scanning-text">Scanning for QR code...</p>
+            
+            <!-- Camera Controls -->
+            <div class="camera-controls">
+              <button 
+                class="control-btn" 
+                [class.active]="isFlashlightOn()" 
+                (click)="toggleFlashlight()"
+                title="Toggle Flashlight"
+              >
+                <span class="control-icon">{{ isFlashlightOn() ? '🔦' : '💡' }}</span>
+                <span class="control-label">Flash</span>
+              </button>
+              <button 
+                class="control-btn" 
+                (click)="switchCamera()"
+                title="Switch Camera"
+              >
+                <span class="control-icon">🔄</span>
+                <span class="control-label">{{ isFrontCamera() ? 'Front' : 'Back' }}</span>
+              </button>
+              <button 
+                class="control-btn" 
+                (click)="adjustZoom('out')"
+                [disabled]="zoomLevel() <= 1"
+                title="Zoom Out"
+              >
+                <span class="control-icon">➖</span>
+                <span class="control-label">Zoom</span>
+              </button>
+              <button 
+                class="control-btn" 
+                (click)="adjustZoom('in')"
+                [disabled]="zoomLevel() >= 3"
+                title="Zoom In"
+              >
+                <span class="control-icon">➕</span>
+                <span class="control-label">{{ zoomLevel() }}x</span>
+              </button>
+            </div>
+            
+            <button class="btn-cancel" (click)="stopScanning()">Cancel</button>
+          </div>
+        }
+
+        @if (scanStatus() === 'success' && scanResult()) {
+          <div class="scan-success">
+            <div class="success-icon">✅</div>
+            <div class="resident-info">
+              <div
+                class="resident-avatar"
+                [style.background]="getAvatarColor(scanResult()!.photo)"
+              >
+                {{ scanResult()!.photo }}
+              </div>
+              <div class="resident-details">
+                <h3>{{ scanResult()!.name }}</h3>
+                <p>Room {{ scanResult()!.roomNumber }} • Floor {{ scanResult()!.floor }}</p>
+                <span class="resident-badge">{{ scanResult()!.status | titlecase }}</span>
+              </div>
+            </div>
+            <div class="action-preview">
+              @if (scanMode() === 'check-in') {
+                <span class="action-type check-in">🟢 Checking IN</span>
+              } @else {
+                <span class="action-type check-out">🔴 Checking OUT</span>
+              }
+              <span class="action-time">{{ currentTime() | date:'shortTime' }}</span>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-cancel" (click)="resetScan()">Cancel</button>
+              @if (scanMode() === 'check-in') {
+                <button class="btn-confirm" (click)="confirmAction()">Confirm Check In</button>
+              } @else {
+                <button class="btn-confirm" (click)="confirmAction()">Confirm Check Out</button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (scanStatus() === 'error') {
+          <div class="scan-error">
+            <div class="error-icon">❌</div>
+            <h3>Scan Failed</h3>
+            <p>{{ errorMessage() }}</p>
+            <button class="btn-retry" (click)="resetScan()">Try Again</button>
+          </div>
+        }
+      </div>
+
+      <!-- Manual Entry -->
+      <div class="manual-entry">
+        <div class="divider">
+          <span>OR</span>
+        </div>
+        <div class="manual-form">
+          <label>Enter Resident ID Manually</label>
+          <div class="input-group">
+            <input
+              type="text"
+              placeholder="e.g., RES001"
+              [value]="manualIdInput()"
+              (input)="updateManualId($event)"
+              (keyup.enter)="submitManualId()"
+            />
+            <button class="btn-submit" (click)="submitManualId()" [disabled]="!manualIdInput()">
+              Search
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Activity -->
+    <section class="activity-section">
+      <h2>Recent Activity</h2>
+      <ul class="activity-list">
+        @for (activity of recentActivities(); track activity.id) {
+          <li class="activity-item" [class]="activity.type">
+            <span class="activity-icon">
+              @if (activity.type === 'check-in') { 🟢 } @else { 🔴 }
+            </span>
+            <div class="activity-details">
+              <span class="activity-name">{{ activity.name }}</span>
+              <span class="activity-room">Room {{ activity.roomNumber }}</span>
+            </div>
+            <div class="activity-meta">
+              <span class="activity-type">{{ activity.type === 'check-in' ? 'IN' : 'OUT' }}</span>
+              <span class="activity-time">{{ activity.timestamp | date:'shortTime' }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</main>

@@ -28,32 +28,32 @@ export class SidebarComponent {
     {
       title: 'Main',
       items: [
-        { label: 'Dashboard', icon: '📊', route: '/dashboard' }
+        { label: 'Dashboard', icon: '📊', route: '/manage/dashboard' }
       ]
     },
     {
       title: 'Management',
       items: [
-        { label: 'Rooms', icon: '🛏️', route: '/rooms' },
-        { label: 'Residents', icon: '👥', route: '/residents' },
-        { label: 'Bookings', icon: '📅', route: '/bookings', badge: 3 },
-        { label: 'Leave Requests', icon: '🚪', route: '/leave-requests', badge: 5 }
+        { label: 'Rooms', icon: '🛏️', route: '/manage/rooms' },
+        { label: 'Residents', icon: '👥', route: '/manage/residents' },
+        { label: 'Bookings', icon: '📅', route: '/manage/bookings', badge: 3 },
+        { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests', badge: 5 }
       ]
     },
     {
       title: 'Operations',
       items: [
-        { label: 'Maintenance', icon: '🔧', route: '/maintenance', badge: 5 },
-        { label: 'Payments', icon: '💰', route: '/payments' },
-        { label: 'Inventory', icon: '📦', route: '/inventory' }
+        { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance', badge: 5 },
+        { label: 'Payments', icon: '💰', route: '/manage/payments' },
+        { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
       ]
     },
     {
       title: 'Reports & Settings',
       items: [
-        { label: 'Reports', icon: '📈', route: '/reports' },
-        { label: 'Announcements', icon: '📢', route: '/announcements' },
-        { label: 'Settings', icon: '⚙️', route: '/settings' }
+        { label: 'Reports', icon: '📈', route: '/manage/reports' },
+        { label: 'Announcements', icon: '📢', route: '/manage/announcements' },
+        { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
       ]
     }
   ];

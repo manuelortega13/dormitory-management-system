@@ -1,0 +1,132 @@
+<main class="security-dashboard">
+  <header class="page-header">
+    <h1>Security Dashboard</h1>
+    <p class="subtitle">{{ currentDate | date:'fullDate' }} - {{ currentShift() }}</p>
+  </header>
+
+  <!-- Quick Stats -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">🚶</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().currentVisitors }}</span>
+        <span class="stat-label">Current Visitors</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">📝</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().todayCheckIns }}</span>
+        <span class="stat-label">Today's Check-ins</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🚪</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().todayCheckOuts }}</span>
+        <span class="stat-label">Today's Check-outs</span>
+      </div>
+    </div>
+    <div class="stat-card alert">
+      <span class="stat-icon">⚠️</span>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats().openIncidents }}</span>
+        <span class="stat-label">Open Incidents</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="dashboard-grid">
+    <!-- Recent Visitor Log -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Recent Visitor Log</h2>
+        <button class="btn-primary">+ Log Visitor</button>
+      </div>
+      <div class="panel-body">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Visitor</th>
+              <th>Visiting</th>
+              <th>Room</th>
+              <th>Time In</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (visitor of recentVisitors(); track visitor.id) {
+              <tr>
+                <td>{{ visitor.name }}</td>
+                <td>{{ visitor.visiting }}</td>
+                <td>{{ visitor.room }}</td>
+                <td>{{ visitor.timeIn | date:'shortTime' }}</td>
+                <td>
+                  <span class="status-badge" [class]="visitor.status">
+                    {{ visitor.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="panel quick-actions">
+      <div class="panel-header">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="panel-body">
+        <div class="actions-grid">
+          <button class="action-btn">
+            <span class="action-icon">📝</span>
+            <span>Log Visitor</span>
+          </button>
+          <button class="action-btn">
+            <span class="action-icon">🚪</span>
+            <span>Check In/Out</span>
+          </button>
+          <button class="action-btn alert">
+            <span class="action-icon">⚠️</span>
+            <span>Report Incident</span>
+          </button>
+          <button class="action-btn emergency">
+            <span class="action-icon">🚨</span>
+            <span>Emergency</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Incidents -->
+    <section class="panel incidents">
+      <div class="panel-header">
+        <h2>Recent Incidents</h2>
+      </div>
+      <div class="panel-body">
+        @if (recentIncidents().length > 0) {
+          <ul class="incident-list">
+            @for (incident of recentIncidents(); track incident.id) {
+              <li class="incident-item" [class]="incident.severity">
+                <span class="incident-icon">
+                  @if (incident.severity === 'high') { 🔴 }
+                  @else if (incident.severity === 'medium') { 🟡 }
+                  @else { 🟢 }
+                </span>
+                <div class="incident-details">
+                  <span class="incident-title">{{ incident.title }}</span>
+                  <span class="incident-time">{{ incident.time | date:'short' }}</span>
+                </div>
+                <span class="incident-status" [class]="incident.status">{{ incident.status }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="no-incidents">No recent incidents</p>
+        }
+      </div>
+    </section>
+  </div>
+</main>

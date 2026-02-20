@@ -1,0 +1,205 @@
+<main class="create-leave-request-page">
+  @if (!isSubmitted()) {
+    <header class="page-header">
+      <h1>Request to Leave Campus</h1>
+      <p class="subtitle">Submit your leave request at least 2 weeks before your expected departure date</p>
+    </header>
+
+    <!-- Current User Info -->
+    <section class="user-info-card">
+      <div class="user-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+        {{ currentUser.avatar }}
+      </div>
+      <div class="user-details">
+        <h3>{{ currentUser.name }}</h3>
+        <p>Room {{ currentUser.roomNumber }} • Floor {{ currentUser.floor }}</p>
+        <p class="secondary">{{ currentUser.email }}</p>
+        <p class="secondary">Check-in: {{ currentUser.checkInDate | date:'mediumDate' }}</p>
+      </div>
+    </section>
+
+    <!-- Leave Request Form -->
+    <form class="leave-request-form" (ngSubmit)="submitRequest()">
+      <!-- Expected Leave Date -->
+      <section class="form-section">
+        <h2>📅 Expected Leave Date</h2>
+        <div class="form-group">
+          <label for="leaveDate">When do you plan to leave? *</label>
+          <input
+            type="date"
+            id="leaveDate"
+            [min]="minDate()"
+            [value]="formData().expectedLeaveDate"
+            (change)="updateLeaveDate($event)"
+            required
+          />
+          <span class="hint">Minimum 2 weeks notice required</span>
+          @if (formData().expectedLeaveDate) {
+            <div class="date-preview">
+              <span class="icon">🗓️</span>
+              <span>You will be leaving in <strong>{{ getDaysUntilLeave() }} days</strong></span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Reason for Leaving -->
+      <section class="form-section">
+        <h2>📝 Reason for Leaving</h2>
+        <div class="form-group">
+          <label for="reason">Select your primary reason *</label>
+          <select
+            id="reason"
+            [value]="formData().reason"
+            (change)="updateReason($event)"
+            required
+          >
+            <option value="">-- Select a reason --</option>
+            @for (option of reasonOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="additionalNotes">Additional Notes (optional)</label>
+          <textarea
+            id="additionalNotes"
+            rows="4"
+            placeholder="Provide any additional details about your leave request..."
+            [value]="formData().additionalNotes"
+            (input)="updateNotes($event)"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- Confirmation Checklist -->
+      <section class="form-section checklist-section">
+        <h2>✅ Pre-Departure Checklist</h2>
+        <p class="checklist-intro">Please confirm the following before submitting your request:</p>
+
+        <div class="checklist">
+          <label class="checkbox-item">
+            <input
+              type="checkbox"
+              [checked]="formData().confirmChecklist.clearedDues"
+              (change)="updateChecklist('clearedDues', $event)"
+            />
+            <span class="checkmark"></span>
+            <span class="checkbox-label">
+              <strong>Clear all dues</strong>
+              <span>I confirm that I will clear all pending payments before leaving</span>
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input
+              type="checkbox"
+              [checked]="formData().confirmChecklist.returnedKeys"
+              (change)="updateChecklist('returnedKeys', $event)"
+            />
+            <span class="checkmark"></span>
+            <span class="checkbox-label">
+              <strong>Return room keys</strong>
+              <span>I will return all keys and access cards to the administration</span>
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input
+              type="checkbox"
+              [checked]="formData().confirmChecklist.roomInspection"
+              (change)="updateChecklist('roomInspection', $event)"
+            />
+            <span class="checkmark"></span>
+            <span class="checkbox-label">
+              <strong>Room inspection</strong>
+              <span>I agree to a room inspection before my departure</span>
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input
+              type="checkbox"
+              [checked]="formData().confirmChecklist.forwardingAddress"
+              (change)="updateChecklist('forwardingAddress', $event)"
+            />
+            <span class="checkmark"></span>
+            <span class="checkbox-label">
+              <strong>Forwarding address</strong>
+              <span>I will provide a forwarding address for any correspondence</span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Error Message -->
+      @if (errorMessage()) {
+        <div class="error-message">
+          <span class="icon">⚠️</span>
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Submit Button -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="goToDashboard()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="!isFormValid() || isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <span class="spinner"></span>
+            Submitting...
+          } @else {
+            Submit Leave Request
+          }
+        </button>
+      </div>
+    </form>
+  } @else {
+    <!-- Success State -->
+    <div class="success-container">
+      <div class="success-icon">✅</div>
+      <h1>Request Submitted Successfully!</h1>
+      <p>Your leave request has been submitted and is pending review by the administration.</p>
+
+      <div class="request-summary">
+        <h3>Request Summary</h3>
+        <div class="summary-row">
+          <span class="label">Expected Leave Date:</span>
+          <span class="value">{{ formData().expectedLeaveDate | date:'fullDate' }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Reason:</span>
+          <span class="value">{{ formData().reason }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Status:</span>
+          <span class="status-badge pending">Pending Review</span>
+        </div>
+      </div>
+
+      <div class="next-steps">
+        <h4>What's Next?</h4>
+        <ul>
+          <li>An administrator will review your request within 2-3 business days</li>
+          <li>You will receive an email notification once your request is processed</li>
+          <li>If approved, you will receive instructions for the checkout process</li>
+        </ul>
+      </div>
+
+      <div class="success-actions">
+        <button class="btn-secondary" (click)="createNewRequest()">
+          Submit Another Request
+        </button>
+        <button class="btn-primary" (click)="goToDashboard()">
+          Go to Dashboard
+        </button>
+      </div>
+    </div>
+  }
+</main>
