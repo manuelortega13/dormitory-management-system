@@ -106,6 +106,25 @@ exports.update = async (req, res) => {
   }
 };
 
+exports.updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['available', 'occupied', 'maintenance', 'reserved'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    await pool.execute('UPDATE rooms SET status = ? WHERE id = ?', [status, id]);
+
+    res.json({ message: 'Room status updated successfully' });
+  } catch (error) {
+    console.error('Update room status error:', error);
+    res.status(500).json({ error: 'Failed to update room status' });
+  }
+};
+
 exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,7 +185,7 @@ exports.getOccupants = async (req, res) => {
 
     const [occupants] = await pool.execute(
       `SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url,
-              ra.start_date, ra.end_date
+              ra.id as assignment_id, ra.start_date, ra.end_date
        FROM room_assignments ra
        JOIN users u ON ra.user_id = u.id
        WHERE ra.room_id = ? AND ra.status = 'active'`,
@@ -177,5 +196,37 @@ exports.getOccupants = async (req, res) => {
   } catch (error) {
     console.error('Get occupants error:', error);
     res.status(500).json({ error: 'Failed to fetch occupants' });
+  }
+};
+
+exports.unassignResident = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+
+    // Update the assignment status to 'ended'
+    const [result] = await pool.execute(
+      `UPDATE room_assignments SET status = 'ended', end_date = CURDATE() 
+       WHERE room_id = ? AND user_id = ? AND status = 'active'`,
+      [id, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    // Check if room is now empty and update status
+    const [remaining] = await pool.execute(
+      'SELECT COUNT(*) as count FROM room_assignments WHERE room_id = ? AND status = "active"',
+      [id]
+    );
+
+    if (remaining[0].count === 0) {
+      await pool.execute('UPDATE rooms SET status = "available" WHERE id = ?', [id]);
+    }
+
+    res.json({ message: 'Resident unassigned successfully' });
+  } catch (error) {
+    console.error('Unassign resident error:', error);
+    res.status(500).json({ error: 'Failed to unassign resident' });
   }
 };

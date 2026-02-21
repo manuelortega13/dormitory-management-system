@@ -10,12 +10,15 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    role ENUM('admin', 'security_guard', 'resident') NOT NULL DEFAULT 'resident',
+    role ENUM('admin', 'security_guard', 'resident', 'parent') NOT NULL DEFAULT 'resident',
     phone VARCHAR(20),
     photo_url VARCHAR(255),
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+    -- Parent/Guardian info for residents
+    parent_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Rooms table
@@ -45,37 +48,65 @@ CREATE TABLE IF NOT EXISTS room_assignments (
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
 );
 
--- Leave requests
+-- Leave/Go-out requests
 CREATE TABLE IF NOT EXISTS leave_requests (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    leave_type ENUM('overnight', 'weekend', 'holiday', 'emergency', 'other') NOT NULL,
+    leave_type ENUM('errand', 'overnight', 'weekend', 'holiday', 'emergency', 'other') NOT NULL,
     start_date DATETIME NOT NULL,
     end_date DATETIME NOT NULL,
-    reason TEXT,
-    destination VARCHAR(255),
+    reason TEXT NOT NULL,
+    destination VARCHAR(255) NOT NULL,
+    
+    -- Emergency contact for the trip
     emergency_contact VARCHAR(100),
     emergency_phone VARCHAR(20),
-    status ENUM('pending', 'approved', 'declined', 'cancelled') DEFAULT 'pending',
-    reviewed_by INT,
-    reviewed_at TIMESTAMP,
-    review_notes TEXT,
+    
+    -- Admin/Dean approval
+    admin_status ENUM('pending', 'approved', 'declined') DEFAULT 'pending',
+    admin_reviewed_by INT,
+    admin_reviewed_at TIMESTAMP,
+    admin_notes TEXT,
+    
+    -- Parent/Guardian approval
+    parent_status ENUM('pending', 'approved', 'declined', 'not_required') DEFAULT 'pending',
+    parent_reviewed_at TIMESTAMP,
+    parent_notes TEXT,
+    
+    -- QR Code for verification (generated after both approvals)
+    qr_code VARCHAR(64) UNIQUE,
+    qr_generated_at TIMESTAMP,
+    
+    -- Exit/Return tracking
+    exit_time TIMESTAMP,
+    exit_recorded_by INT,
+    return_time TIMESTAMP,
+    return_recorded_by INT,
+    
+    -- Overall status
+    status ENUM('pending_admin', 'pending_parent', 'approved', 'active', 'completed', 'declined', 'cancelled', 'expired') DEFAULT 'pending_admin',
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (exit_recorded_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (return_recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Check-in/Check-out logs
+-- Check-in/Check-out logs (linked to leave requests)
 CREATE TABLE IF NOT EXISTS check_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
+    leave_request_id INT,
     type ENUM('check-in', 'check-out') NOT NULL,
     method ENUM('qr_scan', 'manual', 'card') DEFAULT 'qr_scan',
     recorded_by INT,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (leave_request_id) REFERENCES leave_requests(id) ON DELETE SET NULL,
     FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -117,11 +148,16 @@ CREATE TABLE IF NOT EXISTS incidents (
 -- Create indexes for better query performance
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_users_parent ON users(parent_id);
 CREATE INDEX idx_rooms_status ON rooms(status);
 CREATE INDEX idx_room_assignments_status ON room_assignments(status);
 CREATE INDEX idx_leave_requests_status ON leave_requests(status);
 CREATE INDEX idx_leave_requests_user ON leave_requests(user_id);
+CREATE INDEX idx_leave_requests_qr ON leave_requests(qr_code);
+CREATE INDEX idx_leave_requests_admin_status ON leave_requests(admin_status);
+CREATE INDEX idx_leave_requests_parent_status ON leave_requests(parent_status);
 CREATE INDEX idx_check_logs_user ON check_logs(user_id);
 CREATE INDEX idx_check_logs_created ON check_logs(created_at);
+CREATE INDEX idx_check_logs_leave_request ON check_logs(leave_request_id);
 CREATE INDEX idx_visitors_status ON visitors(status);
 CREATE INDEX idx_incidents_status ON incidents(status);

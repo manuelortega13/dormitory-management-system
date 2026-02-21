@@ -4,7 +4,7 @@
       <h1>Rooms Management</h1>
       <p class="subtitle">Manage dormitory rooms and view occupant details</p>
     </div>
-    <button class="btn-primary">
+    <button class="btn-primary" (click)="openAddModal()">
       <span>➕</span> Add New Room
     </button>
   </header>
@@ -115,17 +115,31 @@
 
         @if (room.occupants.length > 0) {
           <div class="occupants-section">
-            <h4>Occupants</h4>
+            <h4>Occupants ({{ room.occupants.length }}/{{ room.capacity }})</h4>
             <ul class="occupants-list">
               @for (occupant of room.occupants; track occupant.id) {
                 <li class="occupant-item">
                   <div class="occupant-avatar">{{ occupant.name.charAt(0) }}</div>
                   <div class="occupant-details">
                     <span class="occupant-name">{{ occupant.name }}</span>
-                    <span class="occupant-contact">{{ occupant.email }}</span>
-                    <span class="occupant-dates">
-                      Check-in: {{ occupant.checkInDate | date:'mediumDate' }}
+                    <span class="occupant-contact">
+                      <span class="contact-icon">📧</span> {{ occupant.email }}
                     </span>
+                    @if (occupant.phone) {
+                      <span class="occupant-contact">
+                        <span class="contact-icon">📱</span> {{ occupant.phone }}
+                      </span>
+                    }
+                    <div class="occupant-dates">
+                      <span class="date-item">
+                        <span class="date-label">Check-in:</span> {{ occupant.checkInDate | date:'mediumDate' }}
+                      </span>
+                      @if (occupant.expectedCheckOut) {
+                        <span class="date-item">
+                          <span class="date-label">Check-out:</span> {{ occupant.expectedCheckOut | date:'mediumDate' }}
+                        </span>
+                      }
+                    </div>
                   </div>
                 </li>
               }
@@ -144,9 +158,9 @@
         }
 
         <div class="room-actions">
-          <button class="btn-secondary">View Details</button>
-          @if (room.status === 'available') {
-            <button class="btn-primary">Assign</button>
+          <button class="btn-secondary" (click)="openDetailsModal(room)">View Details</button>
+          @if (room.status === 'available' || room.occupants.length < room.capacity) {
+            <button class="btn-primary" (click)="openAssignModal(room)">Assign</button>
           }
         </div>
       </article>
@@ -158,3 +172,285 @@
     }
   </section>
 </main>
+<!-- Add Room Modal -->
+@if (showAddModal()) {
+  <div class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add New Room</h2>
+        <button class="close-btn" (click)="closeAddModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="roomNumber">Room Number *</label>
+          <input
+            type="text"
+            id="roomNumber"
+            [value]="formData().roomNumber"
+            (input)="updateFormField('roomNumber', $any($event.target).value)"
+            placeholder="e.g., 101, A-201"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="floor">Floor</label>
+            <input
+              type="number"
+              id="floor"
+              [value]="formData().floor"
+              (input)="updateFormField('floor', +$any($event.target).value)"
+              min="1"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="capacity">Capacity</label>
+            <input
+              type="number"
+              id="capacity"
+              [value]="formData().capacity"
+              (input)="updateFormField('capacity', +$any($event.target).value)"
+              min="1"
+              max="6"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="roomType">Room Type</label>
+            <select
+              id="roomType"
+              [value]="formData().roomType"
+              (change)="updateFormField('roomType', $any($event.target).value)"
+            >
+              <option value="single">Single</option>
+              <option value="double">Double</option>
+              <option value="triple">Triple</option>
+              <option value="suite">Suite</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="pricePerMonth">Monthly Rent ($)</label>
+            <input
+              type="number"
+              id="pricePerMonth"
+              [value]="formData().pricePerMonth"
+              (input)="updateFormField('pricePerMonth', +$any($event.target).value)"
+              min="0"
+              step="50"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="amenities">Amenities (comma-separated)</label>
+          <input
+            type="text"
+            id="amenities"
+            [value]="formData().amenities"
+            (input)="updateFormField('amenities', $any($event.target).value)"
+            placeholder="e.g., AC, WiFi, Attached Bath"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAddModal()" [disabled]="saving()">Cancel</button>
+        <button class="btn-primary" (click)="saveRoom()" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Add Room' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- View Details Modal -->
+@if (showDetailsModal() && selectedRoom()) {
+  <div class="modal-overlay" (click)="closeDetailsModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Room {{ selectedRoom()!.roomNumber }} Details</h2>
+        <button class="close-btn" (click)="closeDetailsModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="details-grid">
+          <div class="detail-section">
+            <h4>Room Information</h4>
+            <div class="detail-item">
+              <span class="detail-label">Room Number:</span>
+              <span class="detail-value">{{ selectedRoom()!.roomNumber }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Floor:</span>
+              <span class="detail-value">{{ selectedRoom()!.floor }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">{{ getRoomTypeLabel(selectedRoom()!.type) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Capacity:</span>
+              <span class="detail-value">{{ selectedRoom()!.occupants.length }}/{{ selectedRoom()!.capacity }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Status:</span>
+              <div class="detail-value-with-action">
+                <span class="status-badge" [class]="selectedRoom()!.status">{{ selectedRoom()!.status }}</span>
+                <select 
+                  class="status-select"
+                  [value]="selectedRoom()!.status"
+                  (change)="setRoomStatus(selectedRoom()!.id, $any($event.target).value)"
+                >
+                  <option value="available">Available</option>
+                  <option value="occupied">Occupied</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="reserved">Reserved</option>
+                </select>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Monthly Rent:</span>
+              <span class="detail-value rent">${{ selectedRoom()!.monthlyRent }}/mo</span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Amenities</h4>
+            <div class="amenities-list">
+              @for (amenity of selectedRoom()!.amenities; track amenity) {
+                <span class="amenity-tag">{{ amenity }}</span>
+              } @empty {
+                <span class="no-data">No amenities listed</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section occupants-full">
+          <h4>Occupants ({{ selectedRoom()!.occupants.length }}/{{ selectedRoom()!.capacity }})</h4>
+          @if (selectedRoom()!.occupants.length > 0) {
+            <div class="occupants-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (occupant of selectedRoom()!.occupants; track occupant.id) {
+                    <tr>
+                      <td>{{ occupant.name }}</td>
+                      <td>{{ occupant.email }}</td>
+                      <td>{{ occupant.phone || '-' }}</td>
+                      <td>{{ occupant.checkInDate | date:'mediumDate' }}</td>
+                      <td>{{ occupant.expectedCheckOut ? (occupant.expectedCheckOut | date:'mediumDate') : '-' }}</td>
+                      <td>
+                        <button 
+                          class="btn-remove" 
+                          (click)="removeOccupant(selectedRoom()!.id, occupant.id, occupant.name)"
+                          title="Remove from room"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="no-data">No occupants assigned to this room</p>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeDetailsModal()">Close</button>
+        @if (selectedRoom()!.occupants.length < selectedRoom()!.capacity) {
+          <button class="btn-primary" (click)="closeDetailsModal(); openAssignModal(selectedRoom()!)">Assign Resident</button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Assign Resident Modal -->
+@if (showAssignModal() && assigningRoom()) {
+  <div class="modal-overlay" (click)="closeAssignModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Assign Resident to Room {{ assigningRoom()!.roomNumber }}</h2>
+        <button class="close-btn" (click)="closeAssignModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="room-summary">
+          <span>{{ getRoomTypeLabel(assigningRoom()!.type) }}</span>
+          <span class="separator">•</span>
+          <span>Floor {{ assigningRoom()!.floor }}</span>
+          <span class="separator">•</span>
+          <span>{{ assigningRoom()!.occupants.length }}/{{ assigningRoom()!.capacity }} occupied</span>
+        </div>
+
+        <div class="form-group">
+          <label for="residentSelect">Select Resident *</label>
+          <select
+            id="residentSelect"
+            [value]="selectedResidentId() ?? ''"
+            (change)="selectedResidentId.set(+$any($event.target).value || null)"
+          >
+            <option value="">-- Select a resident --</option>
+            @for (resident of availableResidents(); track resident.id) {
+              <option [value]="resident.id">{{ resident.first_name }} {{ resident.last_name }} ({{ resident.email }})</option>
+            } @empty {
+              <option disabled>No available residents</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startDate">Start Date *</label>
+            <input
+              type="date"
+              id="startDate"
+              [value]="assignStartDate()"
+              (input)="assignStartDate.set($any($event.target).value)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="endDate">End Date (Optional)</label>
+            <input
+              type="date"
+              id="endDate"
+              [value]="assignEndDate()"
+              (input)="assignEndDate.set($any($event.target).value)"
+            />
+          </div>
+        </div>
+
+        @if (availableResidents().length === 0) {
+          <div class="info-message">
+            <span>ℹ️</span> No residents without room assignments found. All active residents are already assigned to rooms.
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAssignModal()" [disabled]="assigning()">Cancel</button>
+        <button
+          class="btn-primary"
+          (click)="assignResident()"
+          [disabled]="assigning() || !selectedResidentId() || availableResidents().length === 0"
+        >
+          {{ assigning() ? 'Assigning...' : 'Assign Resident' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

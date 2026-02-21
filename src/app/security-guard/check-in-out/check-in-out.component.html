@@ -1,215 +1,227 @@
-<main class="check-in-out-page">
-  <header class="page-header">
-    <h1>Check In / Check Out</h1>
-    <p class="subtitle">Scan QR code or enter ID manually to record entry/exit</p>
-  </header>
-
-  <!-- Today's Stats -->
-  <section class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-icon">📊</span>
-      <div class="stat-content">
-        <span class="stat-value">{{ todayStats().total }}</span>
-        <span class="stat-label">Total Today</span>
+<div class="check-in-out">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Campus Gate Scanner</h1>
+      <p class="current-time">{{ formatTime(currentTime()) }}</p>
+    </div>
+    <div class="today-stats">
+      <div class="stat">
+        <span class="stat-value">{{ todayStats().exits }}</span>
+        <span class="stat-label">Exits</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ todayStats().returns }}</span>
+        <span class="stat-label">Returns</span>
       </div>
     </div>
-    <div class="stat-item check-in">
-      <span class="stat-icon">🟢</span>
-      <div class="stat-content">
-        <span class="stat-value">{{ todayStats().checkIns }}</span>
-        <span class="stat-label">Check-ins</span>
-      </div>
-    </div>
-    <div class="stat-item check-out">
-      <span class="stat-icon">🔴</span>
-      <div class="stat-content">
-        <span class="stat-value">{{ todayStats().checkOuts }}</span>
-        <span class="stat-label">Check-outs</span>
-      </div>
-    </div>
-  </section>
+  </div>
 
   <div class="main-content">
     <!-- Scanner Section -->
-    <section class="scanner-section">
-      <!-- Mode Toggle -->
-      <div class="mode-toggle">
-        <button
-          [class.active]="scanMode() === 'check-in'"
-          (click)="setScanMode('check-in')"
-        >
-          <span class="mode-icon">🟢</span>
-          Check In
-        </button>
-        <button
-          [class.active]="scanMode() === 'check-out'"
-          (click)="setScanMode('check-out')"
-        >
-          <span class="mode-icon">🔴</span>
-          Check Out
-        </button>
-      </div>
-
-      <!-- QR Scanner Area -->
-      <div class="scanner-area" [class]="scanStatus()">
+    <div class="scanner-section">
+      <div class="scanner-card">
         @if (scanStatus() === 'idle') {
-          <div class="scanner-placeholder">
-            <div class="qr-icon">📷</div>
-            <h3>Ready to Scan</h3>
-            <p>Position the QR code within the camera frame</p>
+          <!-- Idle State - Show scan options -->
+          <div class="idle-state">
+            <div class="scan-icon">📷</div>
+            <h2>Scan Resident Pass</h2>
+            <p>Scan the QR code from the resident's approved go-out pass</p>
+            
             <button class="btn-scan" (click)="startScanning()">
-              <span class="icon">📱</span>
-              Start Camera & Scan
+              Start Camera Scanner
             </button>
-          </div>
-        }
 
-        @if (scanStatus() === 'scanning') {
-          <div class="scanner-active">
-            <div class="camera-frame" [style.transform]="'scale(' + zoomLevel() + ')'">
-              <video #videoElement autoplay playsinline muted class="camera-video"></video>
-              <div class="scan-line"></div>
-              <div class="corner top-left"></div>
-              <div class="corner top-right"></div>
-              <div class="corner bottom-left"></div>
-              <div class="corner bottom-right"></div>
+            <div class="divider">
+              <span>or enter manually</span>
             </div>
-            @if (cameraError()) {
-              <p class="camera-error">{{ cameraError() }}</p>
-            }
-            <p class="scanning-text">Scanning for QR code...</p>
+
+            <div class="manual-input">
+              <input 
+                type="text" 
+                placeholder="Enter QR code..."
+                [value]="manualQRInput()"
+                (input)="updateManualQR($event)"
+                (keyup.enter)="submitManualQR()"
+              />
+              <button class="btn-submit" (click)="submitManualQR()">
+                Verify
+              </button>
+            </div>
+          </div>
+        } @else if (scanStatus() === 'scanning') {
+          <!-- Scanning State - Camera active -->
+          <div class="scanning-state">
+            <div class="camera-container">
+              @if (cameraError()) {
+                <div class="camera-error">
+                  <span class="error-icon">📵</span>
+                  <p>{{ cameraError() }}</p>
+                </div>
+              } @else {
+                <video #videoElement autoplay playsinline></video>
+                <div class="scan-overlay">
+                  <div class="scan-frame"></div>
+                  @if (scannerSupported()) {
+                    <div class="scanning-indicator">Scanning...</div>
+                  }
+                </div>
+                @if (!scannerSupported()) {
+                  <div class="scanner-notice">
+                    <p>Auto-scan not supported. Please enter QR code manually below.</p>
+                  </div>
+                }
+              }
+            </div>
             
-            <!-- Camera Controls -->
             <div class="camera-controls">
-              <button 
-                class="control-btn" 
-                [class.active]="isFlashlightOn()" 
-                (click)="toggleFlashlight()"
-                title="Toggle Flashlight"
-              >
-                <span class="control-icon">{{ isFlashlightOn() ? '🔦' : '💡' }}</span>
-                <span class="control-label">Flash</span>
-              </button>
-              <button 
-                class="control-btn" 
-                (click)="switchCamera()"
-                title="Switch Camera"
-              >
-                <span class="control-icon">🔄</span>
-                <span class="control-label">{{ isFrontCamera() ? 'Front' : 'Back' }}</span>
-              </button>
-              <button 
-                class="control-btn" 
-                (click)="adjustZoom('out')"
-                [disabled]="zoomLevel() <= 1"
-                title="Zoom Out"
-              >
-                <span class="control-icon">➖</span>
-                <span class="control-label">Zoom</span>
-              </button>
-              <button 
-                class="control-btn" 
-                (click)="adjustZoom('in')"
-                [disabled]="zoomLevel() >= 3"
-                title="Zoom In"
-              >
-                <span class="control-icon">➕</span>
-                <span class="control-label">{{ zoomLevel() }}x</span>
+              <button class="control-btn" (click)="switchCamera()">
+                🔄 Switch Camera
               </button>
             </div>
-            
-            <button class="btn-cancel" (click)="stopScanning()">Cancel</button>
-          </div>
-        }
 
-        @if (scanStatus() === 'success' && scanResult()) {
-          <div class="scan-success">
-            <div class="success-icon">✅</div>
-            <div class="resident-info">
-              <div
-                class="resident-avatar"
-                [style.background]="getAvatarColor(scanResult()!.photo)"
-              >
-                {{ scanResult()!.photo }}
-              </div>
-              <div class="resident-details">
-                <h3>{{ scanResult()!.name }}</h3>
-                <p>Room {{ scanResult()!.roomNumber }} • Floor {{ scanResult()!.floor }}</p>
-                <span class="resident-badge">{{ scanResult()!.status | titlecase }}</span>
-              </div>
+            <div class="manual-input-inline">
+              <input 
+                type="text" 
+                placeholder="Or enter QR code manually..."
+                [value]="manualQRInput()"
+                (input)="updateManualQR($event)"
+                (keyup.enter)="submitManualQR()"
+              />
+              <button class="btn-verify" (click)="submitManualQR()">
+                Verify
+              </button>
             </div>
-            <div class="action-preview">
-              @if (scanMode() === 'check-in') {
-                <span class="action-type check-in">🟢 Checking IN</span>
-              } @else {
-                <span class="action-type check-out">🔴 Checking OUT</span>
-              }
-              <span class="action-time">{{ currentTime() | date:'shortTime' }}</span>
-            </div>
-            <div class="action-buttons">
-              <button class="btn-cancel" (click)="resetScan()">Cancel</button>
-              @if (scanMode() === 'check-in') {
-                <button class="btn-confirm" (click)="confirmAction()">Confirm Check In</button>
-              } @else {
-                <button class="btn-confirm" (click)="confirmAction()">Confirm Check Out</button>
-              }
-            </div>
-          </div>
-        }
 
-        @if (scanStatus() === 'error') {
-          <div class="scan-error">
-            <div class="error-icon">❌</div>
-            <h3>Scan Failed</h3>
-            <p>{{ errorMessage() }}</p>
-            <button class="btn-retry" (click)="resetScan()">Try Again</button>
-          </div>
-        }
-      </div>
-
-      <!-- Manual Entry -->
-      <div class="manual-entry">
-        <div class="divider">
-          <span>OR</span>
-        </div>
-        <div class="manual-form">
-          <label>Enter Resident ID Manually</label>
-          <div class="input-group">
-            <input
-              type="text"
-              placeholder="e.g., RES001"
-              [value]="manualIdInput()"
-              (input)="updateManualId($event)"
-              (keyup.enter)="submitManualId()"
-            />
-            <button class="btn-submit" (click)="submitManualId()" [disabled]="!manualIdInput()">
-              Search
+            <button class="btn-cancel" (click)="stopScanning()">
+              Cancel
             </button>
           </div>
-        </div>
-      </div>
-    </section>
+        } @else if (scanStatus() === 'verifying') {
+          <!-- Verifying State -->
+          <div class="verifying-state">
+            <div class="spinner-large"></div>
+            <h3>Verifying Pass...</h3>
+            <p>Please wait</p>
+          </div>
+        } @else if (scanStatus() === 'success' && verificationResult()?.valid) {
+          <!-- Success State - Show resident info -->
+          <div class="success-state">
+            <div class="success-header">
+              <span class="success-icon">✓</span>
+              <h2>Pass Verified</h2>
+            </div>
 
-    <!-- Recent Activity -->
-    <section class="activity-section">
-      <h2>Recent Activity</h2>
-      <ul class="activity-list">
-        @for (activity of recentActivities(); track activity.id) {
-          <li class="activity-item" [class]="activity.type">
-            <span class="activity-icon">
-              @if (activity.type === 'check-in') { 🟢 } @else { 🔴 }
-            </span>
-            <div class="activity-details">
-              <span class="activity-name">{{ activity.name }}</span>
-              <span class="activity-room">Room {{ activity.roomNumber }}</span>
+            @if (verificationResult()?.leaveRequest; as request) {
+              <div class="resident-card">
+                <div class="resident-avatar">
+                  {{ getInitials(request.user_name || 'U') }}
+                </div>
+                <div class="resident-info">
+                  <h3>{{ request.user_name }}</h3>
+                  <p class="room">Room {{ request.room_number }}</p>
+                </div>
+              </div>
+
+              <div class="pass-details">
+                <div class="detail-row">
+                  <span class="label">Type:</span>
+                  <span class="value">{{ getLeaveTypeLabel(request.leave_type) }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Destination:</span>
+                  <span class="value">{{ request.destination }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Valid Until:</span>
+                  <span class="value">{{ formatDate(request.end_date) }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Emergency:</span>
+                  <span class="value">{{ request.emergency_contact }} ({{ request.emergency_phone }})</span>
+                </div>
+              </div>
+
+              <div class="action-section">
+                @if (verificationResult()?.action === 'exit') {
+                  <div class="action-info exit">
+                    <span class="action-icon">🚪</span>
+                    <span class="action-text">Recording EXIT</span>
+                  </div>
+                } @else {
+                  <div class="action-info return">
+                    <span class="action-icon">🏠</span>
+                    <span class="action-text">Recording RETURN</span>
+                  </div>
+                }
+
+                <div class="action-buttons">
+                  <button class="btn-cancel-action" (click)="resetScan()">
+                    Cancel
+                  </button>
+                  <button 
+                    class="btn-confirm" 
+                    [class.exit]="verificationResult()?.action === 'exit'"
+                    [class.return]="verificationResult()?.action === 'return'"
+                    [disabled]="isProcessing()"
+                    (click)="confirmAction()"
+                  >
+                    @if (isProcessing()) {
+                      Processing...
+                    } @else if (verificationResult()?.action === 'exit') {
+                      Confirm Exit
+                    } @else {
+                      Confirm Return
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else if (scanStatus() === 'error') {
+          <!-- Error State -->
+          <div class="error-state">
+            <div class="error-header">
+              <span class="error-icon-large">⚠️</span>
+              <h2>Verification Failed</h2>
             </div>
-            <div class="activity-meta">
-              <span class="activity-type">{{ activity.type === 'check-in' ? 'IN' : 'OUT' }}</span>
-              <span class="activity-time">{{ activity.timestamp | date:'shortTime' }}</span>
-            </div>
-          </li>
+            
+            <p class="error-message">{{ errorMessage() }}</p>
+            
+            <button class="btn-retry" (click)="resetScan()">
+              Try Again
+            </button>
+          </div>
         }
-      </ul>
-    </section>
+      </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="activity-section">
+      <h3>Recent Activity</h3>
+      
+      @if (recentActivities().length === 0) {
+        <div class="no-activity">
+          <p>No activity recorded yet today</p>
+        </div>
+      } @else {
+        <div class="activity-list">
+          @for (activity of recentActivities(); track activity.id) {
+            <div class="activity-item" [class.exit]="activity.action === 'exit'" [class.return]="activity.action === 'return'">
+              <div class="activity-icon">
+                @if (activity.action === 'exit') { 🚪 } @else { 🏠 }
+              </div>
+              <div class="activity-info">
+                <span class="activity-name">{{ activity.name }}</span>
+                <span class="activity-room">Room {{ activity.roomNumber }} · {{ getLeaveTypeLabel(activity.leaveType) }}</span>
+              </div>
+              <div class="activity-time">
+                {{ formatTime(activity.timestamp) }}
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
   </div>
-</main>
+</div>

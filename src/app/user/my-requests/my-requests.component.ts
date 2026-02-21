@@ -1,0 +1,167 @@
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { LeaveRequestService, LeaveRequest } from '../data/leave-request.service';
+
+@Component({
+  selector: 'app-my-requests',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './my-requests.component.html',
+  styleUrl: './my-requests.component.scss'
+})
+export class MyRequestsComponent implements OnInit {
+  private router = inject(Router);
+  private leaveRequestService = inject(LeaveRequestService);
+
+  requests = signal<LeaveRequest[]>([]);
+  isLoading = signal(true);
+  errorMessage = signal('');
+  
+  activeQRCode = signal<string | null>(null);
+  activeRequest = signal<LeaveRequest | null>(null);
+  showQRModal = signal(false);
+
+  ngOnInit() {
+    this.loadRequests();
+  }
+
+  async loadRequests() {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    try {
+      const data = await this.leaveRequestService.getMyRequests();
+      this.requests.set(data);
+
+      // Check if there's an active QR code
+      const qrData = await this.leaveRequestService.getMyQRCode();
+      if (qrData) {
+        this.activeQRCode.set(qrData.qr_code);
+        this.activeRequest.set(qrData.leave_request);
+      }
+    } catch (error: any) {
+      this.errorMessage.set(error.message || 'Failed to load requests');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  isExpired(request: LeaveRequest): boolean {
+    // A request is expired if end_date is past and status is not completed/cancelled/declined/active
+    const endDate = new Date(request.end_date);
+    const now = new Date();
+    const terminatedStatuses = ['completed', 'cancelled', 'declined', 'expired'];
+    return endDate < now && !terminatedStatuses.includes(request.status);
+  }
+
+  getEffectiveStatus(request: LeaveRequest): string {
+    if (this.isExpired(request)) {
+      return 'expired';
+    }
+    return request.status;
+  }
+
+  getStatusClass(request: LeaveRequest): string {
+    const status = this.getEffectiveStatus(request);
+    switch (status) {
+      case 'pending_admin':
+      case 'pending_parent':
+        return 'status-pending';
+      case 'approved':
+        return 'status-approved';
+      case 'active':
+        return 'status-active';
+      case 'completed':
+        return 'status-completed';
+      case 'declined':
+      case 'cancelled':
+      case 'expired':
+        return 'status-declined';
+      default:
+        return '';
+    }
+  }
+
+  getStatusLabel(request: LeaveRequest): string {
+    const status = this.getEffectiveStatus(request);
+    switch (status) {
+      case 'pending_admin':
+        return 'Awaiting Admin Approval';
+      case 'pending_parent':
+        return 'Awaiting Parent Approval';
+      case 'approved':
+        return 'Approved - Ready to Go';
+      case 'active':
+        return 'Currently Out';
+      case 'completed':
+        return 'Completed';
+      case 'declined':
+        return 'Declined';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'expired':
+        return 'Expired';
+      default:
+        return status;
+    }
+  }
+
+  getLeaveTypeLabel(type: string): string {
+    const types: Record<string, string> = {
+      'errand': 'Errand',
+      'overnight': 'Overnight',
+      'weekend': 'Weekend',
+      'emergency': 'Emergency',
+      'other': 'Other'
+    };
+    return types[type] || type;
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  async cancelRequest(request: LeaveRequest) {
+    if (!confirm('Are you sure you want to cancel this request?')) {
+      return;
+    }
+
+    try {
+      await this.leaveRequestService.cancel(request.id);
+      await this.loadRequests();
+    } catch (error: any) {
+      alert(error.message || 'Failed to cancel request');
+    }
+  }
+
+  viewQRCode(request: LeaveRequest) {
+    if (request.qr_code) {
+      this.activeQRCode.set(request.qr_code);
+      this.activeRequest.set(request);
+      this.showQRModal.set(true);
+    }
+  }
+
+  closeQRModal() {
+    this.showQRModal.set(false);
+  }
+
+  getQRCodeUrl(qrCode: string): string {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`;
+  }
+
+  createNewRequest() {
+    this.router.navigate(['/my-leave-request']);
+  }
+
+  goBack() {
+    this.router.navigate(['/']);
+  }
+}

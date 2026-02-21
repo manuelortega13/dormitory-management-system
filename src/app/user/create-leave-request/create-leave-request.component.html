@@ -1,205 +1,216 @@
-<main class="create-leave-request-page">
-  @if (!isSubmitted()) {
-    <header class="page-header">
-      <h1>Request to Leave Campus</h1>
-      <p class="subtitle">Submit your leave request at least 2 weeks before your expected departure date</p>
-    </header>
+<div class="go-out-request">
+  <div class="page-header">
+    <button class="back-btn" (click)="goBack()">
+      <span class="back-icon">←</span>
+      Back
+    </button>
+    <div class="header-content">
+      <h1>Request to Go Out</h1>
+      <p>Submit your request to leave campus. Your request will be reviewed by the admin/dean and your parent.</p>
+    </div>
+  </div>
 
-    <!-- Current User Info -->
-    <section class="user-info-card">
-      <div class="user-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
-        {{ currentUser.avatar }}
-      </div>
-      <div class="user-details">
-        <h3>{{ currentUser.name }}</h3>
-        <p>Room {{ currentUser.roomNumber }} • Floor {{ currentUser.floor }}</p>
-        <p class="secondary">{{ currentUser.email }}</p>
-        <p class="secondary">Check-in: {{ currentUser.checkInDate | date:'mediumDate' }}</p>
-      </div>
-    </section>
-
-    <!-- Leave Request Form -->
-    <form class="leave-request-form" (ngSubmit)="submitRequest()">
-      <!-- Expected Leave Date -->
-      <section class="form-section">
-        <h2>📅 Expected Leave Date</h2>
-        <div class="form-group">
-          <label for="leaveDate">When do you plan to leave? *</label>
-          <input
-            type="date"
-            id="leaveDate"
-            [min]="minDate()"
-            [value]="formData().expectedLeaveDate"
-            (change)="updateLeaveDate($event)"
-            required
-          />
-          <span class="hint">Minimum 2 weeks notice required</span>
-          @if (formData().expectedLeaveDate) {
-            <div class="date-preview">
-              <span class="icon">🗓️</span>
-              <span>You will be leaving in <strong>{{ getDaysUntilLeave() }} days</strong></span>
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- Reason for Leaving -->
-      <section class="form-section">
-        <h2>📝 Reason for Leaving</h2>
-        <div class="form-group">
-          <label for="reason">Select your primary reason *</label>
-          <select
-            id="reason"
-            [value]="formData().reason"
-            (change)="updateReason($event)"
-            required
-          >
-            <option value="">-- Select a reason --</option>
-            @for (option of reasonOptions; track option) {
-              <option [value]="option">{{ option }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="additionalNotes">Additional Notes (optional)</label>
-          <textarea
-            id="additionalNotes"
-            rows="4"
-            placeholder="Provide any additional details about your leave request..."
-            [value]="formData().additionalNotes"
-            (input)="updateNotes($event)"
-          ></textarea>
-        </div>
-      </section>
-
-      <!-- Confirmation Checklist -->
-      <section class="form-section checklist-section">
-        <h2>✅ Pre-Departure Checklist</h2>
-        <p class="checklist-intro">Please confirm the following before submitting your request:</p>
-
-        <div class="checklist">
-          <label class="checkbox-item">
-            <input
-              type="checkbox"
-              [checked]="formData().confirmChecklist.clearedDues"
-              (change)="updateChecklist('clearedDues', $event)"
-            />
-            <span class="checkmark"></span>
-            <span class="checkbox-label">
-              <strong>Clear all dues</strong>
-              <span>I confirm that I will clear all pending payments before leaving</span>
-            </span>
-          </label>
-
-          <label class="checkbox-item">
-            <input
-              type="checkbox"
-              [checked]="formData().confirmChecklist.returnedKeys"
-              (change)="updateChecklist('returnedKeys', $event)"
-            />
-            <span class="checkmark"></span>
-            <span class="checkbox-label">
-              <strong>Return room keys</strong>
-              <span>I will return all keys and access cards to the administration</span>
-            </span>
-          </label>
-
-          <label class="checkbox-item">
-            <input
-              type="checkbox"
-              [checked]="formData().confirmChecklist.roomInspection"
-              (change)="updateChecklist('roomInspection', $event)"
-            />
-            <span class="checkmark"></span>
-            <span class="checkbox-label">
-              <strong>Room inspection</strong>
-              <span>I agree to a room inspection before my departure</span>
-            </span>
-          </label>
-
-          <label class="checkbox-item">
-            <input
-              type="checkbox"
-              [checked]="formData().confirmChecklist.forwardingAddress"
-              (change)="updateChecklist('forwardingAddress', $event)"
-            />
-            <span class="checkmark"></span>
-            <span class="checkbox-label">
-              <strong>Forwarding address</strong>
-              <span>I will provide a forwarding address for any correspondence</span>
-            </span>
-          </label>
-        </div>
-      </section>
-
-      <!-- Error Message -->
-      @if (errorMessage()) {
-        <div class="error-message">
-          <span class="icon">⚠️</span>
-          {{ errorMessage() }}
-        </div>
-      }
-
-      <!-- Submit Button -->
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" (click)="goToDashboard()">
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn-primary"
-          [disabled]="!isFormValid() || isSubmitting()"
-        >
-          @if (isSubmitting()) {
-            <span class="spinner"></span>
-            Submitting...
-          } @else {
-            Submit Leave Request
-          }
-        </button>
-      </div>
-    </form>
-  } @else {
-    <!-- Success State -->
-    <div class="success-container">
-      <div class="success-icon">✅</div>
-      <h1>Request Submitted Successfully!</h1>
-      <p>Your leave request has been submitted and is pending review by the administration.</p>
-
-      <div class="request-summary">
-        <h3>Request Summary</h3>
-        <div class="summary-row">
-          <span class="label">Expected Leave Date:</span>
-          <span class="value">{{ formData().expectedLeaveDate | date:'fullDate' }}</span>
-        </div>
-        <div class="summary-row">
-          <span class="label">Reason:</span>
-          <span class="value">{{ formData().reason }}</span>
-        </div>
-        <div class="summary-row">
-          <span class="label">Status:</span>
-          <span class="status-badge pending">Pending Review</span>
-        </div>
-      </div>
-
-      <div class="next-steps">
-        <h4>What's Next?</h4>
-        <ul>
-          <li>An administrator will review your request within 2-3 business days</li>
-          <li>You will receive an email notification once your request is processed</li>
-          <li>If approved, you will receive instructions for the checkout process</li>
-        </ul>
-      </div>
-
-      <div class="success-actions">
-        <button class="btn-secondary" (click)="createNewRequest()">
-          Submit Another Request
-        </button>
-        <button class="btn-primary" (click)="goToDashboard()">
-          Go to Dashboard
-        </button>
-      </div>
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      {{ errorMessage() }}
     </div>
   }
-</main>
+
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <span class="alert-icon">✓</span>
+      {{ successMessage() }}
+    </div>
+  }
+
+  <form (ngSubmit)="onSubmit()" class="request-form">
+    <!-- Leave Type -->
+    <div class="form-section">
+      <h3>Type of Leave</h3>
+      <div class="leave-types">
+        @for (type of leaveTypes; track type.value) {
+          <label class="type-option" [class.selected]="form.leaveType === type.value">
+            <input 
+              type="radio" 
+              name="leaveType" 
+              [value]="type.value" 
+              [(ngModel)]="form.leaveType"
+            />
+            <div class="type-content">
+              <span class="type-label">{{ type.label }}</span>
+              <span class="type-desc">{{ type.description }}</span>
+            </div>
+          </label>
+        }
+      </div>
+    </div>
+
+    <!-- Date & Time -->
+    <div class="form-section">
+      <h3>Schedule</h3>
+      <div class="date-time-grid">
+        <div class="form-group" [class.has-error]="fieldErrors().startDate">
+          <label for="startDate">Departure Date *</label>
+          <input 
+            type="date" 
+            id="startDate" 
+            [(ngModel)]="form.startDate" 
+            name="startDate"
+            [min]="getTodayDate()"
+            (input)="clearFieldError('startDate')"
+            required
+          />
+          @if (fieldErrors().startDate) {
+            <span class="field-error">{{ fieldErrors().startDate }}</span>
+          }
+        </div>
+        <div class="form-group" [class.has-error]="fieldErrors().startTime">
+          <label for="startTime">Departure Time *</label>
+          <input 
+            type="time" 
+            id="startTime" 
+            [(ngModel)]="form.startTime" 
+            name="startTime"
+            [min]="getMinStartTime()"
+            (input)="clearFieldError('startTime')"
+            required
+          />
+          @if (fieldErrors().startTime) {
+            <span class="field-error">{{ fieldErrors().startTime }}</span>
+          }
+        </div>
+        <div class="form-group" [class.has-error]="fieldErrors().endDate">
+          <label for="endDate">Return Date *</label>
+          <input 
+            type="date" 
+            id="endDate" 
+            [(ngModel)]="form.endDate" 
+            name="endDate"
+            [min]="getMinEndDate()"
+            (input)="clearFieldError('endDate')"
+            required
+          />
+          @if (fieldErrors().endDate) {
+            <span class="field-error">{{ fieldErrors().endDate }}</span>
+          }
+        </div>
+        <div class="form-group" [class.has-error]="fieldErrors().endTime">
+          <label for="endTime">Return Time *</label>
+          <input 
+            type="time" 
+            id="endTime" 
+            [(ngModel)]="form.endTime" 
+            name="endTime"
+            (input)="clearFieldError('endTime')"
+            required
+          />
+          @if (fieldErrors().endTime) {
+            <span class="field-error">{{ fieldErrors().endTime }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Destination & Reason -->
+    <div class="form-section">
+      <h3>Details</h3>
+      <div class="form-group" [class.has-error]="fieldErrors().destination">
+        <label for="destination">Destination *</label>
+        <input 
+          type="text" 
+          id="destination" 
+          [(ngModel)]="form.destination" 
+          name="destination"
+          placeholder="Where are you going? (e.g., Mall of Asia, Home - Quezon City)"
+          (input)="clearFieldError('destination')"
+          required
+        />
+        @if (fieldErrors().destination) {
+          <span class="field-error">{{ fieldErrors().destination }}</span>
+        }
+      </div>
+      <div class="form-group" [class.has-error]="fieldErrors().reason">
+        <label for="reason">Reason for Leave *</label>
+        <textarea 
+          id="reason" 
+          [(ngModel)]="form.reason" 
+          name="reason"
+          rows="4"
+          placeholder="Please provide a detailed reason for your request..."
+          (input)="clearFieldError('reason')"
+          required
+        ></textarea>
+        @if (fieldErrors().reason) {
+          <span class="field-error">{{ fieldErrors().reason }}</span>
+        }
+      </div>
+    </div>
+
+    <!-- Emergency Contact -->
+    <div class="form-section">
+      <h3>Emergency Contact</h3>
+      <p class="section-note">Person to contact in case of emergency while you're away</p>
+      <div class="contact-grid">
+        <div class="form-group" [class.has-error]="fieldErrors().emergencyContact">
+          <label for="emergencyContact">Contact Name *</label>
+          <input 
+            type="text" 
+            id="emergencyContact" 
+            [(ngModel)]="form.emergencyContact" 
+            name="emergencyContact"
+            placeholder="Full name of emergency contact"
+            (input)="clearFieldError('emergencyContact')"
+            required
+          />
+          @if (fieldErrors().emergencyContact) {
+            <span class="field-error">{{ fieldErrors().emergencyContact }}</span>
+          }
+        </div>
+        <div class="form-group" [class.has-error]="fieldErrors().emergencyPhone">
+          <label for="emergencyPhone">Contact Phone *</label>
+          <input 
+            type="tel" 
+            id="emergencyPhone" 
+            [(ngModel)]="form.emergencyPhone" 
+            name="emergencyPhone"
+            placeholder="e.g., 09171234567"
+            (input)="clearFieldError('emergencyPhone')"
+            required
+          />
+          @if (fieldErrors().emergencyPhone) {
+            <span class="field-error">{{ fieldErrors().emergencyPhone }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Approval Process Info -->
+    <div class="info-box">
+      <h4>📋 Approval Process</h4>
+      <ol>
+        <li><strong>Admin/Dean Review:</strong> Your request will first be reviewed by the dormitory admin or dean.</li>
+        <li><strong>Parent Approval:</strong> Once admin approves, your parent/guardian will be notified to approve.</li>
+        <li><strong>QR Code Generated:</strong> After both approvals, a QR code will be generated for you.</li>
+        <li><strong>Security Scan:</strong> Show your QR code to the security guard when leaving and returning.</li>
+      </ol>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="goBack()">Cancel</button>
+      <button 
+        type="submit" 
+        class="btn-primary" 
+        [disabled]="!isFormValid() || isSubmitting()"
+      >
+        @if (isSubmitting()) {
+          <span class="spinner"></span>
+          Submitting...
+        } @else {
+          Submit Request
+        }
+      </button>
+    </div>
+  </form>
+</div>

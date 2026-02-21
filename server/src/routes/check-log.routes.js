@@ -9,6 +9,9 @@ router.get('/', authMiddleware, roleMiddleware('admin', 'security_guard'), check
 // GET /api/check-logs/today - Get today's logs
 router.get('/today', authMiddleware, roleMiddleware('admin', 'security_guard'), checkLogController.getToday);
 
+// GET /api/check-logs/children - Get logs for parent's children
+router.get('/children', authMiddleware, roleMiddleware('parent'), checkLogController.getChildrenLogs);
+
 // GET /api/check-logs/user/:userId - Get logs for specific user
 router.get('/user/:userId', authMiddleware, checkLogController.getByUser);
 

@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-security-layout',
@@ -62,6 +63,10 @@ import { CommonModule } from '@angular/common';
               <span class="guard-shift">Night Shift</span>
             </div>
           </div>
+          <button class="logout-btn" (click)="logout()">
+            <span class="logout-icon">🚪</span>
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
       <main class="security-content">
@@ -218,6 +223,35 @@ import { CommonModule } from '@angular/common';
     .sidebar-footer {
       padding: 1rem;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(231, 76, 60, 0.2);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      border-radius: 8px;
+      color: #e74c3c;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(231, 76, 60, 0.3);
+        border-color: rgba(231, 76, 60, 0.5);
+      }
+
+      .logout-icon {
+        font-size: 1rem;
+      }
     }
 
     .guard-info {
@@ -303,6 +337,7 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class SecurityLayoutComponent {
+  private readonly authService = inject(AuthService);
   protected readonly isSidebarOpen = signal(false);
 
   toggleSidebar() {
@@ -311,5 +346,9 @@ export class SecurityLayoutComponent {
 
   closeSidebar() {
     this.isSidebarOpen.set(false);
+  }
+
+  logout() {
+    this.authService.logout();
   }
 }

@@ -18,6 +18,9 @@ router.post('/', authMiddleware, roleMiddleware('admin'), roomController.create)
 // PUT /api/rooms/:id - Update room (admin only)
 router.put('/:id', authMiddleware, roleMiddleware('admin'), roomController.update);
 
+// PATCH /api/rooms/:id/status - Update room status only (admin only)
+router.patch('/:id/status', authMiddleware, roleMiddleware('admin'), roomController.updateStatus);
+
 // DELETE /api/rooms/:id - Delete room (admin only)
 router.delete('/:id', authMiddleware, roleMiddleware('admin'), roomController.delete);
 
@@ -26,5 +29,8 @@ router.post('/:id/assign', authMiddleware, roleMiddleware('admin'), roomControll
 
 // GET /api/rooms/:id/occupants - Get room occupants
 router.get('/:id/occupants', authMiddleware, roomController.getOccupants);
+
+// DELETE /api/rooms/:id/occupants/:userId - Unassign resident from room (admin only)
+router.delete('/:id/occupants/:userId', authMiddleware, roleMiddleware('admin'), roomController.unassignResident);
 
 module.exports = router;

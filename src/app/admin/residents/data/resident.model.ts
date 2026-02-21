@@ -19,12 +19,42 @@ export interface Resident {
   room_number: string | null;
   floor: number | null;
   room_type: string | null;
-  check_in_date: string | null;
-  check_out_date: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  parent_id: number | null;
+  parent_first_name: string | null;
+  parent_last_name: string | null;
+  parent_email: string | null;
+  parent_phone: string | null;
 }
 
 export interface ResidentFilters {
   status?: ResidentStatus;
   search?: string;
   floor?: number;
+}
+
+export interface CreateResidentDto {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  parentId?: number | null;
+}
+
+export interface UpdateResidentDto {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  password?: string;
+  parentId?: number | null;
+}
+
+export interface Parent {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string | null;
 }

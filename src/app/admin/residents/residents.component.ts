@@ -1,12 +1,14 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ResidentsService, Resident, ResidentStatus } from './data';
+import { ResidentsService, Resident, ResidentStatus, CreateResidentDto, UpdateResidentDto, Parent } from './data';
+import { ResidentFormModalComponent } from './resident-form-modal/resident-form-modal.component';
+import { SuspendModalComponent } from './suspend-modal/suspend-modal.component';
 
 @Component({
   selector: 'app-residents',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ResidentFormModalComponent, SuspendModalComponent],
   templateUrl: './residents.component.html',
   styleUrl: './residents.component.scss'
 })
@@ -18,10 +20,19 @@ export class ResidentsComponent implements OnInit {
   protected readonly selectedFloor = signal<number | 'all'>('all');
   protected readonly viewMode = signal<'grid' | 'list'>('list');
   protected readonly showAddModal = signal(false);
+  protected readonly showEditModal = signal(false);
   protected readonly selectedResident = signal<Resident | null>(null);
+  protected readonly editingResident = signal<Resident | null>(null);
   protected readonly isLoading = signal(false);
+  protected readonly modalError = signal('');
+  protected readonly modalSaving = signal(false);
+  protected readonly showSuspendModal = signal(false);
+  protected readonly suspendingResident = signal<Resident | null>(null);
+  protected readonly suspendError = signal('');
+  protected readonly suspendSaving = signal(false);
 
   protected readonly residents = signal<Resident[]>([]);
+  protected readonly parents = signal<Parent[]>([]);
 
   ngOnInit(): void {
     this.loadResidents();
@@ -127,11 +138,32 @@ export class ResidentsComponent implements OnInit {
   }
 
   openAddModal(): void {
+    this.modalError.set('');
+    this.modalSaving.set(false);
+    this.loadParents();
     this.showAddModal.set(true);
   }
 
   closeAddModal(): void {
     this.showAddModal.set(false);
+    this.modalError.set('');
+  }
+
+  onAddResident(data: CreateResidentDto | UpdateResidentDto): void {
+    this.modalSaving.set(true);
+    this.modalError.set('');
+
+    this.residentsService.createResident(data as CreateResidentDto).subscribe({
+      next: () => {
+        this.modalSaving.set(false);
+        this.closeAddModal();
+        this.loadResidents();
+      },
+      error: (err) => {
+        this.modalError.set(err.error?.error || 'Failed to create resident');
+        this.modalSaving.set(false);
+      }
+    });
   }
 
   viewResident(resident: Resident): void {
@@ -143,8 +175,45 @@ export class ResidentsComponent implements OnInit {
   }
 
   editResident(resident: Resident): void {
-    console.log('Edit resident:', resident);
-    // TODO: Implement edit functionality
+    this.modalError.set('');
+    this.modalSaving.set(false);
+    this.editingResident.set(resident);
+    this.loadParents();
+    this.showEditModal.set(true);
+  }
+
+  loadParents(): void {
+    this.residentsService.getParents().subscribe({
+      next: (data) => this.parents.set(data),
+      error: (err) => console.error('Failed to load parents:', err)
+    });
+  }
+
+  closeEditModal(): void {
+    this.showEditModal.set(false);
+    this.editingResident.set(null);
+    this.modalError.set('');
+  }
+
+  onEditResident(data: CreateResidentDto | UpdateResidentDto): void {
+    const resident = this.editingResident();
+    if (!resident) return;
+
+    this.modalSaving.set(true);
+    this.modalError.set('');
+
+    this.residentsService.updateResident(resident.id, data as UpdateResidentDto).subscribe({
+      next: () => {
+        this.modalSaving.set(false);
+        this.closeEditModal();
+        this.closeResidentDetail();
+        this.loadResidents();
+      },
+      error: (err) => {
+        this.modalError.set(err.error?.error || 'Failed to update resident');
+        this.modalSaving.set(false);
+      }
+    });
   }
 
   deleteResident(resident: Resident): void {
@@ -152,6 +221,7 @@ export class ResidentsComponent implements OnInit {
       this.residentsService.deleteResident(resident.id).subscribe({
         next: () => {
           this.residents.update(residents => residents.filter(r => r.id !== resident.id));
+          this.closeResidentDetail();
         },
         error: (err) => console.error('Failed to delete resident:', err)
       });
@@ -161,5 +231,51 @@ export class ResidentsComponent implements OnInit {
   assignRoom(resident: Resident): void {
     console.log('Assign room to:', resident);
     // TODO: Implement room assignment
+  }
+
+  openSuspendModal(resident: Resident): void {
+    this.suspendError.set('');
+    this.suspendSaving.set(false);
+    this.suspendingResident.set(resident);
+    this.showSuspendModal.set(true);
+  }
+
+  closeSuspendModal(): void {
+    this.showSuspendModal.set(false);
+    this.suspendingResident.set(null);
+    this.suspendError.set('');
+  }
+
+  onSuspendResident(reason: string): void {
+    const resident = this.suspendingResident();
+    if (!resident) return;
+
+    this.suspendSaving.set(true);
+    this.suspendError.set('');
+
+    this.residentsService.suspendResident(resident.id, reason).subscribe({
+      next: () => {
+        this.suspendSaving.set(false);
+        this.closeSuspendModal();
+        this.closeResidentDetail();
+        this.loadResidents();
+      },
+      error: (err) => {
+        this.suspendError.set(err.error?.error || 'Failed to suspend resident');
+        this.suspendSaving.set(false);
+      }
+    });
+  }
+
+  reactivateResident(resident: Resident): void {
+    if (confirm(`Are you sure you want to reactivate ${this.getFullName(resident)}?`)) {
+      this.residentsService.reactivateResident(resident.id).subscribe({
+        next: () => {
+          this.closeResidentDetail();
+          this.loadResidents();
+        },
+        error: (err) => console.error('Failed to reactivate resident:', err)
+      });
+    }
   }
 }

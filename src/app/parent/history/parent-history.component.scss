@@ -1,0 +1,182 @@
+.parent-history {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 1.5rem;
+    color: #1a1a2e;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    color: #666;
+    margin: 0;
+  }
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+
+  &-error {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 2rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e5e5;
+    border-top-color: #7c3aed;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #666;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    color: #1a1a2e;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    color: #666;
+    margin: 0;
+  }
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history-item {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+
+    .type-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .child-name {
+        font-weight: 600;
+        color: #7c3aed;
+        background: #f3e8ff;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+      }
+
+      .type-label {
+        font-weight: 600;
+        color: #1a1a2e;
+      }
+
+      .date {
+        font-size: 0.85rem;
+        color: #888;
+      }
+    }
+
+    .status-badge {
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+
+      &.status-pending {
+        background: #fef3c7;
+        color: #d97706;
+      }
+
+      &.status-approved {
+        background: #d1fae5;
+        color: #059669;
+      }
+
+      &.status-active {
+        background: #dbeafe;
+        color: #2563eb;
+      }
+
+      &.status-completed {
+        background: #e5e5e5;
+        color: #666;
+      }
+
+      &.status-declined {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+    }
+  }
+
+  .item-body {
+    padding: 1rem 1.25rem;
+
+    p {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.9rem;
+      color: #333;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      strong {
+        color: #666;
+      }
+    }
+  }
+}

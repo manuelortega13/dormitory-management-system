@@ -1,0 +1,175 @@
+<div class="parent-dashboard">
+  <div class="page-header">
+    <h1>Your Child's Requests</h1>
+    <p>Review and respond to your child's campus leave requests</p>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading requests...</p>
+    </div>
+  } @else if (requests().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">✅</span>
+      <h3>No Pending Requests</h3>
+      <p>Your child doesn't have any requests waiting for your approval.</p>
+    </div>
+  } @else {
+    <div class="requests-grid">
+      @for (request of requests(); track request.id) {
+        <div class="request-card">
+          <div class="card-header">
+            <div class="leave-type">
+              <span class="type-icon">{{ getLeaveTypeIcon(request.leave_type) }}</span>
+              <span class="type-label">{{ getLeaveTypeLabel(request.leave_type) }}</span>
+            </div>
+            <span class="status-badge pending">Needs Your Approval</span>
+          </div>
+
+          <div class="child-info">
+            <div class="child-avatar">{{ request.user_name?.charAt(0) || 'C' }}</div>
+            <div class="child-details">
+              <span class="child-name">{{ request.user_name }}</span>
+              <span class="child-room">Room {{ request.room_number }}</span>
+            </div>
+          </div>
+
+          <div class="request-details">
+            <div class="detail-group">
+              <span class="detail-label">📍 Destination</span>
+              <span class="detail-value">{{ request.destination }}</span>
+            </div>
+
+            <div class="detail-group">
+              <span class="detail-label">📅 Schedule</span>
+              <div class="schedule-block">
+                <div class="schedule-item">
+                  <span class="schedule-label">Leaving:</span>
+                  <span class="schedule-value">{{ formatShortDate(request.start_date) }}</span>
+                </div>
+                <div class="schedule-item">
+                  <span class="schedule-label">Returning:</span>
+                  <span class="schedule-value">{{ formatShortDate(request.end_date) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-group">
+              <span class="detail-label">📝 Reason</span>
+              <span class="detail-value reason">{{ request.reason }}</span>
+            </div>
+
+            <div class="detail-group">
+              <span class="detail-label">📞 Emergency Contact</span>
+              <span class="detail-value">{{ request.emergency_contact }} ({{ request.emergency_phone }})</span>
+            </div>
+          </div>
+
+          <div class="admin-approval">
+            <span class="approval-icon">✓</span>
+            <span class="approval-text">
+              Approved by Admin
+              @if (request.admin_reviewed_at) {
+                <span class="approval-date">on {{ formatShortDate(request.admin_reviewed_at) }}</span>
+              }
+            </span>
+          </div>
+
+          @if (request.admin_notes) {
+            <div class="admin-notes">
+              <span class="notes-label">Admin Notes:</span>
+              <span class="notes-text">{{ request.admin_notes }}</span>
+            </div>
+          }
+
+          <div class="card-actions">
+            <button class="btn-decline" (click)="openDeclineModal(request)">
+              ✗ Decline
+            </button>
+            <button class="btn-approve" (click)="openApproveModal(request)">
+              ✓ Approve
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Action Modal -->
+  @if (showActionModal() && selectedRequest()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeModal()">×</button>
+        
+        <div class="modal-header" [class.approve]="actionType() === 'approve'" [class.decline]="actionType() === 'decline'">
+          @if (actionType() === 'approve') {
+            <span class="modal-icon">✓</span>
+            <h2>Approve Request</h2>
+          } @else {
+            <span class="modal-icon">✗</span>
+            <h2>Decline Request</h2>
+          }
+        </div>
+
+        <div class="modal-body">
+          <div class="request-summary">
+            <p><strong>Child:</strong> {{ selectedRequest()!.user_name }}</p>
+            <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
+            <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
+            <p><strong>When:</strong> {{ formatShortDate(selectedRequest()!.start_date) }} - {{ formatShortDate(selectedRequest()!.end_date) }}</p>
+          </div>
+
+          @if (actionType() === 'approve') {
+            <div class="info-message approve">
+              <span class="info-icon">ℹ️</span>
+              <p>After your approval, a QR code will be generated for your child to use at the campus gate.</p>
+            </div>
+          } @else {
+            <div class="info-message decline">
+              <span class="info-icon">⚠️</span>
+              <p>If you decline, your child will not be able to leave campus for this request.</p>
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="parentNotes">Message for your child (optional)</label>
+            <textarea 
+              id="parentNotes"
+              rows="3"
+              placeholder="Add a message or note..."
+              [ngModel]="parentNotes()"
+              (ngModelChange)="parentNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+          <button 
+            class="btn-confirm"
+            [class.approve]="actionType() === 'approve'"
+            [class.decline]="actionType() === 'decline'"
+            [disabled]="isProcessing()"
+            (click)="confirmAction()"
+          >
+            @if (isProcessing()) {
+              Processing...
+            } @else if (actionType() === 'approve') {
+              Yes, Approve
+            } @else {
+              Yes, Decline
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

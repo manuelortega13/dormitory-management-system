@@ -1,0 +1,68 @@
+<div class="parent-activity">
+  <div class="page-header">
+    <h1>Child Activity</h1>
+    <p>Track your child's campus check-ins and check-outs</p>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading activity...</p>
+    </div>
+  } @else if (activities().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">📍</span>
+      <h3>No Activity Yet</h3>
+      <p>Your child hasn't checked in or out of campus yet.</p>
+    </div>
+  } @else {
+    <div class="activity-timeline">
+      @for (activity of activities(); track activity.id) {
+        <div class="activity-card" [class.check-out]="activity.type === 'check-out'" [class.check-in]="activity.type === 'check-in'">
+          <div class="activity-icon">
+            {{ getActivityIcon(activity.type) }}
+          </div>
+          <div class="activity-content">
+            <div class="activity-header">
+              <span class="child-name">{{ activity.user_name }}</span>
+              <span class="activity-type" [class.out]="activity.type === 'check-out'" [class.in]="activity.type === 'check-in'">
+                {{ getActivityLabel(activity.type) }}
+              </span>
+            </div>
+            <div class="activity-details">
+              @if (activity.room_number) {
+                <span class="detail-item">
+                  <span class="detail-icon">🛏️</span>
+                  Room {{ activity.room_number }}
+                </span>
+              }
+              @if (activity.destination) {
+                <span class="detail-item">
+                  <span class="detail-icon">📍</span>
+                  {{ activity.destination }}
+                </span>
+              }
+              @if (activity.leave_type) {
+                <span class="detail-item">
+                  <span class="detail-icon">📋</span>
+                  {{ getLeaveTypeLabel(activity.leave_type) }}
+                </span>
+              }
+            </div>
+            <div class="activity-time">
+              <span class="relative-time">{{ formatRelativeTime(activity.created_at) }}</span>
+              <span class="exact-time">{{ formatDate(activity.created_at) }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

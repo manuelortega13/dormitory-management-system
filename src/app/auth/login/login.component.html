@@ -1,0 +1,84 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo">🏠</div>
+      <h1>DormConnect</h1>
+      <p>Dormitory Management System</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert alert-error">
+        <span class="alert-icon">⚠️</span>
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📧</span>
+          <input 
+            type="email" 
+            id="email" 
+            placeholder="Enter your email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            name="email"
+            autocomplete="email"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input 
+            [type]="showPassword() ? 'text' : 'password'"
+            id="password" 
+            placeholder="Enter your password"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+            name="password"
+            autocomplete="current-password"
+            required
+          />
+          <button 
+            type="button" 
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+          >
+            {{ showPassword() ? '🙈' : '👁️' }}
+          </button>
+        </div>
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn-login"
+        [disabled]="isLoading()"
+      >
+        @if (isLoading()) {
+          <span class="spinner"></span>
+          Signing in...
+        } @else {
+          Sign In
+        }
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <div class="role-info">
+        <h4>Portal Access:</h4>
+        <ul>
+          <li><span class="role-badge admin">Admin</span> Manage dormitory operations</li>
+          <li><span class="role-badge resident">Resident</span> Request campus leave</li>
+          <li><span class="role-badge parent">Parent</span> Approve child's requests</li>
+          <li><span class="role-badge guard">Guard</span> Scan QR codes at gate</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

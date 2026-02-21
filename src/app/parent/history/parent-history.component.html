@@ -1,0 +1,57 @@
+<div class="parent-history">
+  <div class="page-header">
+    <h1>Request History</h1>
+    <p>Past leave requests from your child</p>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading history...</p>
+    </div>
+  } @else if (requests().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">📜</span>
+      <h3>No History Yet</h3>
+      <p>There are no past requests to display.</p>
+    </div>
+  } @else {
+    <div class="history-list">
+      @for (request of requests(); track request.id) {
+        <div class="history-item">
+          <div class="item-header">
+            <div class="type-info">
+              <span class="child-name">{{ request.user_name }}</span>
+              <span class="type-label">{{ getLeaveTypeLabel(request.leave_type) }}</span>
+              <span class="date">{{ formatDate(request.created_at) }}</span>
+            </div>
+            <span class="status-badge" [class]="getStatusClass(request.status)">
+              {{ getStatusLabel(request.status) }}
+            </span>
+          </div>
+          <div class="item-body">
+            <p><strong>Destination:</strong> {{ request.destination }}</p>
+            <p><strong>Schedule:</strong> {{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</p>
+            <p><strong>Reason:</strong> {{ request.reason }}</p>
+            @if (request.room_number) {
+              <p><strong>Room:</strong> {{ request.room_number }}</p>
+            }
+            @if (request.parent_notes) {
+              <p><strong>Your Note:</strong> {{ request.parent_notes }}</p>
+            }
+            @if (request.admin_notes) {
+              <p><strong>Admin Note:</strong> {{ request.admin_notes }}</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

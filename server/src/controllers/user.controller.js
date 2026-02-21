@@ -63,7 +63,7 @@ exports.getById = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, password } = req.body;
+    const { firstName, lastName, phone, password, parentId } = req.body;
 
     // Users can only update their own profile unless admin
     if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
@@ -77,6 +77,12 @@ exports.update = async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       query += ', password = ?';
       params.push(hashedPassword);
+    }
+
+    // Only admin can update parent_id
+    if (req.user.role === 'admin' && parentId !== undefined) {
+      query += ', parent_id = ?';
+      params.push(parentId);
     }
 
     query += ' WHERE id = ?';
@@ -135,10 +141,12 @@ exports.getResidents = async (req, res) => {
       SELECT 
         u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url, u.status, u.created_at,
         r.room_number, r.floor, r.room_type,
-        ra.check_in_date, ra.check_out_date
+        ra.start_date, ra.end_date,
+        p.id as parent_id, p.first_name as parent_first_name, p.last_name as parent_last_name, p.email as parent_email, p.phone as parent_phone
       FROM users u
       LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
       LEFT JOIN rooms r ON ra.room_id = r.id
+      LEFT JOIN users p ON u.parent_id = p.id
       WHERE u.role = 'resident'
     `;
     const params = [];
@@ -167,5 +175,83 @@ exports.getResidents = async (req, res) => {
   } catch (error) {
     console.error('Get residents error:', error);
     res.status(500).json({ error: 'Failed to fetch residents' });
+  }
+};
+
+exports.suspendResident = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({ error: 'Please provide a valid reason (at least 10 characters)' });
+    }
+
+    // Check if user exists and is a resident
+    const [users] = await pool.execute(
+      'SELECT id, role, status FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (users[0].role !== 'resident') {
+      return res.status(400).json({ error: 'Only residents can be suspended' });
+    }
+
+    if (users[0].status === 'suspended') {
+      return res.status(400).json({ error: 'Resident is already suspended' });
+    }
+
+    // Update user status to suspended
+    await pool.execute(
+      'UPDATE users SET status = ? WHERE id = ?',
+      ['suspended', id]
+    );
+
+    // Log the suspension reason (could be stored in a separate audit table if needed)
+    console.log(`Resident ${id} suspended by admin ${req.user.id}. Reason: ${reason.trim()}`);
+
+    res.json({ message: 'Resident suspended successfully' });
+  } catch (error) {
+    console.error('Suspend resident error:', error);
+    res.status(500).json({ error: 'Failed to suspend resident' });
+  }
+};
+
+exports.reactivateResident = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists and is suspended
+    const [users] = await pool.execute(
+      'SELECT id, role, status FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (users[0].role !== 'resident') {
+      return res.status(400).json({ error: 'Only residents can be reactivated' });
+    }
+
+    if (users[0].status !== 'suspended') {
+      return res.status(400).json({ error: 'Resident is not suspended' });
+    }
+
+    // Update user status to active
+    await pool.execute(
+      'UPDATE users SET status = ? WHERE id = ?',
+      ['active', id]
+    );
+
+    res.json({ message: 'Resident reactivated successfully' });
+  } catch (error) {
+    console.error('Reactivate resident error:', error);
+    res.status(500).json({ error: 'Failed to reactivate resident' });
   }
 };

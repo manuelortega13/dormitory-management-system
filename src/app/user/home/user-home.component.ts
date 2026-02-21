@@ -1,6 +1,16 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { AuthService, User } from '../../auth/auth.service';
+import { firstValueFrom } from 'rxjs';
+
+interface RoomInfo {
+  roomNumber: string;
+  floor: number;
+  type: string;
+  roommates: string[];
+}
 
 @Component({
   selector: 'app-user-home',
@@ -355,14 +365,19 @@ import { RouterLink } from '@angular/router';
     }
   `]
 })
-export class UserHomeComponent {
-  protected readonly userName = signal('John');
+export class UserHomeComponent implements OnInit {
+  private authService = inject(AuthService);
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:3000/api/users';
 
-  protected readonly roomInfo = signal({
-    roomNumber: '101',
-    floor: 1,
-    type: 'Double Room',
-    roommates: ['Mike Smith']
+  protected readonly userName = signal('Resident');
+  protected readonly currentUser = signal<User | null>(null);
+
+  protected readonly roomInfo = signal<RoomInfo>({
+    roomNumber: '-',
+    floor: 0,
+    type: '-',
+    roommates: []
   });
 
   protected readonly paymentInfo = signal({
@@ -376,4 +391,33 @@ export class UserHomeComponent {
     { id: 2, date: new Date('2026-02-15'), title: 'Spring semester payment deadline reminder' },
     { id: 3, date: new Date('2026-02-10'), title: 'New laundry room hours posted' }
   ]);
+
+  ngOnInit() {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.currentUser.set(user);
+      this.userName.set(user.firstName);
+      this.loadRoomInfo(user.id);
+    }
+  }
+
+  private async loadRoomInfo(userId: number) {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<any>(`${this.apiUrl}/${userId}/room`)
+      );
+      
+      if (response) {
+        this.roomInfo.set({
+          roomNumber: response.room_number || '-',
+          floor: response.floor || 0,
+          type: response.room_type || '-',
+          roommates: [] // Could fetch roommates separately if needed
+        });
+      }
+    } catch (error) {
+      // No room assigned or error fetching
+      console.log('No room info available');
+    }
+  }
 }

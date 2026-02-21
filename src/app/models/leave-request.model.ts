@@ -1,0 +1,30 @@
+export interface LeaveRequest {
+  id: number;
+  user_id: number;
+  user_name?: string;
+  user_email?: string;
+  room_number?: string;
+  leave_type: 'errand' | 'overnight' | 'weekend' | 'emergency' | 'other';
+  start_date: string;
+  end_date: string;
+  destination: string;
+  reason: string;
+  emergency_contact: string;
+  emergency_phone: string;
+  admin_status: 'pending' | 'approved' | 'declined';
+  admin_reviewed_by?: number;
+  admin_reviewed_at?: string;
+  admin_notes?: string;
+  parent_status: 'pending' | 'approved' | 'declined' | 'not_required';
+  parent_reviewed_at?: string;
+  parent_notes?: string;
+  qr_code?: string;
+  qr_generated_at?: string;
+  exit_time?: string;
+  exit_recorded_by?: number;
+  return_time?: string;
+  return_recorded_by?: number;
+  status: 'pending_admin' | 'pending_parent' | 'approved' | 'active' | 'completed' | 'declined' | 'cancelled' | 'expired';
+  created_at: string;
+  updated_at: string;
+}

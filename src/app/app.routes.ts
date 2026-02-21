@@ -1,10 +1,17 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
+  // Login route
+  {
+    path: 'login',
+    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent)
+  },
   // User routes (no prefix)
   {
     path: '',
     loadComponent: () => import('./layouts/user-layout/user-layout.component').then(m => m.UserLayoutComponent),
+    canActivate: [authGuard],
     children: [
       {
         path: '',
@@ -13,6 +20,10 @@ export const routes: Routes = [
       {
         path: 'my-leave-request',
         loadComponent: () => import('./user/create-leave-request/create-leave-request.component').then(m => m.CreateLeaveRequestComponent)
+      },
+      {
+        path: 'my-requests',
+        loadComponent: () => import('./user/my-requests/my-requests.component').then(m => m.MyRequestsComponent)
       }
     ]
   },
@@ -20,6 +31,7 @@ export const routes: Routes = [
   {
     path: 'manage',
     loadComponent: () => import('./layouts/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
+    canActivate: [authGuard],
     children: [
       {
         path: '',
@@ -48,6 +60,7 @@ export const routes: Routes = [
   {
     path: 'security-guard',
     loadComponent: () => import('./layouts/security-layout/security-layout.component').then(m => m.SecurityLayoutComponent),
+    canActivate: [authGuard],
     children: [
       {
         path: '',
@@ -56,6 +69,26 @@ export const routes: Routes = [
       {
         path: 'check-in-out',
         loadComponent: () => import('./security-guard/check-in-out/check-in-out.component').then(m => m.CheckInOutComponent)
+      }
+    ]
+  },
+  // Parent routes (/parent)
+  {
+    path: 'parent',
+    loadComponent: () => import('./layouts/parent-layout/parent-layout.component').then(m => m.ParentLayoutComponent),
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./parent/dashboard/parent-dashboard.component').then(m => m.ParentDashboardComponent)
+      },
+      {
+        path: 'history',
+        loadComponent: () => import('./parent/history/parent-history.component').then(m => m.ParentHistoryComponent)
+      },
+      {
+        path: 'activity',
+        loadComponent: () => import('./parent/activity/parent-activity.component').then(m => m.ParentActivityComponent)
       }
     ]
   }

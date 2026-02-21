@@ -18,6 +18,12 @@ router.put('/:id', authMiddleware, userController.update);
 // DELETE /api/users/:id - Delete user (admin only)
 router.delete('/:id', authMiddleware, roleMiddleware('admin'), userController.delete);
 
+// PATCH /api/users/:id/suspend - Suspend a resident (admin only)
+router.patch('/:id/suspend', authMiddleware, roleMiddleware('admin'), userController.suspendResident);
+
+// PATCH /api/users/:id/reactivate - Reactivate a suspended resident (admin only)
+router.patch('/:id/reactivate', authMiddleware, roleMiddleware('admin'), userController.reactivateResident);
+
 // GET /api/users/:id/room - Get user's room assignment
 router.get('/:id/room', authMiddleware, userController.getUserRoom);
 

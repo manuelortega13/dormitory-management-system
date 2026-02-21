@@ -1,0 +1,28 @@
+<div class="parent-layout">
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">🏠 DormConnect</span>
+      <span class="role-badge">Parent Portal</span>
+    </div>
+    <div class="header-right">
+      <span class="user-name">{{ parentName }}</span>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <a routerLink="/parent" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+      📋 Pending Requests
+    </a>
+    <a routerLink="/parent/history" routerLinkActive="active">
+      📜 History
+    </a>
+    <a routerLink="/parent/activity" routerLinkActive="active">
+      📍 Activity
+    </a>
+  </nav>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

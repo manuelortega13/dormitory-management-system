@@ -18,7 +18,7 @@
   </div>
 
   <nav class="sidebar-nav">
-    @for (section of menuSections; track section.title) {
+    @for (section of menuSections(); track section.title) {
       <div class="menu-section">
         @if (!isCollapsed()) {
           <span class="section-title">{{ section.title }}</span>
@@ -52,5 +52,11 @@
         </div>
       }
     </div>
+    <button class="logout-btn" (click)="logout()" title="Logout">
+      <span class="logout-icon">🚪</span>
+      @if (!isCollapsed()) {
+        <span class="logout-text">Logout</span>
+      }
+    </button>
   </div>
 </aside>

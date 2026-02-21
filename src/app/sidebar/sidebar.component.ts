@@ -1,6 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
+import { AdminLeaveRequestService } from '../admin/leave-requests/data/admin-leave-request.service';
 
 interface MenuItem {
   label: string;
@@ -21,10 +24,14 @@ interface MenuSection {
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+  private leaveRequestService = inject(AdminLeaveRequestService);
+  private subscription: Subscription | null = null;
   protected readonly isCollapsed = signal(false);
+  protected readonly pendingLeaveRequestsCount = signal(0);
 
-  protected readonly menuSections: MenuSection[] = [
+  protected readonly menuSections = signal<MenuSection[]>([
     {
       title: 'Main',
       items: [
@@ -36,14 +43,14 @@ export class SidebarComponent {
       items: [
         { label: 'Rooms', icon: '🛏️', route: '/manage/rooms' },
         { label: 'Residents', icon: '👥', route: '/manage/residents' },
-        { label: 'Bookings', icon: '📅', route: '/manage/bookings', badge: 3 },
-        { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests', badge: 5 }
+        { label: 'Bookings', icon: '📅', route: '/manage/bookings' },
+        { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' }
       ]
     },
     {
       title: 'Operations',
       items: [
-        { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance', badge: 5 },
+        { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance' },
         { label: 'Payments', icon: '💰', route: '/manage/payments' },
         { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
       ]
@@ -56,9 +63,49 @@ export class SidebarComponent {
         { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
       ]
     }
-  ];
+  ]);
+
+  ngOnInit(): void {
+    this.loadPendingLeaveRequestsCount();
+    
+    // Subscribe to leave request updates
+    this.subscription = this.leaveRequestService.leaveRequestUpdated$.subscribe(() => {
+      this.loadPendingLeaveRequestsCount();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
+  }
+
+  private async loadPendingLeaveRequestsCount(): Promise<void> {
+    try {
+      const pendingRequests = await this.leaveRequestService.getPendingRequests();
+      this.pendingLeaveRequestsCount.set(pendingRequests.length);
+      this.updateLeaveRequestsBadge(pendingRequests.length);
+    } catch (error) {
+      console.error('Failed to load pending leave requests count:', error);
+    }
+  }
+
+  private updateLeaveRequestsBadge(count: number): void {
+    this.menuSections.update(sections => 
+      sections.map(section => ({
+        ...section,
+        items: section.items.map(item => 
+          item.label === 'Leave Requests' 
+            ? { ...item, badge: count > 0 ? count : undefined }
+            : item
+        )
+      }))
+    );
+  }
 
   toggleSidebar() {
     this.isCollapsed.update(value => !value);
+  }
+
+  logout() {
+    this.authService.logout();
   }
 }

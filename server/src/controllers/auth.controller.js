@@ -12,7 +12,7 @@ const generateToken = (user) => {
 
 exports.register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, phone } = req.body;
+    const { email, password, firstName, lastName, role, phone, parentId } = req.body;
 
     // Check if user exists
     const [existingUsers] = await pool.execute(
@@ -29,9 +29,9 @@ exports.register = async (req, res) => {
 
     // Create user
     const [result] = await pool.execute(
-      `INSERT INTO users (email, password, first_name, last_name, role, phone) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [email, hashedPassword, firstName, lastName, role || 'resident', phone || null]
+      `INSERT INTO users (email, password, first_name, last_name, role, phone, parent_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [email, hashedPassword, firstName, lastName, role || 'resident', phone || null, parentId || null]
     );
 
     const token = generateToken({ id: result.insertId, email, role: role || 'resident' });

@@ -1,0 +1,177 @@
+<div class="my-requests">
+  <div class="page-header">
+    <div class="header-left">
+      <button class="back-btn" (click)="goBack()">
+        <span class="back-icon">←</span>
+        Back
+      </button>
+      <div class="header-content">
+        <h1>My Go-Out Requests</h1>
+        <p>View and manage your campus leave requests</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="createNewRequest()">
+      + New Request
+    </button>
+  </div>
+
+  <!-- Active QR Code Banner -->
+  @if (activeQRCode() && activeRequest() && !isExpired(activeRequest()!)) {
+    <div class="active-qr-banner" (click)="showQRModal.set(true)">
+      <div class="banner-icon">🎫</div>
+      <div class="banner-content">
+        <h3>You have an active pass!</h3>
+        <p>Tap to view your QR code for: {{ getLeaveTypeLabel(activeRequest()!.leave_type) }}</p>
+      </div>
+      <span class="banner-arrow">→</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading your requests...</p>
+    </div>
+  } @else if (requests().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">📋</span>
+      <h3>No Requests Yet</h3>
+      <p>You haven't submitted any go-out requests.</p>
+      <button class="btn-primary" (click)="createNewRequest()">
+        Create Your First Request
+      </button>
+    </div>
+  } @else {
+    <div class="requests-list">
+      @for (request of requests(); track request.id) {
+        <div class="request-card">
+          <div class="request-header">
+            <div class="request-type">
+              <span class="type-badge">{{ getLeaveTypeLabel(request.leave_type) }}</span>
+              <span class="request-date">Created {{ formatDate(request.created_at) }}</span>
+            </div>
+            <span class="status-badge" [class]="getStatusClass(request)">
+              {{ getStatusLabel(request) }}
+            </span>
+          </div>
+
+          <div class="request-body">
+            <div class="info-row">
+              <span class="label">📍 Destination:</span>
+              <span class="value">{{ request.destination }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">📅 Schedule:</span>
+              <span class="value">{{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">📝 Reason:</span>
+              <span class="value">{{ request.reason }}</span>
+            </div>
+          </div>
+
+          <!-- Approval Timeline -->
+          <div class="approval-timeline">
+            <div class="timeline-item" [class.completed]="request.admin_status === 'approved'" [class.declined]="request.admin_status === 'declined'">
+              <span class="timeline-icon">
+                @if (request.admin_status === 'approved') { ✓ }
+                @else if (request.admin_status === 'declined') { ✗ }
+                @else { ○ }
+              </span>
+              <span class="timeline-label">Admin</span>
+            </div>
+            <div class="timeline-line" [class.completed]="request.admin_status === 'approved'"></div>
+            <div class="timeline-item" [class.completed]="request.parent_status === 'approved'" [class.declined]="request.parent_status === 'declined'" [class.na]="request.parent_status === 'not_required'">
+              <span class="timeline-icon">
+                @if (request.parent_status === 'approved') { ✓ }
+                @else if (request.parent_status === 'declined') { ✗ }
+                @else if (request.parent_status === 'not_required') { - }
+                @else { ○ }
+              </span>
+              <span class="timeline-label">Parent</span>
+            </div>
+            <div class="timeline-line" [class.completed]="request.qr_code"></div>
+            <div class="timeline-item" [class.completed]="request.qr_code">
+              <span class="timeline-icon">
+                @if (request.qr_code) { ✓ } @else { ○ }
+              </span>
+              <span class="timeline-label">QR Code</span>
+            </div>
+          </div>
+
+          <!-- Admin/Parent Notes -->
+          @if (request.admin_notes) {
+            <div class="notes-section">
+              <span class="notes-label">Admin Notes:</span>
+              <span class="notes-text">{{ request.admin_notes }}</span>
+            </div>
+          }
+          @if (request.parent_notes) {
+            <div class="notes-section">
+              <span class="notes-label">Parent Notes:</span>
+              <span class="notes-text">{{ request.parent_notes }}</span>
+            </div>
+          }
+
+          <!-- Actions -->
+          <div class="request-actions">
+            @if (request.qr_code && !isExpired(request) && (request.status === 'approved' || request.status === 'active')) {
+              <button class="btn-qr" (click)="viewQRCode(request)">
+                🎫 View QR Code
+              </button>
+            }
+            @if (!isExpired(request) && (request.status === 'pending_admin' || request.status === 'pending_parent')) {
+              <button class="btn-cancel" (click)="cancelRequest(request)">
+                Cancel Request
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- QR Code Modal -->
+  @if (showQRModal() && activeQRCode()) {
+    <div class="modal-overlay" (click)="closeQRModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <button class="modal-close" (click)="closeQRModal()">×</button>
+        <h2>Your Campus Pass</h2>
+        @if (activeRequest()) {
+          <p class="modal-subtitle">{{ getLeaveTypeLabel(activeRequest()!.leave_type) }} - {{ activeRequest()!.destination }}</p>
+        }
+        
+        <div class="qr-display">
+          <div class="qr-placeholder">
+            <img [src]="getQRCodeUrl(activeQRCode()!)" alt="QR Code" class="qr-code-image" />
+          </div>
+          <p class="qr-instruction">Show this code to the security guard</p>
+          <div class="qr-code-fallback">
+            <span class="fallback-label">Manual Code:</span>
+            <code class="fallback-code">{{ activeQRCode() }}</code>
+          </div>
+        </div>
+
+        @if (activeRequest()) {
+          <div class="pass-details">
+            <div class="detail-row">
+              <span class="detail-label">Valid From:</span>
+              <span class="detail-value">{{ formatDate(activeRequest()!.start_date) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Valid Until:</span>
+              <span class="detail-value">{{ formatDate(activeRequest()!.end_date) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

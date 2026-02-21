@@ -1,0 +1,46 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="close.emit()">✕</button>
+    
+    <div class="modal-header">
+      <div class="warning-icon">⚠️</div>
+      <h2>Suspend Resident</h2>
+    </div>
+
+    <div class="modal-body">
+      @if (errorMessage || localError()) {
+        <div class="alert alert-error">{{ errorMessage || localError() }}</div>
+      }
+
+      <p class="confirm-message">
+        Are you sure you want to suspend <strong>{{ getFullName() }}</strong>?
+      </p>
+      <p class="info-text">
+        This action will deactivate the resident's account. They will not be able to access the system until reactivated.
+      </p>
+
+      <div class="form-group">
+        <label for="reason">Reason for Suspension <span class="required">*</span></label>
+        <textarea
+          id="reason"
+          rows="4"
+          [value]="reason()"
+          (input)="updateReason($event)"
+          placeholder="Please provide a detailed reason for suspending this resident..."
+        ></textarea>
+        <span class="helper-text">Minimum 10 characters required</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close.emit()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-danger" (click)="onConfirm()" [disabled]="isSaving">
+        @if (isSaving) {
+          Suspending...
+        } @else {
+          Suspend Resident
+        }
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService, User } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-user-layout',
@@ -18,6 +19,10 @@ import { CommonModule } from '@angular/common';
             <a routerLink="/my-leave-request" routerLinkActive="active" class="nav-item primary">
               <span class="nav-icon">📤</span>
               Request Leave
+            </a>
+            <a routerLink="/my-requests" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📋</span>
+              My Requests
             </a>
             <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
               <span class="nav-icon">🏠</span>
@@ -37,8 +42,9 @@ import { CommonModule } from '@angular/common';
             </a>
           </nav>
           <div class="user-profile">
-            <div class="avatar">JD</div>
-            <span class="user-name">John Doe</span>
+            <div class="avatar">{{ userInitials() }}</div>
+            <span class="user-name">{{ userName() }}</span>
+            <button class="logout-btn" (click)="logout()" title="Logout">🚪</button>
           </div>
         </div>
       </header>
@@ -154,6 +160,21 @@ import { CommonModule } from '@angular/common';
         font-size: 0.9rem;
         font-weight: 500;
       }
+
+      .logout-btn {
+        background: rgba(239, 68, 68, 0.2);
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s;
+
+        &:hover {
+          background: rgba(239, 68, 68, 0.4);
+        }
+      }
     }
 
     .user-content {
@@ -184,4 +205,25 @@ import { CommonModule } from '@angular/common';
     }
   `]
 })
-export class UserLayoutComponent {}
+export class UserLayoutComponent implements OnInit {
+  private authService = inject(AuthService);
+  
+  protected readonly userName = signal('User');
+  protected readonly userInitials = signal('U');
+
+  ngOnInit() {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.userName.set(`${user.firstName} ${user.lastName}`);
+      this.userInitials.set(this.getInitials(user.firstName, user.lastName));
+    }
+  }
+
+  private getInitials(firstName: string, lastName: string): string {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+}
