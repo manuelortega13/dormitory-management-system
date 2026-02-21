@@ -44,11 +44,11 @@
 
   <div class="sidebar-footer">
     <div class="user-info">
-      <div class="avatar">👤</div>
+      <div class="avatar">{{ userInitials() }}</div>
       @if (!isCollapsed()) {
         <div class="user-details">
-          <span class="user-name">Admin User</span>
-          <span class="user-role">Administrator</span>
+          <span class="user-name">{{ userDisplayName() }}</span>
+          <span class="user-role">{{ userRoleDisplay() }}</span>
         </div>
       }
     </div>

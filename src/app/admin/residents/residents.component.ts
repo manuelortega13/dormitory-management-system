@@ -4,16 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { ResidentsService, Resident, ResidentStatus, CreateResidentDto, UpdateResidentDto, Parent } from './data';
 import { ResidentFormModalComponent } from './resident-form-modal/resident-form-modal.component';
 import { SuspendModalComponent } from './suspend-modal/suspend-modal.component';
+import { AssignRoomModalComponent, AssignRoomData } from './assign-room-modal/assign-room-modal.component';
+import { RoomsService } from '../rooms/data/rooms.service';
 
 @Component({
   selector: 'app-residents',
   standalone: true,
-  imports: [CommonModule, FormsModule, ResidentFormModalComponent, SuspendModalComponent],
+  imports: [CommonModule, FormsModule, ResidentFormModalComponent, SuspendModalComponent, AssignRoomModalComponent],
   templateUrl: './residents.component.html',
   styleUrl: './residents.component.scss'
 })
 export class ResidentsComponent implements OnInit {
   private readonly residentsService = inject(ResidentsService);
+  private readonly roomsService = inject(RoomsService);
 
   protected readonly searchQuery = signal('');
   protected readonly selectedStatus = signal<ResidentStatus | 'all'>('all');
@@ -30,6 +33,12 @@ export class ResidentsComponent implements OnInit {
   protected readonly suspendingResident = signal<Resident | null>(null);
   protected readonly suspendError = signal('');
   protected readonly suspendSaving = signal(false);
+
+  // Assign Room Modal state
+  protected readonly showAssignRoomModal = signal(false);
+  protected readonly assigningResident = signal<Resident | null>(null);
+  protected readonly assignRoomSaving = signal(false);
+  protected readonly assignRoomError = signal('');
 
   protected readonly residents = signal<Resident[]>([]);
   protected readonly parents = signal<Parent[]>([]);
@@ -229,8 +238,40 @@ export class ResidentsComponent implements OnInit {
   }
 
   assignRoom(resident: Resident): void {
-    console.log('Assign room to:', resident);
-    // TODO: Implement room assignment
+    this.assigningResident.set(resident);
+    this.assignRoomError.set('');
+    this.assignRoomSaving.set(false);
+    this.showAssignRoomModal.set(true);
+  }
+
+  closeAssignRoomModal(): void {
+    this.showAssignRoomModal.set(false);
+    this.assigningResident.set(null);
+    this.assignRoomError.set('');
+  }
+
+  onAssignRoom(data: AssignRoomData): void {
+    const resident = this.assigningResident();
+    if (!resident) return;
+
+    this.assignRoomSaving.set(true);
+    this.assignRoomError.set('');
+
+    this.roomsService.assignResident(data.roomId, {
+      userId: resident.id,
+      startDate: data.startDate,
+      endDate: data.endDate
+    }).subscribe({
+      next: () => {
+        this.assignRoomSaving.set(false);
+        this.closeAssignRoomModal();
+        this.loadResidents();
+      },
+      error: (err) => {
+        this.assignRoomError.set(err.error?.error || 'Failed to assign room');
+        this.assignRoomSaving.set(false);
+      }
+    });
   }
 
   openSuspendModal(resident: Resident): void {

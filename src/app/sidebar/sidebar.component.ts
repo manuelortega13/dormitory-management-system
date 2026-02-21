@@ -1,8 +1,8 @@
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, User } from '../auth/auth.service';
 import { AdminLeaveRequestService } from '../admin/leave-requests/data/admin-leave-request.service';
 
 interface MenuItem {
@@ -30,6 +30,30 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private subscription: Subscription | null = null;
   protected readonly isCollapsed = signal(false);
   protected readonly pendingLeaveRequestsCount = signal(0);
+  protected readonly currentUser = signal<User | null>(null);
+
+  protected readonly userDisplayName = computed(() => {
+    const user = this.currentUser();
+    if (!user) return 'User';
+    return `${user.firstName} ${user.lastName}`;
+  });
+
+  protected readonly userRoleDisplay = computed(() => {
+    const user = this.currentUser();
+    if (!user) return '';
+    switch (user.role) {
+      case 'admin': return 'Administrator';
+      case 'dean': return 'Dean';
+      case 'security_guard': return 'Security Guard';
+      default: return user.role;
+    }
+  });
+
+  protected readonly userInitials = computed(() => {
+    const user = this.currentUser();
+    if (!user) return '?';
+    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  });
 
   protected readonly menuSections = signal<MenuSection[]>([
     {
@@ -43,6 +67,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       items: [
         { label: 'Rooms', icon: '🛏️', route: '/manage/rooms' },
         { label: 'Residents', icon: '👥', route: '/manage/residents' },
+        { label: 'Agents', icon: '👮', route: '/manage/agents' },
         { label: 'Bookings', icon: '📅', route: '/manage/bookings' },
         { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' }
       ]
@@ -66,6 +91,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ]);
 
   ngOnInit(): void {
+    this.currentUser.set(this.authService.getCurrentUser());
     this.loadPendingLeaveRequestsCount();
     
     // Subscribe to leave request updates

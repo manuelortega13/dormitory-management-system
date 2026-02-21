@@ -507,7 +507,15 @@
         display: block;
         font-size: 0.75rem;
         color: #888;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .code-with-copy {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
       }
 
       .fallback-code {
@@ -516,6 +524,28 @@
         color: #333;
         word-break: break-all;
         user-select: all;
+      }
+
+      .copy-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.4rem 0.75rem;
+        background: #4361ee;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #3651de;
+        }
+
+        &.copied {
+          background: #16a34a;
+        }
       }
     }
   }

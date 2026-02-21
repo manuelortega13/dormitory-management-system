@@ -21,6 +21,7 @@ export class MyRequestsComponent implements OnInit {
   activeQRCode = signal<string | null>(null);
   activeRequest = signal<LeaveRequest | null>(null);
   showQRModal = signal(false);
+  copiedFeedback = signal(false);
 
   ngOnInit() {
     this.loadRequests();
@@ -151,6 +152,19 @@ export class MyRequestsComponent implements OnInit {
 
   closeQRModal() {
     this.showQRModal.set(false);
+  }
+
+  async copyQRCode(): Promise<void> {
+    const qrCode = this.activeQRCode();
+    if (qrCode) {
+      try {
+        await navigator.clipboard.writeText(qrCode);
+        this.copiedFeedback.set(true);
+        setTimeout(() => this.copiedFeedback.set(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
   }
 
   getQRCodeUrl(qrCode: string): string {

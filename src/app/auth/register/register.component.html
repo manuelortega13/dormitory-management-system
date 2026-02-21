@@ -1,0 +1,172 @@
+<div class="register-page">
+  <div class="register-card">
+    <div class="register-header">
+      <div class="logo">🏠</div>
+      <h1>DormConnect</h1>
+      <p>Create your Resident Account</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert alert-error">
+        <span class="alert-icon">⚠️</span>
+        {{ errorMessage() }}
+      </div>
+    }
+
+    @if (successMessage()) {
+      <div class="alert alert-success">
+        <span class="alert-icon">✓</span>
+        {{ successMessage() }}
+      </div>
+    }
+
+    <form (ngSubmit)="onSubmit()" class="register-form">
+      <div class="form-row">
+        <div class="form-group" [class.has-error]="fieldErrors().firstName">
+          <label for="firstName">First Name *</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input 
+              type="text" 
+              id="firstName" 
+              placeholder="Enter your first name"
+              [(ngModel)]="form.firstName"
+              name="firstName"
+              (input)="clearFieldError('firstName')"
+              autocomplete="given-name"
+            />
+          </div>
+          @if (fieldErrors().firstName) {
+            <span class="field-error">{{ fieldErrors().firstName }}</span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="fieldErrors().lastName">
+          <label for="lastName">Last Name *</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input 
+              type="text" 
+              id="lastName" 
+              placeholder="Enter your last name"
+              [(ngModel)]="form.lastName"
+              name="lastName"
+              (input)="clearFieldError('lastName')"
+              autocomplete="family-name"
+            />
+          </div>
+          @if (fieldErrors().lastName) {
+            <span class="field-error">{{ fieldErrors().lastName }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="form-group" [class.has-error]="fieldErrors().email">
+        <label for="email">Email Address *</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📧</span>
+          <input 
+            type="email" 
+            id="email" 
+            placeholder="Enter your email"
+            [(ngModel)]="form.email"
+            name="email"
+            (input)="clearFieldError('email')"
+            autocomplete="email"
+          />
+        </div>
+        @if (fieldErrors().email) {
+          <span class="field-error">{{ fieldErrors().email }}</span>
+        }
+      </div>
+
+      <div class="form-group" [class.has-error]="fieldErrors().phone">
+        <label for="phone">Phone Number *</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📱</span>
+          <input 
+            type="tel" 
+            id="phone" 
+            placeholder="e.g., 09171234567"
+            [(ngModel)]="form.phone"
+            name="phone"
+            (input)="clearFieldError('phone')"
+            autocomplete="tel"
+          />
+        </div>
+        @if (fieldErrors().phone) {
+          <span class="field-error">{{ fieldErrors().phone }}</span>
+        }
+      </div>
+
+      <div class="form-group" [class.has-error]="fieldErrors().password">
+        <label for="password">Password *</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input 
+            [type]="showPassword() ? 'text' : 'password'"
+            id="password" 
+            placeholder="Create a password (min 6 characters)"
+            [(ngModel)]="form.password"
+            name="password"
+            (input)="clearFieldError('password')"
+            autocomplete="new-password"
+          />
+          <button 
+            type="button" 
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+          >
+            {{ showPassword() ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        @if (fieldErrors().password) {
+          <span class="field-error">{{ fieldErrors().password }}</span>
+        }
+      </div>
+
+      <div class="form-group" [class.has-error]="fieldErrors().confirmPassword">
+        <label for="confirmPassword">Confirm Password *</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input 
+            [type]="showConfirmPassword() ? 'text' : 'password'"
+            id="confirmPassword" 
+            placeholder="Confirm your password"
+            [(ngModel)]="form.confirmPassword"
+            name="confirmPassword"
+            (input)="clearFieldError('confirmPassword')"
+            autocomplete="new-password"
+          />
+          <button 
+            type="button" 
+            class="toggle-password"
+            (click)="toggleConfirmPasswordVisibility()"
+          >
+            {{ showConfirmPassword() ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        @if (fieldErrors().confirmPassword) {
+          <span class="field-error">{{ fieldErrors().confirmPassword }}</span>
+        }
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn-register"
+        [disabled]="isLoading()"
+      >
+        @if (isLoading()) {
+          <span class="spinner"></span>
+          Creating Account...
+        } @else {
+          Create Account
+        }
+      </button>
+    </form>
+
+    <div class="register-footer">
+      <p>Already have an account? <a routerLink="/login">Sign In</a></p>
+    </div>
+  </div>
+</div>

@@ -9,13 +9,22 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'security_guard' | 'resident' | 'parent';
+  role: 'admin' | 'security_guard' | 'resident' | 'parent' | 'dean';
 }
 
 export interface LoginResponse {
   message: string;
   token: string;
   user: User;
+}
+
+export interface RegisterData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: 'resident';
 }
 
 @Injectable({
@@ -37,6 +46,20 @@ export class AuthService {
     );
     
     // Store token and user info
+    if (this.isBrowser) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    
+    return response;
+  }
+
+  async register(data: RegisterData): Promise<LoginResponse> {
+    const response = await firstValueFrom(
+      this.http.post<LoginResponse>(`${this.apiUrl}/register`, data)
+    );
+    
+    // Store token and user info (auto-login after registration)
     if (this.isBrowser) {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
@@ -76,6 +99,7 @@ export class AuthService {
   getRedirectUrl(role: string): string {
     switch (role) {
       case 'admin':
+      case 'dean':
         return '/manage';
       case 'security_guard':
         return '/security-guard';

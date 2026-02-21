@@ -1,4 +1,4 @@
-.login-page {
+.register-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -7,18 +7,18 @@
   padding: 1rem;
 }
 
-.login-card {
+.register-card {
   background: white;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   overflow: hidden;
 }
 
-.login-header {
+.register-header {
   text-align: center;
-  padding: 2.5rem 2rem 1.5rem;
+  padding: 2rem 2rem 1.5rem;
   background: linear-gradient(135deg, #4361ee, #7c3aed);
 
   .logo {
@@ -54,24 +54,36 @@
     border: 1px solid #fecaca;
   }
 
+  &-success {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+  }
+
   .alert-icon {
     font-size: 1rem;
   }
 }
 
-.login-form {
-  padding: 2rem 1.5rem;
+.register-form {
+  padding: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 
   label {
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: #333;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
   .input-wrapper {
@@ -88,10 +100,10 @@
 
     input {
       width: 100%;
-      padding: 0.85rem 1rem 0.85rem 2.75rem;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
       border: 2px solid #e5e7eb;
       border-radius: 10px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       transition: all 0.2s;
 
       &:focus {
@@ -121,16 +133,35 @@
       }
     }
   }
+
+  &.has-error {
+    .input-wrapper input {
+      border-color: #dc2626;
+      background-color: #fef2f2;
+
+      &:focus {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+      }
+    }
+  }
+
+  .field-error {
+    display: block;
+    color: #dc2626;
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+  }
 }
 
-.btn-login {
+.btn-register {
   width: 100%;
   padding: 1rem;
   background: linear-gradient(135deg, #4361ee, #7c3aed);
   color: white;
   border: none;
   border-radius: 10px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
@@ -170,10 +201,11 @@
   }
 }
 
-.register-link {
-  padding: 1rem 1.5rem;
-  text-align: center;
+.register-footer {
+  padding: 1.25rem 1.5rem;
+  background: #f9fafb;
   border-top: 1px solid #e5e7eb;
+  text-align: center;
 
   p {
     margin: 0;
@@ -192,84 +224,27 @@
   }
 }
 
-.login-footer {
-  padding: 1.5rem;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
-
-  .role-info {
-    h4 {
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin: 0 0 0.75rem 0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-
-      li {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.4rem 0;
-        font-size: 0.85rem;
-        color: #4b5563;
-      }
-    }
-
-    .role-badge {
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      min-width: 60px;
-      text-align: center;
-
-      &.admin {
-        background: #dbeafe;
-        color: #1d4ed8;
-      }
-
-      &.resident {
-        background: #d1fae5;
-        color: #047857;
-      }
-
-      &.parent {
-        background: #f3e8ff;
-        color: #7c3aed;
-      }
-
-      &.guard {
-        background: #fef3c7;
-        color: #b45309;
-      }
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .login-page {
+@media (max-width: 520px) {
+  .register-page {
     padding: 0;
     align-items: stretch;
   }
 
-  .login-card {
+  .register-card {
     border-radius: 0;
     max-width: none;
     min-height: 100vh;
   }
 
-  .login-header {
-    padding: 2rem 1.5rem 1.5rem;
+  .form-row {
+    grid-template-columns: 1fr;
   }
 
-  .login-form {
-    padding: 1.5rem;
+  .register-header {
+    padding: 1.5rem 1.5rem 1rem;
+  }
+
+  .register-form {
+    padding: 1.25rem;
   }
 }

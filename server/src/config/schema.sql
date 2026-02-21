@@ -3,14 +3,14 @@
 CREATE DATABASE IF NOT EXISTS dormitory_db;
 USE dormitory_db;
 
--- Users table (for admins, security guards, and residents)
+-- Users table (for admins, security guards, residents, parents, and deans)
 CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    role ENUM('admin', 'security_guard', 'resident', 'parent') NOT NULL DEFAULT 'resident',
+    role ENUM('admin', 'security_guard', 'resident', 'parent', 'dean') NOT NULL DEFAULT 'resident',
     phone VARCHAR(20),
     photo_url VARCHAR(255),
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',

@@ -8,12 +8,13 @@ const generateQRCode = () => {
 
 exports.getAll = async (req, res) => {
   try {
-    const { status, adminStatus, parentStatus } = req.query;
+    const { status, adminStatus, parentStatus, limit } = req.query;
     const userId = req.user.id;
     const userRole = req.user.role;
 
     let query = `
       SELECT lr.*, 
+             u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) as user_name,
              u.email as user_email, u.phone as user_phone,
              r.room_number,
@@ -56,6 +57,10 @@ exports.getAll = async (req, res) => {
     }
 
     query += ' ORDER BY lr.created_at DESC';
+
+    if (limit) {
+      query += ` LIMIT ${parseInt(limit)}`;
+    }
 
     const [requests] = await pool.execute(query, params);
 

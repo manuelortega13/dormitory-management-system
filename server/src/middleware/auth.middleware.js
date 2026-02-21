@@ -24,7 +24,10 @@ const roleMiddleware = (...allowedRoles) => {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    // Treat dean as admin for permission purposes
+    const effectiveRole = req.user.role === 'dean' ? 'admin' : req.user.role;
+
+    if (!allowedRoles.includes(req.user.role) && !allowedRoles.includes(effectiveRole)) {
       return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
     }
 

@@ -1,22 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface DormitorySummary {
-  totalRooms: number;
-  occupiedRooms: number;
-  availableRooms: number;
-  totalResidents: number;
-  pendingRequests: number;
-  maintenanceIssues: number;
-}
-
-interface RecentActivity {
-  id: number;
-  type: 'check-in' | 'check-out' | 'maintenance' | 'payment';
-  description: string;
-  timestamp: Date;
-  icon: string;
-}
+import { DashboardService, DashboardSummary, RecentActivity } from './data';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,62 +9,65 @@ interface RecentActivity {
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent {
-  protected readonly summary = signal<DormitorySummary>({
-    totalRooms: 120,
-    occupiedRooms: 98,
-    availableRooms: 22,
-    totalResidents: 186,
-    pendingRequests: 5,
-    maintenanceIssues: 3
+export class DashboardComponent implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
+
+  protected readonly isLoading = signal(true);
+
+  protected readonly summary = signal<DashboardSummary>({
+    totalRooms: 0,
+    occupiedRooms: 0,
+    availableRooms: 0,
+    maintenanceRooms: 0,
+    totalResidents: 0,
+    activeResidents: 0,
+    pendingRequests: 0
   });
 
-  protected readonly occupancyRate = signal<number>(
-    Math.round((this.summary().occupiedRooms / this.summary().totalRooms) * 100)
-  );
+  protected readonly occupancyRate = computed(() => {
+    const s = this.summary();
+    if (s.totalRooms === 0) return 0;
+    return Math.round((s.occupiedRooms / s.totalRooms) * 100);
+  });
 
-  protected readonly recentActivities = signal<RecentActivity[]>([
-    {
-      id: 1,
-      type: 'check-in',
-      description: 'John Doe checked into Room 205',
-      timestamp: new Date('2026-02-19T09:30:00'),
-      icon: '🏠'
-    },
-    {
-      id: 2,
-      type: 'payment',
-      description: 'Payment received from Sarah Smith - $850',
-      timestamp: new Date('2026-02-19T08:15:00'),
-      icon: '💰'
-    },
-    {
-      id: 3,
-      type: 'maintenance',
-      description: 'Maintenance request for Room 112 - Plumbing',
-      timestamp: new Date('2026-02-18T16:45:00'),
-      icon: '🔧'
-    },
-    {
-      id: 4,
-      type: 'check-out',
-      description: 'Mike Johnson checked out from Room 301',
-      timestamp: new Date('2026-02-18T14:00:00'),
-      icon: '👋'
-    },
-    {
-      id: 5,
-      type: 'check-in',
-      description: 'Emily Brown checked into Room 108',
-      timestamp: new Date('2026-02-18T11:20:00'),
-      icon: '🏠'
-    }
-  ]);
+  protected readonly recentActivities = signal<RecentActivity[]>([]);
 
   protected readonly quickActions = [
-    { label: 'Add Resident', icon: '👤', route: '/residents/add' },
-    { label: 'Room Assignment', icon: '🛏️', route: '/rooms/assign' },
-    { label: 'Maintenance Request', icon: '🔧', route: '/maintenance/new' },
-    { label: 'View Reports', icon: '📊', route: '/reports' }
+    { label: 'Add Resident', icon: '👤', route: '/manage/residents' },
+    { label: 'Room Assignment', icon: '🛏️', route: '/manage/rooms' },
+    { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
+    { label: 'View Reports', icon: '📊', route: '/manage/reports' }
   ];
+
+  ngOnInit(): void {
+    this.loadDashboardData();
+    this.loadRecentActivities();
+  }
+
+  private loadDashboardData(): void {
+    this.isLoading.set(true);
+
+    this.dashboardService.getSummary().subscribe({
+      next: async (summaryData) => {
+        const pendingRequests = await this.dashboardService.getPendingRequestsCount();
+        this.summary.set({ ...summaryData, pendingRequests });
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load dashboard data:', err);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  private loadRecentActivities(): void {
+    this.dashboardService.getRecentActivities(10).subscribe({
+      next: (activities) => {
+        this.recentActivities.set(activities);
+      },
+      error: (err) => {
+        console.error('Failed to load recent activities:', err);
+      }
+    });
+  }
 }

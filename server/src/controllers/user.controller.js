@@ -255,3 +255,92 @@ exports.reactivateResident = async (req, res) => {
     res.status(500).json({ error: 'Failed to reactivate resident' });
   }
 };
+
+// Create agent (admin, security_guard, dean) - admin only
+exports.createAgent = async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, role, phone } = req.body;
+
+    // Validate role - only allow agent roles
+    const allowedRoles = ['admin', 'security_guard', 'dean'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, dean' });
+    }
+
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName || !role) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Check if user exists
+    const [existingUsers] = await pool.execute(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const [result] = await pool.execute(
+      `INSERT INTO users (email, password, first_name, last_name, role, phone, status) 
+       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
+      [email, hashedPassword, firstName, lastName, role, phone || null]
+    );
+
+    res.status(201).json({
+      message: 'Agent created successfully',
+      data: {
+        id: result.insertId,
+        email,
+        firstName,
+        lastName,
+        role,
+        phone
+      }
+    });
+  } catch (error) {
+    console.error('Create agent error:', error);
+    res.status(500).json({ error: 'Failed to create agent' });
+  }
+};
+
+// Get all agents (admin, security_guard, dean)
+exports.getAgents = async (req, res) => {
+  try {
+    const { role, status, search } = req.query;
+
+    let query = `SELECT id, email, first_name, last_name, role, phone, photo_url, status, created_at 
+                 FROM users WHERE role IN ('admin', 'security_guard', 'dean')`;
+    const params = [];
+
+    if (role) {
+      query += ' AND role = ?';
+      params.push(role);
+    }
+
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+
+    if (search) {
+      query += ' AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [users] = await pool.execute(query, params);
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get agents error:', error);
+    res.status(500).json({ error: 'Failed to fetch agents' });
+  }
+};

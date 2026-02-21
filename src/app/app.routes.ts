@@ -7,6 +7,11 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent)
   },
+  // Register route (residents only)
+  {
+    path: 'register',
+    loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent)
+  },
   // User routes (no prefix)
   {
     path: '',
@@ -53,6 +58,10 @@ export const routes: Routes = [
       {
         path: 'leave-requests',
         loadComponent: () => import('./admin/leave-requests/leave-requests.component').then(m => m.LeaveRequestsComponent)
+      },
+      {
+        path: 'agents',
+        loadComponent: () => import('./admin/agents/agents.component').then(m => m.AgentsComponent)
       }
     ]
   },

@@ -155,7 +155,16 @@
           <p class="qr-instruction">Show this code to the security guard</p>
           <div class="qr-code-fallback">
             <span class="fallback-label">Manual Code:</span>
-            <code class="fallback-code">{{ activeQRCode() }}</code>
+            <div class="code-with-copy">
+              <code class="fallback-code">{{ activeQRCode() }}</code>
+              <button class="copy-btn" (click)="copyQRCode()" [class.copied]="copiedFeedback()">
+                @if (copiedFeedback()) {
+                  ✓ Copied
+                } @else {
+                  📋 Copy
+                }
+              </button>
+            </div>
           </div>
         </div>
 

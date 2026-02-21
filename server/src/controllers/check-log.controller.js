@@ -28,8 +28,7 @@ exports.getAll = async (req, res) => {
     query += ' ORDER BY cl.created_at DESC';
 
     if (limit) {
-      query += ' LIMIT ?';
-      params.push(parseInt(limit));
+      query += ` LIMIT ${parseInt(limit)}`;
     }
 
     const [logs] = await pool.execute(query, params);

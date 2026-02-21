@@ -6,53 +6,59 @@
 
   <!-- Summary Cards -->
   <section class="summary-cards">
-    <div class="card total-rooms">
-      <div class="card-icon">🏢</div>
-      <div class="card-content">
-        <span class="card-value">{{ summary().totalRooms }}</span>
-        <span class="card-label">Total Rooms</span>
+    @if (isLoading()) {
+      <div class="loading-cards">
+        <span class="spinner">⏳</span> Loading dashboard data...
       </div>
-    </div>
+    } @else {
+      <div class="card total-rooms">
+        <div class="card-icon">🏢</div>
+        <div class="card-content">
+          <span class="card-value">{{ summary().totalRooms }}</span>
+          <span class="card-label">Total Rooms</span>
+        </div>
+      </div>
 
-    <div class="card occupied">
-      <div class="card-icon">🛏️</div>
-      <div class="card-content">
-        <span class="card-value">{{ summary().occupiedRooms }}</span>
-        <span class="card-label">Occupied Rooms</span>
+      <div class="card occupied">
+        <div class="card-icon">🛏️</div>
+        <div class="card-content">
+          <span class="card-value">{{ summary().occupiedRooms }}</span>
+          <span class="card-label">Occupied Rooms</span>
+        </div>
       </div>
-    </div>
 
-    <div class="card available">
-      <div class="card-icon">✅</div>
-      <div class="card-content">
-        <span class="card-value">{{ summary().availableRooms }}</span>
-        <span class="card-label">Available Rooms</span>
+      <div class="card available">
+        <div class="card-icon">✅</div>
+        <div class="card-content">
+          <span class="card-value">{{ summary().availableRooms }}</span>
+          <span class="card-label">Available Rooms</span>
+        </div>
       </div>
-    </div>
 
-    <div class="card residents">
-      <div class="card-icon">👥</div>
-      <div class="card-content">
-        <span class="card-value">{{ summary().totalResidents }}</span>
-        <span class="card-label">Total Residents</span>
+      <div class="card residents">
+        <div class="card-icon">👥</div>
+        <div class="card-content">
+          <span class="card-value">{{ summary().totalResidents }}</span>
+          <span class="card-label">Total Residents</span>
+        </div>
       </div>
-    </div>
 
-    <div class="card pending">
-      <div class="card-icon">📋</div>
-      <div class="card-content">
-        <span class="card-value">{{ summary().pendingRequests }}</span>
-        <span class="card-label">Pending Requests</span>
+      <div class="card pending">
+        <div class="card-icon">📋</div>
+        <div class="card-content">
+          <span class="card-value">{{ summary().pendingRequests }}</span>
+          <span class="card-label">Pending Requests</span>
+        </div>
       </div>
-    </div>
 
-    <div class="card maintenance">
-      <div class="card-icon">🔧</div>
-      <div class="card-content">
-        <span class="card-value">{{ summary().maintenanceIssues }}</span>
-        <span class="card-label">Maintenance Issues</span>
+      <div class="card maintenance">
+        <div class="card-icon">🔧</div>
+        <div class="card-content">
+          <span class="card-value">{{ summary().maintenanceRooms }}</span>
+          <span class="card-label">Maintenance Rooms</span>
+        </div>
       </div>
-    </div>
+    }
   </section>
 
   <div class="dashboard-grid">
@@ -106,17 +112,24 @@
     <!-- Recent Activity -->
     <section class="recent-activity-section">
       <h2>Recent Activity</h2>
-      <ul class="activity-list">
-        @for (activity of recentActivities(); track activity.id) {
-          <li class="activity-item" [class]="activity.type">
-            <span class="activity-icon">{{ activity.icon }}</span>
-            <div class="activity-details">
-              <p class="activity-description">{{ activity.description }}</p>
-              <span class="activity-time">{{ activity.timestamp | date:'short' }}</span>
-            </div>
-          </li>
-        }
-      </ul>
+      @if (recentActivities().length === 0) {
+        <div class="empty-activity">
+          <span class="empty-icon">📭</span>
+          <p>No recent activity to display</p>
+        </div>
+      } @else {
+        <ul class="activity-list">
+          @for (activity of recentActivities(); track activity.id) {
+            <li class="activity-item" [class]="activity.type">
+              <span class="activity-icon">{{ activity.icon }}</span>
+              <div class="activity-details">
+                <p class="activity-description">{{ activity.description }}</p>
+                <span class="activity-time">{{ activity.timestamp | date:'short' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
     </section>
   </div>
 </main>

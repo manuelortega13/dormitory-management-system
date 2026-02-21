@@ -1,0 +1,82 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="close.emit()">✕</button>
+    
+    <div class="modal-header">
+      <h2>Assign Room</h2>
+      <p class="modal-subtitle">Assign a room to {{ getFullName() }}</p>
+    </div>
+
+    @if (getDisplayError()) {
+      <div class="alert alert-error">
+        <span class="alert-icon">⚠️</span>
+        {{ getDisplayError() }}
+      </div>
+    }
+
+    <div class="modal-body">
+      @if (isLoading()) {
+        <div class="loading">
+          <span class="spinner"></span>
+          Loading available rooms...
+        </div>
+      } @else {
+        <div class="form-group">
+          <label for="roomSelect">Select Room *</label>
+          <select 
+            id="roomSelect" 
+            [value]="selectedRoomId() ?? ''"
+            (change)="selectedRoomId.set(+$any($event.target).value || null)"
+          >
+            <option value="">-- Select a room --</option>
+            @for (room of availableRooms(); track room.id) {
+              <option [value]="room.id">
+                Room {{ room.roomNumber }} - Floor {{ room.floor }} - {{ getRoomTypeLabel(room.type) }} ({{ room.capacity }} capacity) - ₱{{ room.monthlyRent }}/mo
+              </option>
+            }
+          </select>
+          @if (availableRooms().length === 0) {
+            <span class="hint">No available rooms at the moment</span>
+          }
+        </div>
+
+        <div class="date-grid">
+          <div class="form-group">
+            <label for="startDate">Start Date *</label>
+            <input 
+              type="date" 
+              id="startDate" 
+              [value]="startDate()"
+              (input)="startDate.set($any($event.target).value)"
+            />
+          </div>
+          <div class="form-group">
+            <label for="endDate">End Date (Optional)</label>
+            <input 
+              type="date" 
+              id="endDate" 
+              [value]="endDate()"
+              [min]="startDate()"
+              (input)="endDate.set($any($event.target).value)"
+            />
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close.emit()">Cancel</button>
+      <button 
+        class="btn-primary" 
+        (click)="onConfirm()" 
+        [disabled]="!selectedRoomId() || !startDate() || isSaving || isLoading()"
+      >
+        @if (isSaving) {
+          Assigning...
+        } @else {
+          Assign Room
+        }
+      </button>
+    </div>
+  </div>
+</div>

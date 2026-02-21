@@ -389,4 +389,15 @@
       (confirm)="onSuspendResident($event)"
     />
   }
+
+  <!-- Assign Room Modal -->
+  @if (showAssignRoomModal()) {
+    <app-assign-room-modal
+      [resident]="assigningResident()"
+      [errorMessage]="assignRoomError()"
+      [isSaving]="assignRoomSaving()"
+      (close)="closeAssignRoomModal()"
+      (confirm)="onAssignRoom($event)"
+    />
+  }
 </main>

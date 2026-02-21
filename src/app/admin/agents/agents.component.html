@@ -1,0 +1,285 @@
+<main class="agents-page">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Agents Management</h1>
+      <p class="subtitle">Manage administrators, security guards, and deans</p>
+    </div>
+    <button class="btn-primary" (click)="openAddModal()">
+      <span>➕</span> Add New Agent
+    </button>
+  </header>
+
+  <!-- Stats Overview -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value">{{ stats().total }}</span>
+      <span class="stat-label">Total Agents</span>
+    </div>
+    <div class="stat-item admin">
+      <span class="stat-value">{{ stats().admins }}</span>
+      <span class="stat-label">Admins</span>
+    </div>
+    <div class="stat-item security">
+      <span class="stat-value">{{ stats().securityGuards }}</span>
+      <span class="stat-label">Security Guards</span>
+    </div>
+    <div class="stat-item dean">
+      <span class="stat-value">{{ stats().deans }}</span>
+      <span class="stat-label">Deans</span>
+    </div>
+    <div class="stat-item active">
+      <span class="stat-value">{{ stats().active }}</span>
+      <span class="stat-label">Active</span>
+    </div>
+    <div class="stat-item suspended">
+      <span class="stat-value">{{ stats().suspended }}</span>
+      <span class="stat-label">Suspended</span>
+    </div>
+  </section>
+
+  <!-- Filters & Search -->
+  <section class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by name or email..."
+        [value]="searchQuery()"
+        (input)="updateSearch($event)"
+      />
+    </div>
+
+    <div class="filter-group">
+      <select (change)="updateRole($event)">
+        <option value="all">All Roles</option>
+        <option value="admin">Admin</option>
+        <option value="security_guard">Security Guard</option>
+        <option value="dean">Dean</option>
+      </select>
+
+      <select (change)="updateStatus($event)">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="suspended">Suspended</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Agents Table -->
+  <section class="agents-table">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <span class="spinner">⏳</span>
+        <p>Loading agents...</p>
+      </div>
+    } @else if (filteredAgents().length === 0) {
+      <div class="empty-state">
+        <span class="icon">👮</span>
+        <p>No agents found</p>
+      </div>
+    } @else {
+      <div class="table-header">
+        <span class="col-name">Name</span>
+        <span class="col-contact">Contact</span>
+        <span class="col-role">Role</span>
+        <span class="col-status">Status</span>
+        <span class="col-created">Created</span>
+        <span class="col-actions">Actions</span>
+      </div>
+      @for (agent of filteredAgents(); track agent.id) {
+        <div class="table-row" [class]="getStatusClass(agent.status)">
+          <div class="col-name">
+            <div 
+              class="agent-avatar" 
+              [style.background]="getAvatarColor(agent.first_name)"
+            >
+              {{ getInitials(agent) }}
+            </div>
+            <div class="agent-info">
+              <span class="name">{{ getFullName(agent) }}</span>
+              <span class="id">ID: {{ agent.id }}</span>
+            </div>
+          </div>
+          <div class="col-contact">
+            <span class="email">{{ agent.email }}</span>
+            @if (agent.phone) {
+              <span class="phone">{{ agent.phone }}</span>
+            }
+          </div>
+          <div class="col-role">
+            <span class="role-badge" [class]="getRoleClass(agent.role)">
+              {{ getRoleLabel(agent.role) }}
+            </span>
+          </div>
+          <div class="col-status">
+            <span class="status-badge" [class]="agent.status">
+              {{ agent.status | titlecase }}
+            </span>
+          </div>
+          <div class="col-created">
+            <span class="date">{{ agent.created_at | date:'mediumDate' }}</span>
+          </div>
+          <div class="col-actions">
+            @if (agent.status !== 'suspended') {
+              <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">🚫</button>
+            } @else {
+              <button class="btn-icon reactivate" title="Reactivate" (click)="reactivateAgent(agent)">✅</button>
+            }
+            <button class="btn-icon delete" title="Delete" (click)="deleteAgent(agent)">🗑️</button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+</main>
+
+<!-- Add Agent Modal -->
+@if (showAddModal()) {
+  <div class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add New Agent</h2>
+        <button class="btn-close" (click)="closeAddModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        @if (modalError()) {
+          <div class="error-message">{{ modalError() }}</div>
+        }
+
+        <div class="form-group">
+          <label for="firstName">First Name <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="firstName"
+            placeholder="Enter first name"
+            [value]="newAgent().firstName"
+            (input)="updateNewAgentField('firstName', $event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="lastName">Last Name <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="lastName"
+            placeholder="Enter last name"
+            [value]="newAgent().lastName"
+            (input)="updateNewAgentField('lastName', $event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email <span class="required">*</span></label>
+          <input 
+            type="email" 
+            id="email"
+            placeholder="Enter email address"
+            [value]="newAgent().email"
+            (input)="updateNewAgentField('email', $event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password <span class="required">*</span></label>
+          <div class="password-input">
+            <input 
+              [type]="showPassword() ? 'text' : 'password'" 
+              id="password"
+              placeholder="Enter password (min 6 characters)"
+              [value]="newAgent().password"
+              (input)="updateNewAgentField('password', $event)"
+            />
+            <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+              {{ showPassword() ? '🙈' : '👁️' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="role">Role <span class="required">*</span></label>
+          <select 
+            id="role"
+            [value]="newAgent().role"
+            (change)="updateNewAgentField('role', $event)"
+          >
+            <option value="security_guard">Security Guard</option>
+            <option value="admin">Admin</option>
+            <option value="dean">Dean</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input 
+            type="tel" 
+            id="phone"
+            placeholder="Enter phone number (optional)"
+            [value]="newAgent().phone"
+            (input)="updateNewAgentField('phone', $event)"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAddModal()" [disabled]="modalSaving()">
+          Cancel
+        </button>
+        <button class="btn-primary" (click)="saveNewAgent()" [disabled]="modalSaving()">
+          @if (modalSaving()) {
+            <span class="spinner">⏳</span> Saving...
+          } @else {
+            Add Agent
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Suspend Modal -->
+@if (showSuspendModal()) {
+  <div class="modal-overlay" (click)="closeSuspendModal()">
+    <div class="modal-content suspend-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Suspend Agent</h2>
+        <button class="btn-close" (click)="closeSuspendModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        @if (suspendError()) {
+          <div class="error-message">{{ suspendError() }}</div>
+        }
+
+        <p class="suspend-warning">
+          You are about to suspend <strong>{{ getFullName(suspendingAgent()!) }}</strong>. 
+          This will revoke their access to the system.
+        </p>
+
+        <div class="form-group">
+          <label for="suspendReason">Reason for Suspension <span class="required">*</span></label>
+          <textarea 
+            id="suspendReason"
+            placeholder="Enter the reason for suspension"
+            rows="4"
+            [value]="suspendReason()"
+            (input)="updateSuspendReason($event)"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeSuspendModal()" [disabled]="suspendSaving()">
+          Cancel
+        </button>
+        <button class="btn-danger" (click)="confirmSuspend()" [disabled]="suspendSaving()">
+          @if (suspendSaving()) {
+            <span class="spinner">⏳</span> Suspending...
+          } @else {
+            Suspend Agent
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
