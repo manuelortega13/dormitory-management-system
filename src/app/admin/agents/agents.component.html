@@ -88,7 +88,7 @@
       </div>
       @for (agent of filteredAgents(); track agent.id) {
         <div class="table-row" [class]="getStatusClass(agent.status)">
-          <div class="col-name">
+          <div class="col-name" data-label="Agent">
             <div 
               class="agent-avatar" 
               [style.background]="getAvatarColor(agent.first_name)"
@@ -100,26 +100,26 @@
               <span class="id">ID: {{ agent.id }}</span>
             </div>
           </div>
-          <div class="col-contact">
+          <div class="col-contact" data-label="Contact">
             <span class="email">{{ agent.email }}</span>
             @if (agent.phone) {
               <span class="phone">{{ agent.phone }}</span>
             }
           </div>
-          <div class="col-role">
+          <div class="col-role" data-label="Role">
             <span class="role-badge" [class]="getRoleClass(agent.role)">
               {{ getRoleLabel(agent.role) }}
             </span>
           </div>
-          <div class="col-status">
+          <div class="col-status" data-label="Status">
             <span class="status-badge" [class]="agent.status">
               {{ agent.status | titlecase }}
             </span>
           </div>
-          <div class="col-created">
+          <div class="col-created" data-label="Created">
             <span class="date">{{ agent.created_at | date:'mediumDate' }}</span>
           </div>
-          <div class="col-actions">
+          <div class="col-actions" data-label="Actions">
             @if (agent.status !== 'suspended') {
               <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">🚫</button>
             } @else {

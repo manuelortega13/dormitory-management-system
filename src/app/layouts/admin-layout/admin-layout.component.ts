@@ -40,6 +40,7 @@ import { CommonModule } from '@angular/common';
       transition: margin-left 0.3s ease;
       min-height: 100vh;
       background: #f5f6fa;
+      width: 100%;
     }
 
     .mobile-header {

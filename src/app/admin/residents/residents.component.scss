@@ -62,7 +62,7 @@
 // Stats Bar
 .stats-bar {
   display: flex;
-  gap: 2%;
+  gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
@@ -659,6 +659,8 @@
   }
 
   .stats-bar {
+    gap: 0.5rem;
+
     .stat-item {
       flex: 1;
       min-width: calc(50% - 0.5rem);
