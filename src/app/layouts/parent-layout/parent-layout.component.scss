@@ -115,3 +115,70 @@
     padding: 1rem;
   }
 }
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+
+    .header-left {
+      .logo {
+        font-size: 1.1rem;
+      }
+
+      .role-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+      }
+    }
+
+    .header-right {
+      .logout-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .nav {
+    gap: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    .header-left {
+      gap: 0.5rem;
+
+      .logo {
+        font-size: 1rem;
+      }
+    }
+
+    .header-right {
+      gap: 0.5rem;
+
+      .user-name {
+        display: none;
+      }
+    }
+  }
+
+  .nav {
+    padding: 0.5rem 0.75rem;
+
+    a {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .main-content {
+    padding: 0.75rem;
+  }
+}

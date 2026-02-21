@@ -544,3 +544,268 @@
     }
   }
 }
+
+// Mobile Responsive Styles
+@media (max-width: 768px) {
+  .leave-requests {
+    padding: 1rem;
+  }
+
+  .page-header {
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+
+    .tabs {
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      -webkit-overflow-scrolling: touch;
+
+      .tab {
+        flex-shrink: 0;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    .search-box input {
+      width: 100%;
+    }
+  }
+
+  // Table responsive - convert to card layout
+  .requests-table {
+    background: transparent;
+    box-shadow: none;
+
+    table {
+      display: block;
+
+      thead {
+        display: none;
+      }
+
+      tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      tr {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        gap: 0.75rem;
+
+        &:hover {
+          background: white;
+        }
+      }
+
+      td {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        border-bottom: none;
+        
+        &[data-label]::before {
+          content: attr(data-label);
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 0.25rem;
+        }
+
+        &.resident-cell::before,
+        &.actions-cell::before {
+          display: none;
+        }
+      }
+
+      .details-row {
+        display: none;
+      }
+    }
+  }
+
+  .resident-cell {
+    .resident-info {
+      .avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .schedule-cell .schedule {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .destination-cell {
+    .reason {
+      max-width: none;
+      white-space: normal;
+    }
+  }
+
+  .actions-cell {
+    border-top: 1px solid #eee;
+    padding-top: 0.75rem !important;
+    margin-top: 0.25rem;
+    flex-direction: row !important;
+
+    .btn-approve,
+    .btn-decline,
+    .btn-view {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+
+  .requests-list {
+    gap: 0.75rem;
+  }
+
+  .request-card {
+    padding: 1rem;
+
+    .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+
+      .user-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+    }
+
+    .card-body {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .card-footer {
+      flex-direction: column;
+      gap: 0.75rem;
+
+      .actions {
+        width: 100%;
+
+        button {
+          flex: 1;
+        }
+      }
+    }
+  }
+
+  // Modal responsive
+  .modal-content {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+
+    .details-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .modal-footer {
+    padding: 1rem;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .leave-requests {
+    padding: 0.75rem;
+  }
+
+  .controls .tabs .tab {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .requests-table {
+    tr {
+      padding: 0.75rem;
+    }
+
+    td::before {
+      font-size: 0.7rem;
+    }
+  }
+
+  .resident-cell {
+    .resident-info {
+      .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+      }
+
+      .info {
+        .name {
+          font-size: 0.9rem;
+        }
+
+        .room {
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  .type-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .actions-cell {
+    .btn-approve,
+    .btn-decline,
+    .btn-view {
+      padding: 0.35rem 0.5rem;
+      font-size: 0.8rem;
+    }
+  }
+
+  .request-card {
+    .avatar {
+      width: 36px;
+      height: 36px;
+      font-size: 0.9rem;
+    }
+  }
+}

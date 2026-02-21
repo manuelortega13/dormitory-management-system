@@ -74,7 +74,7 @@
         <tbody>
           @for (request of filteredRequests(); track request.id) {
             <tr>
-              <td class="resident-cell">
+              <td class="resident-cell" data-label="Resident">
                 <div class="resident-info">
                   <div class="avatar">{{ getInitials(request.user_name) }}</div>
                   <div class="info">
@@ -83,26 +83,26 @@
                   </div>
                 </div>
               </td>
-              <td>
+              <td data-label="Type">
                 <span class="type-badge">{{ getLeaveTypeLabel(request.leave_type) }}</span>
               </td>
-              <td class="schedule-cell">
+              <td class="schedule-cell" data-label="Schedule">
                 <div class="schedule">
                   <span class="date">{{ formatDate(request.start_date) }}</span>
                   <span class="separator">→</span>
                   <span class="date">{{ formatDate(request.end_date) }}</span>
                 </div>
               </td>
-              <td class="destination-cell">
+              <td class="destination-cell" data-label="Destination">
                 <span class="destination">{{ request.destination }}</span>
                 <span class="reason">{{ request.reason }}</span>
               </td>
-              <td>
+              <td data-label="Status">
                 <span class="status-badge" [class]="getStatusClass(request.status)">
                   {{ getStatusLabel(request.status) }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="actions-cell" data-label="Actions">
                 @if (request.status === 'pending_admin') {
                   <button class="btn-approve" (click)="openApproveModal(request)">
                     ✓ Approve

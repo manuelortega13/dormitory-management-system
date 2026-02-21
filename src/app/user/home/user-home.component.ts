@@ -363,6 +363,93 @@ interface RoomInfo {
         font-weight: 500;
       }
     }
+
+    // Mobile Responsive Styles
+    @media (max-width: 768px) {
+      .user-home {
+        padding: 1rem;
+      }
+
+      .welcome-section {
+        flex-direction: column;
+        gap: 1.25rem;
+        padding: 1.5rem;
+        text-align: center;
+
+        .welcome-content {
+          h1 {
+            font-size: 1.4rem;
+          }
+
+          p {
+            font-size: 0.9rem;
+          }
+        }
+
+        .quick-action-btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+
+    @media (max-width: 480px) {
+      .user-home {
+        padding: 0.75rem;
+      }
+
+      .welcome-section {
+        padding: 1.25rem;
+        border-radius: 12px;
+
+        .welcome-content {
+          h1 {
+            font-size: 1.25rem;
+          }
+        }
+
+        .quick-action-btn {
+          padding: 0.75rem 1rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      .info-card {
+        border-radius: 10px;
+      }
+
+      .card-header {
+        padding: 0.75rem 1rem;
+
+        h2 {
+          font-size: 0.9rem;
+        }
+      }
+
+      .card-body {
+        padding: 1rem;
+      }
+
+      .room-number {
+        font-size: 1.25rem;
+      }
+
+      .links-grid {
+        gap: 0.5rem;
+
+        .quick-link {
+          padding: 0.75rem;
+
+          .link-icon {
+            font-size: 1.25rem;
+          }
+
+          span:last-child {
+            font-size: 0.8rem;
+          }
+        }
+      }
+    }
   `]
 })
 export class UserHomeComponent implements OnInit {
