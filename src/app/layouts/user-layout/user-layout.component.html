@@ -1,0 +1,60 @@
+<div class="user-layout">
+  <header class="user-header">
+    <div class="header-container">
+      <div class="logo">
+        <span class="logo-icon">🏠</span>
+        <span class="logo-text">PAC DormHub</span>
+      </div>
+      
+      <!-- Mobile menu button -->
+      <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+        <span class="hamburger-icon" [class.open]="isMobileMenuOpen()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+      
+      <nav class="user-nav" [class.mobile-open]="isMobileMenuOpen()">
+        <a routerLink="/my-leave-request" routerLinkActive="active" class="nav-item primary">
+          <span class="nav-icon">📤</span>
+          Request Leave
+        </a>
+        <a routerLink="/my-requests" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📋</span>
+          My Requests
+        </a>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+          <span class="nav-icon">🏠</span>
+          Home
+        </a>
+        <a routerLink="/my-room" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🛏️</span>
+          My Room
+        </a>
+        <a routerLink="/my-payments" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">💰</span>
+          Payments
+        </a>
+        <a routerLink="/announcements" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📢</span>
+          Announcements
+        </a>
+      </nav>
+      <div class="user-profile">
+        <div class="avatar">{{ userInitials() }}</div>
+        <span class="user-name">{{ userName() }}</span>
+        <button class="logout-btn" (click)="logout()" title="Logout">🚪</button>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Mobile menu overlay -->
+  @if (isMobileMenuOpen()) {
+    <div class="mobile-overlay" (click)="closeMobileMenu()"></div>
+  }
+  
+  <main class="user-content">
+    <router-outlet />
+  </main>
+</div>
