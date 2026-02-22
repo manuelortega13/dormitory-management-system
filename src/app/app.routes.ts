@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './auth/auth.guard';
+import { adminGuard, residentGuard, securityGuard, parentGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
   // Login route
@@ -12,11 +12,11 @@ export const routes: Routes = [
     path: 'register',
     loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent)
   },
-  // User routes (no prefix)
+  // User/Resident routes (no prefix)
   {
     path: '',
     loadComponent: () => import('./layouts/user-layout/user-layout.component').then(m => m.UserLayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [residentGuard],
     children: [
       {
         path: '',
@@ -36,7 +36,7 @@ export const routes: Routes = [
   {
     path: 'manage',
     loadComponent: () => import('./layouts/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     children: [
       {
         path: '',
@@ -69,7 +69,7 @@ export const routes: Routes = [
   {
     path: 'security-guard',
     loadComponent: () => import('./layouts/security-layout/security-layout.component').then(m => m.SecurityLayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [securityGuard],
     children: [
       {
         path: '',
@@ -85,7 +85,7 @@ export const routes: Routes = [
   {
     path: 'parent',
     loadComponent: () => import('./layouts/parent-layout/parent-layout.component').then(m => m.ParentLayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [parentGuard],
     children: [
       {
         path: '',
@@ -100,5 +100,11 @@ export const routes: Routes = [
         loadComponent: () => import('./parent/activity/parent-activity.component').then(m => m.ParentActivityComponent)
       }
     ]
+  },
+  // Wildcard route - redirect to login (auth guards will handle proper redirect)
+  {
+    path: '**',
+    redirectTo: 'login',
+    pathMatch: 'full'
   }
 ];
