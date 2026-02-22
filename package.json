@@ -2,12 +2,12 @@
   "name": "dorm",
   "version": "0.0.0",
   "scripts": {
-    "ng": "echo 'Angular disabled'",
-    "start": "echo 'Angular disabled'",
-    "build": "echo 'No build needed'",
-    "watch": "echo 'Watching disabled'",
-    "test": "echo 'Tests disabled'",
-    "serve:ssr:dorm": "echo 'SSR disabled'"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "serve:ssr:dorm": "node dist/dorm/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,
