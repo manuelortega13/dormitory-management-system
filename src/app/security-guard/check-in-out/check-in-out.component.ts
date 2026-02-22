@@ -33,6 +33,7 @@ interface RecentActivity {
 export class CheckInOutComponent implements OnInit, OnDestroy {
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   
   private securityService = inject(SecurityService);
 
@@ -47,6 +48,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
   protected readonly cameraError = signal('');
   protected readonly isProcessing = signal(false);
   protected readonly scannerSupported = signal(true);
+  protected readonly isIOSPWA = signal(false);
   
   private mediaStream: MediaStream | null = null;
   private timeInterval: any;
@@ -68,6 +70,13 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     }
     // Scanner is always supported now with jsQR fallback
     this.scannerSupported.set(true);
+    
+    // Detect iOS PWA (standalone) mode - camera doesn't work in this mode
+    if (typeof window !== 'undefined') {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isStandalone = (window.navigator as any).standalone === true;
+      this.isIOSPWA.set(isIOS && isStandalone);
+    }
   }
 
   ngOnInit() {
@@ -305,6 +314,79 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       return;
     }
     await this.processQRCode(qrCode);
+  }
+
+  // Handle file/image capture for iOS PWA mode
+  async onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    
+    if (!file) return;
+    
+    this.scanStatus.set('verifying');
+    this.errorMessage.set('');
+    
+    try {
+      // Create an image from the file
+      const image = new Image();
+      const imageUrl = URL.createObjectURL(file);
+      
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error('Failed to load image'));
+        image.src = imageUrl;
+      });
+      
+      // Draw image to canvas and extract QR code
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Canvas not supported');
+      }
+      
+      // Scale down large images for faster processing
+      const maxDimension = 1024;
+      let width = image.width;
+      let height = image.height;
+      
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = (height / width) * maxDimension;
+          width = maxDimension;
+        } else {
+          width = (width / height) * maxDimension;
+          height = maxDimension;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(image, 0, 0, width, height);
+      
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'attemptBoth'
+      });
+      
+      URL.revokeObjectURL(imageUrl);
+      
+      if (code && code.data) {
+        await this.processQRCode(code.data);
+      } else {
+        this.scanStatus.set('error');
+        this.errorMessage.set('No QR code found in the image. Please try again or enter the code manually.');
+      }
+    } catch (error) {
+      console.error('Image processing error:', error);
+      this.scanStatus.set('error');
+      this.errorMessage.set('Failed to process image. Please try again.');
+    } finally {
+      // Reset file input for next capture
+      if (this.fileInput?.nativeElement) {
+        this.fileInput.nativeElement.value = '';
+      }
+    }
   }
 
   // This would be called by QR scanner library when a QR code is detected

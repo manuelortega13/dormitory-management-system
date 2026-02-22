@@ -101,6 +101,7 @@
   }
 
   .btn-scan {
+    display: inline-block;
     padding: 1rem 2.5rem;
     background: linear-gradient(135deg, #4361ee, #7c3aed);
     color: white;
@@ -110,11 +111,23 @@
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+    text-decoration: none;
 
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
     }
+  }
+
+  .ios-hint {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    max-width: 300px;
   }
 
   .divider {

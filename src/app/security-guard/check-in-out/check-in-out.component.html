@@ -28,9 +28,26 @@
             <h2>Scan Resident Pass</h2>
             <p>Scan the QR code from the resident's approved go-out pass</p>
             
-            <button class="btn-scan" (click)="startScanning()">
-              Start Camera Scanner
-            </button>
+            @if (isIOSPWA()) {
+              <!-- iOS PWA mode - use file capture instead of camera stream -->
+              <label class="btn-scan" for="qrFileInput">
+                📸 Take Photo of QR Code
+              </label>
+              <input 
+                type="file" 
+                id="qrFileInput"
+                #fileInput
+                accept="image/*" 
+                capture="environment"
+                (change)="onFileSelected($event)"
+                style="display: none;"
+              />
+              <p class="ios-hint">Camera stream is not available in home screen mode. Use photo capture instead.</p>
+            } @else {
+              <button class="btn-scan" (click)="startScanning()">
+                Start Camera Scanner
+              </button>
+            }
 
             <div class="divider">
               <span>or enter manually</span>
