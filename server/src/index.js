@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { testConnection } = require('./config/database');
+const initDatabase = require('./config/init-db');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -58,6 +59,7 @@ app.use((err, req, res, next) => {
 // Start server
 const startServer = async () => {
   await testConnection();
+  await initDatabase();
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

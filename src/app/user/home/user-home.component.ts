@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, User } from '../../auth/auth.service';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 interface RoomInfo {
   roomNumber: string;
@@ -455,7 +456,7 @@ interface RoomInfo {
 export class UserHomeComponent implements OnInit {
   private authService = inject(AuthService);
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/users';
+  private apiUrl = `${environment.apiUrl}/users`;
 
   protected readonly userName = signal('Resident');
   protected readonly currentUser = signal<User | null>(null);

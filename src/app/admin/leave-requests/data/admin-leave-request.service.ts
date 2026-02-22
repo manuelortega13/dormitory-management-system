@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Subject } from 'rxjs';
 import { LeaveRequest } from '../../../models/leave-request.model';
+import { environment } from '../../../../environments/environment';
 
 export type { LeaveRequest };
 
@@ -10,7 +11,7 @@ export type { LeaveRequest };
 })
 export class AdminLeaveRequestService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/leave-requests';
+  private apiUrl = `${environment.apiUrl}/leave-requests`;
   
   // Subject to notify when leave requests are updated
   private leaveRequestUpdated = new Subject<void>();

@@ -5,6 +5,7 @@ import { DashboardSummary, RecentActivity, CheckLog, LeaveRequestActivity } from
 import { RoomsService } from '../../rooms/data/rooms.service';
 import { ResidentsService } from '../../residents/data/residents.service';
 import { AdminLeaveRequestService } from '../../leave-requests/data/admin-leave-request.service';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,7 @@ export class DashboardService {
   private readonly roomsService = inject(RoomsService);
   private readonly residentsService = inject(ResidentsService);
   private readonly leaveRequestService = inject(AdminLeaveRequestService);
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   getSummary(): Observable<DashboardSummary> {
     return forkJoin({

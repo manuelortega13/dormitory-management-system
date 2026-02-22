@@ -2,13 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Agent, AgentFilters, CreateAgentDto } from './agent.model';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AgentsService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:3000/api/users';
+  private readonly apiUrl = `${environment.apiUrl}/users`;
 
   getAgents(filters?: AgentFilters): Observable<Agent[]> {
     let params = new HttpParams();

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LeaveRequest } from '../../models/leave-request.model';
+import { environment } from '../../../environments/environment';
 
 export interface VerificationResult {
   valid: boolean;
@@ -37,8 +38,8 @@ export interface TodayLogsResponse {
 })
 export class SecurityService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/leave-requests';
-  private checkLogsUrl = 'http://localhost:3000/api/check-logs';
+  private apiUrl = `${environment.apiUrl}/leave-requests`;
+  private checkLogsUrl = `${environment.apiUrl}/check-logs`;
 
   // Verify QR code
   async verifyQRCode(qrCode: string): Promise<VerificationResult> {

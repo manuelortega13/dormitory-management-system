@@ -2,14 +2,15 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Resident, ResidentFilters, CreateResidentDto, UpdateResidentDto, Parent } from './resident.model';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ResidentsService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:3000/api/users';
-  private readonly authUrl = 'http://localhost:3000/api/auth';
+  private readonly apiUrl = `${environment.apiUrl}/users`;
+  private readonly authUrl = `${environment.apiUrl}/auth`;
 
   getResidents(filters?: ResidentFilters): Observable<Resident[]> {
     let params = new HttpParams();

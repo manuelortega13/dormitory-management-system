@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, switchMap } from 'rxjs';
 import { Room, RoomStatus, RoomType, Occupant, RoomResponse, OccupantResponse } from './room.model';
+import { environment } from '../../../../environments/environment';
 
 export type { Room, RoomStatus, RoomType, Occupant } from './room.model';
 
@@ -10,7 +11,7 @@ export type { Room, RoomStatus, RoomType, Occupant } from './room.model';
 })
 export class RoomsService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:3000/api/rooms';
+  private readonly apiUrl = `${environment.apiUrl}/rooms`;
 
   getAll(filters?: { status?: RoomStatus; floor?: number; roomType?: RoomType }): Observable<Room[]> {
     let url = this.apiUrl;

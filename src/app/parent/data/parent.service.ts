@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LeaveRequest } from '../../models/leave-request.model';
+import { environment } from '../../../environments/environment';
 
 export interface ChildActivityLog {
   id: number;
@@ -23,8 +24,8 @@ export interface ChildActivityLog {
 })
 export class ParentService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/leave-requests';
-  private checkLogsUrl = 'http://localhost:3000/api/check-logs';
+  private apiUrl = `${environment.apiUrl}/leave-requests`;
+  private checkLogsUrl = `${environment.apiUrl}/check-logs`;
 
   // Get all leave requests for parent's children
   async getChildRequests(): Promise<LeaveRequest[]> {

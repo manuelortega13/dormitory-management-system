@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LeaveRequest } from '../../models/leave-request.model';
+import { environment } from '../../../environments/environment';
 
 export type { LeaveRequest };
 
@@ -20,7 +21,7 @@ export interface CreateLeaveRequestDto {
 })
 export class LeaveRequestService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/leave-requests';
+  private apiUrl = `${environment.apiUrl}/leave-requests`;
 
   // Get all leave requests for current user
   async getMyRequests(): Promise<LeaveRequest[]> {
