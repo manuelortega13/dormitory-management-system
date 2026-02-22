@@ -206,10 +206,14 @@ export class CreateLeaveRequestComponent {
     this.successMessage.set('');
 
     try {
+      // Convert local date/time to UTC ISO format
+      const startDateTime = new Date(`${this.form.startDate}T${this.form.startTime}:00`);
+      const endDateTime = new Date(`${this.form.endDate}T${this.form.endTime}:00`);
+      
       const requestData = {
         leaveType: this.form.leaveType,
-        startDate: `${this.form.startDate} ${this.form.startTime}:00`,
-        endDate: `${this.form.endDate} ${this.form.endTime}:00`,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString(),
         destination: this.form.destination.trim(),
         reason: this.form.reason.trim(),
         emergencyContact: this.form.emergencyContact.trim(),

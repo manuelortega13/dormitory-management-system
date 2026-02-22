@@ -10,10 +10,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // Timezone configuration - treat dates as stored (no conversion)
-  timezone: process.env.DB_TIMEZONE || '+08:00',
-  // Return dates as strings instead of Date objects to avoid timezone confusion
-  dateStrings: true
+  // Use UTC for all date/time operations
+  timezone: 'Z'
 });
 
 // Test database connection

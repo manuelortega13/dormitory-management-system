@@ -55,9 +55,8 @@ export class ParentActivityComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    // Remove 'Z' suffix to parse as local time, not UTC
-    const localDateStr = dateStr.replace('Z', '').replace('.000', '');
-    return new Date(localDateStr).toLocaleDateString('en-US', {
+    // Parse as UTC and display in user's local timezone
+    return new Date(dateStr).toLocaleString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -68,9 +67,8 @@ export class ParentActivityComponent implements OnInit {
   }
 
   formatRelativeTime(dateStr: string): string {
-    // Remove 'Z' suffix to parse as local time, not UTC
-    const localDateStr = dateStr.replace('Z', '').replace('.000', '');
-    const date = new Date(localDateStr);
+    // Parse as UTC
+    const date = new Date(dateStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);

@@ -391,9 +391,8 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    // Remove 'Z' suffix to parse as local time, not UTC
-    const localDateStr = dateStr.replace('Z', '').replace('.000', '');
-    return new Date(localDateStr).toLocaleDateString('en-US', {
+    // Parse as UTC and display in user's local timezone
+    return new Date(dateStr).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

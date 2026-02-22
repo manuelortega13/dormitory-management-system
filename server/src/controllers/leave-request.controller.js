@@ -450,38 +450,24 @@ exports.verifyQRCode = async (req, res) => {
       });
     }
 
-    // Parse dates - with dateStrings: true, these come as strings like "2026-02-23 00:48:00"
-    // We need to parse them consistently
-    const parseLocalDate = (dateStr) => {
-      // Handle both string and Date object formats
-      if (dateStr instanceof Date) return dateStr;
-      // Parse as local time by replacing space with T
-      return new Date(dateStr.replace(' ', 'T'));
-    };
-
+    // All dates are now stored and compared in UTC
     const now = new Date();
-    const startDate = parseLocalDate(request.start_date);
-    const endDate = parseLocalDate(request.end_date);
+    const startDate = new Date(request.start_date);
+    const endDate = new Date(request.end_date);
 
-    // For validation, compare just the date components (more lenient)
-    // This avoids timezone issues between server and client
-    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-    // Check if within valid date range (date-level check, not time-level)
-    // Allow same-day usage
-    if (nowDateOnly < startDateOnly) {
+    // Check if within valid date range (with 30 min buffer for early arrival)
+    const bufferMs = 30 * 60 * 1000;
+    if (now.getTime() < startDate.getTime() - bufferMs) {
       return res.json({ 
         data: {
           valid: false, 
-          message: `Leave request not yet valid. Starts on ${startDate.toLocaleDateString()}`,
+          message: `Leave request not yet valid. Starts at ${startDate.toISOString()}`,
           leave_request: request
         }
       });
     }
     
-    if (nowDateOnly > endDateOnly) {
+    if (now > endDate) {
       return res.json({ 
         data: {
           valid: false, 
