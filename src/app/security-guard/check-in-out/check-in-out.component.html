@@ -59,18 +59,14 @@
                   <p>{{ cameraError() }}</p>
                 </div>
               } @else {
-                <video #videoElement autoplay playsinline></video>
+                <video #videoElement autoplay playsinline muted></video>
+                <canvas #canvasElement style="display: none;"></canvas>
                 <div class="scan-overlay">
                   <div class="scan-frame"></div>
                   @if (scannerSupported()) {
                     <div class="scanning-indicator">Scanning...</div>
                   }
                 </div>
-                @if (!scannerSupported()) {
-                  <div class="scanner-notice">
-                    <p>Auto-scan not supported. Please enter QR code manually below.</p>
-                  </div>
-                }
               }
             </div>
             

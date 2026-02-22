@@ -55,3 +55,30 @@ html, body {
 body {
   overflow-x: hidden;
 }
+
+/* Prevent iOS zoom on input focus - inputs must be at least 16px */
+@media (max-width: 768px) {
+  input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Disable touch callout and selection on interactive elements */
+@media (pointer: coarse) {
+  input, textarea, select, button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityService, CheckLog } from '../data/security.service';
 import { LeaveRequest } from '../../models/leave-request.model';
+import jsQR from 'jsqr';
 
 type ScanStatus = 'idle' | 'scanning' | 'verifying' | 'success' | 'error';
 
@@ -61,12 +62,12 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       this.currentTime.set(new Date());
     }, 1000);
 
-    // Check if BarcodeDetector is supported
+    // Check if BarcodeDetector is supported (optional, we have jsQR fallback)
     if ('BarcodeDetector' in window) {
       this.barcodeDetector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-    } else {
-      this.scannerSupported.set(false);
     }
+    // Scanner is always supported now with jsQR fallback
+    this.scannerSupported.set(true);
   }
 
   ngOnInit() {
@@ -150,11 +151,12 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
   }
 
   private startQRScanning() {
-    if (!this.barcodeDetector || !this.videoElement?.nativeElement) {
+    if (!this.videoElement?.nativeElement) {
       return;
     }
 
     const video = this.videoElement.nativeElement;
+    const canvas = this.canvasElement?.nativeElement;
     
     this.scanInterval = setInterval(async () => {
       if (video.readyState !== video.HAVE_ENOUGH_DATA) {
@@ -162,13 +164,38 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       }
 
       try {
-        const barcodes = await this.barcodeDetector.detect(video);
-        if (barcodes.length > 0) {
-          const qrCode = barcodes[0].rawValue;
-          if (qrCode) {
-            clearInterval(this.scanInterval);
-            this.scanInterval = null;
-            await this.processQRCode(qrCode);
+        // Try native BarcodeDetector first if available
+        if (this.barcodeDetector) {
+          const barcodes = await this.barcodeDetector.detect(video);
+          if (barcodes.length > 0) {
+            const qrCode = barcodes[0].rawValue;
+            if (qrCode) {
+              clearInterval(this.scanInterval);
+              this.scanInterval = null;
+              await this.processQRCode(qrCode);
+              return;
+            }
+          }
+        }
+        
+        // Fallback to jsQR (works on all browsers including iOS)
+        if (canvas) {
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: 'dontInvert'
+            });
+            
+            if (code && code.data) {
+              clearInterval(this.scanInterval);
+              this.scanInterval = null;
+              await this.processQRCode(code.data);
+            }
           }
         }
       } catch (error) {
