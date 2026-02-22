@@ -9,7 +9,11 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'dormitory_db',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Timezone configuration - treat dates as stored (no conversion)
+  timezone: process.env.DB_TIMEZONE || '+08:00',
+  // Return dates as strings instead of Date objects to avoid timezone confusion
+  dateStrings: true
 });
 
 // Test database connection
