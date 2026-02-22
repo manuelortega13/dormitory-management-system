@@ -59,8 +59,8 @@
                   <p>{{ cameraError() }}</p>
                 </div>
               } @else {
-                <video #videoElement autoplay playsinline muted></video>
-                <canvas #canvasElement style="display: none;"></canvas>
+                <video #videoElement autoplay playsinline muted webkit-playsinline></video>
+                <canvas #canvasElement style="display: none;"></canvas></canvas>
                 <div class="scan-overlay">
                   <div class="scan-frame"></div>
                   @if (scannerSupported()) {

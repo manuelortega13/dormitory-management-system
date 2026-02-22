@@ -105,9 +105,25 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     this.cameraError.set('');
     this.verificationResult.set(null);
 
+    // Check for HTTPS (required for camera on iOS)
+    if (typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+      this.cameraError.set('Camera requires HTTPS. Please access the app via HTTPS or enter QR code manually.');
+      return;
+    }
+
+    // Check if mediaDevices is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.cameraError.set('Camera not supported on this device. Please enter QR code manually.');
+      return;
+    }
+
     try {
+      // For iOS, use simpler constraints first
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const constraints: MediaStreamConstraints = {
-        video: {
+        video: isIOS ? {
+          facingMode: { ideal: this.isFrontCamera() ? 'user' : 'environment' }
+        } : {
           facingMode: this.isFrontCamera() ? 'user' : 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
@@ -116,17 +132,50 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      setTimeout(() => {
-        if (this.videoElement?.nativeElement && this.mediaStream) {
-          this.videoElement.nativeElement.srcObject = this.mediaStream;
-          this.videoElement.nativeElement.play();
+      // Wait for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (this.videoElement?.nativeElement && this.mediaStream) {
+        const video = this.videoElement.nativeElement;
+        video.srcObject = this.mediaStream;
+        
+        // iOS requires explicit play after srcObject is set
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.muted = true;
+        
+        try {
+          await video.play();
           this.startQRScanning();
+        } catch (playError) {
+          console.error('Video play error:', playError);
+          // Try play on user interaction
+          this.cameraError.set('Tap the video area to start camera');
+          video.onclick = async () => {
+            try {
+              await video.play();
+              this.cameraError.set('');
+              this.startQRScanning();
+            } catch (e) {
+              this.cameraError.set('Unable to start camera. Please enter QR code manually.');
+            }
+          };
         }
-      }, 100);
+      }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Camera access error:', error);
-      this.cameraError.set('Unable to access camera. Please check permissions or enter QR code manually.');
+      let errorMsg = 'Unable to access camera. ';
+      if (error.name === 'NotAllowedError') {
+        errorMsg += 'Camera permission denied. Please allow camera access in Settings > Safari > Camera.';
+      } else if (error.name === 'NotFoundError') {
+        errorMsg += 'No camera found on this device.';
+      } else if (error.name === 'NotReadableError') {
+        errorMsg += 'Camera is in use by another app.';
+      } else {
+        errorMsg += 'Please check permissions or enter QR code manually.';
+      }
+      this.cameraError.set(errorMsg);
       this.scanStatus.set('idle');
     }
   }
@@ -218,8 +267,11 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     this.stopCameraStream();
     
     try {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const constraints: MediaStreamConstraints = {
-        video: {
+        video: isIOS ? {
+          facingMode: { ideal: this.isFrontCamera() ? 'user' : 'environment' }
+        } : {
           facingMode: this.isFrontCamera() ? 'user' : 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
@@ -229,8 +281,10 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (this.videoElement?.nativeElement && this.mediaStream) {
-        this.videoElement.nativeElement.srcObject = this.mediaStream;
-        this.videoElement.nativeElement.play();
+        const video = this.videoElement.nativeElement;
+        video.srcObject = this.mediaStream;
+        video.muted = true;
+        await video.play();
         this.startQRScanning();
       }
     } catch (error) {
