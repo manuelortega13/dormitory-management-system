@@ -71,7 +71,7 @@ exports.update = async (req, res) => {
     }
 
     let query = 'UPDATE users SET first_name = ?, last_name = ?, phone = ?';
-    const params = [firstName, lastName, phone];
+    const params = [firstName || null, lastName || null, phone === undefined ? null : phone];
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -82,7 +82,7 @@ exports.update = async (req, res) => {
     // Only admin can update parent_id
     if (req.user.role === 'admin' && parentId !== undefined) {
       query += ', parent_id = ?';
-      params.push(parentId);
+      params.push(parentId === '' ? null : parentId);
     }
 
     query += ' WHERE id = ?';
