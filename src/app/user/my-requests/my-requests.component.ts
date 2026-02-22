@@ -120,7 +120,10 @@ export class MyRequestsComponent implements OnInit {
   }
 
   formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    if (!dateStr) return '-';
+    // Remove 'Z' suffix to parse as local time, not UTC
+    const localDateStr = dateStr.replace('Z', '').replace('.000', '');
+    return new Date(localDateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

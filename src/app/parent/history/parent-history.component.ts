@@ -82,7 +82,9 @@ export class ParentHistoryComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    // Remove 'Z' suffix to parse as local time, not UTC
+    const localDateStr = dateStr.replace('Z', '').replace('.000', '');
+    return new Date(localDateStr).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
