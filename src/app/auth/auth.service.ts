@@ -103,7 +103,7 @@ export class AuthService {
       case 'dean':
         return '/manage';
       case 'security_guard':
-        return '/security-guard';
+        return '/security-guard/check-in-out';
       case 'parent':
         return '/parent';
       case 'resident':

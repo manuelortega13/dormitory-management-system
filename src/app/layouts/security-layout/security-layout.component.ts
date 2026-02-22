@@ -33,7 +33,7 @@ import { AuthService } from '../../auth/auth.service';
         </div>
 
         <nav class="sidebar-nav">
-          <a routerLink="/security-guard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item" (click)="closeSidebar()">
+          <a routerLink="/security-guard/dashboard" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
             <span class="nav-icon">📊</span>
             <span class="nav-label">Dashboard</span>
           </a>

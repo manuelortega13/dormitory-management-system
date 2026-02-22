@@ -73,6 +73,11 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        redirectTo: 'check-in-out',
+        pathMatch: 'full'
+      },
+      {
+        path: 'dashboard',
         loadComponent: () => import('./security-guard/dashboard/security-dashboard.component').then(m => m.SecurityDashboardComponent)
       },
       {
@@ -104,7 +109,6 @@ export const routes: Routes = [
   // Wildcard route - redirect to login (auth guards will handle proper redirect)
   {
     path: '**',
-    redirectTo: 'login',
-    pathMatch: 'full'
+    redirectTo: 'login'
   }
 ];
