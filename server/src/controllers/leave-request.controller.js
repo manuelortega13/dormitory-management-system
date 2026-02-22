@@ -165,6 +165,16 @@ exports.create = async (req, res) => {
     } = req.body;
     const userId = req.user.id;
 
+    // Convert ISO dates to MySQL datetime format
+    const formatDate = (date) => {
+      if (!date) return null;
+      const d = new Date(date);
+      return d.toISOString().slice(0, 19).replace('T', ' ');
+    };
+
+    const formattedStartDate = formatDate(startDate);
+    const formattedEndDate = formatDate(endDate);
+
     // Check if user has a parent linked
     const [users] = await pool.execute(
       'SELECT parent_id FROM users WHERE id = ?',
@@ -179,8 +189,8 @@ exports.create = async (req, res) => {
        (user_id, leave_type, start_date, end_date, reason, destination, 
         emergency_contact, emergency_phone, status, admin_status, parent_status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_admin', 'pending', ?)`,
-      [userId, leaveType, startDate, endDate, reason, destination, 
-       emergencyContact, emergencyPhone, parentStatus]
+      [userId, leaveType, formattedStartDate, formattedEndDate, reason, destination, 
+       emergencyContact || null, emergencyPhone || null, parentStatus]
     );
 
     // Fetch the created request
@@ -204,6 +214,16 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const { leaveType, startDate, endDate, reason, destination, emergencyContact, emergencyPhone } = req.body;
 
+    // Convert ISO dates to MySQL datetime format
+    const formatDate = (date) => {
+      if (!date) return null;
+      const d = new Date(date);
+      return d.toISOString().slice(0, 19).replace('T', ' ');
+    };
+
+    const formattedStartDate = formatDate(startDate);
+    const formattedEndDate = formatDate(endDate);
+
     // Check if request exists and is still pending admin
     const [existing] = await pool.execute(
       'SELECT * FROM leave_requests WHERE id = ? AND status = "pending_admin"',
@@ -224,7 +244,7 @@ exports.update = async (req, res) => {
        leave_type = ?, start_date = ?, end_date = ?, reason = ?, 
        destination = ?, emergency_contact = ?, emergency_phone = ?
        WHERE id = ?`,
-      [leaveType, startDate, endDate, reason, destination, emergencyContact, emergencyPhone, id]
+      [leaveType, formattedStartDate, formattedEndDate, reason, destination, emergencyContact || null, emergencyPhone || null, id]
     );
 
     res.json({ message: 'Leave request updated successfully' });
