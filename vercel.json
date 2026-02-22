@@ -3,14 +3,17 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/dorm/browser",
   "framework": "angular",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://node-server-production-e00e.up.railway.app/api/$1"
+      "handle": "filesystem"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "https://node-server-production-e00e.up.railway.app/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
