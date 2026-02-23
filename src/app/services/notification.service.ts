@@ -1,27 +1,144 @@
-import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
+import { Injectable, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
+import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
-import { Notification, NotificationResponse, UnreadCountResponse } from '../models/notification.model';
+import { AppNotification, NotificationResponse, UnreadCountResponse } from '../models/notification.model';
 
 @Injectable({
   providedIn: 'root'
 })
-export class NotificationService {
+export class NotificationService implements OnDestroy {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.apiUrl}/notifications`;
 
   // Signals for reactive state
-  notifications = signal<Notification[]>([]);
+  notifications = signal<AppNotification[]>([]);
   unreadCount = signal<number>(0);
   loading = signal<boolean>(false);
+  connected = signal<boolean>(false);
 
+  private socket: Socket | null = null;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
   private get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  ngOnDestroy(): void {
+    this.disconnect();
+  }
+
+  /**
+   * Connect to WebSocket for real-time notifications
+   */
+  connect(): void {
+    // Prevent duplicate connections - check if socket exists (connecting or connected)
+    if (!this.isBrowser || this.socket) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('No auth token, falling back to polling');
+      this.startPolling();
+      return;
+    }
+
+    // Get WebSocket URL (same as API but without /api path)
+    const wsUrl = environment.apiUrl.replace('/api', '');
+
+    this.socket = io(wsUrl, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    });
+
+    this.socket.on('connect', () => {
+      console.log('🔌 WebSocket connected');
+      this.connected.set(true);
+      this.reconnectAttempts = 0;
+      this.stopPolling(); // Stop polling when WebSocket is connected
+      this.fetchUnreadCount(); // Get initial count
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('🔌 WebSocket disconnected:', reason);
+      this.connected.set(false);
+      
+      // Start polling as fallback if disconnected unexpectedly
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        this.startPolling();
+      }
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error.message);
+      this.reconnectAttempts++;
+      
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.warn('Max reconnection attempts reached, falling back to polling');
+        this.socket?.disconnect();
+        this.startPolling();
+      }
+    });
+
+    // Listen for real-time notifications
+    this.socket.on('notification', (notification: AppNotification) => {
+      console.log('📬 Real-time notification received:', notification);
+      
+      // Check if notification already exists (prevent duplicates)
+      const exists = this.notifications().some(n => n.id === notification.id);
+      if (!exists) {
+        // Add to notifications list at the beginning
+        this.notifications.update(notifs => [notification, ...notifs]);
+        
+        // Increment unread count only if notification is new
+        this.unreadCount.update(count => count + 1);
+        
+        // Show browser notification
+        this.showBrowserNotification(notification);
+      }
+    });
+  }
+
+  /**
+   * Disconnect from WebSocket
+   */
+  disconnect(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    this.stopPolling();
+    this.connected.set(false);
+  }
+
+  /**
+   * Show browser notification (if permitted)
+   */
+  private async showBrowserNotification(notification: AppNotification): Promise<void> {
+    if (!this.isBrowser || !('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/favicon.ico'
+      });
+    } else if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        new Notification(notification.title, {
+          body: notification.message,
+          icon: '/favicon.ico'
+        });
+      }
+    }
   }
 
   async fetchNotifications(): Promise<void> {
@@ -103,9 +220,11 @@ export class NotificationService {
     }
   }
 
-  // Start polling for notifications (every 30 seconds)
-  startPolling(): void {
+  // Start polling for notifications (fallback when WebSocket is unavailable)
+  private startPolling(): void {
     if (!this.isBrowser || this.pollingInterval) return;
+    
+    console.log('📡 Starting polling fallback for notifications');
     
     // Initial fetch
     this.fetchUnreadCount();
@@ -116,8 +235,8 @@ export class NotificationService {
     }, 30000);
   }
 
-  // Stop polling
-  stopPolling(): void {
+  // Stop polling (internal use)
+  private stopPolling(): void {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;

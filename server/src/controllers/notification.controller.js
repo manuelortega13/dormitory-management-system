@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const { sendNotificationToUser, sendNotificationToRole } = require('../services/socket.service');
 
 // Get all notifications for the current user
 exports.getAll = async (req, res) => {
@@ -104,14 +105,33 @@ exports.delete = async (req, res) => {
 // Helper function to create a notification (used internally)
 exports.createNotification = async (userId, type, title, message, referenceId = null, referenceType = null) => {
   try {
-    await pool.execute(
+    const [result] = await pool.execute(
       `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [userId, type, title, message, referenceId, referenceType]
     );
+
+    // Build notification object for real-time delivery
+    const notification = {
+      id: result.insertId,
+      user_id: userId,
+      type,
+      title,
+      message,
+      reference_id: referenceId,
+      reference_type: referenceType,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+
+    // Send real-time notification via WebSocket
+    sendNotificationToUser(userId, notification);
+
+    return notification;
   } catch (error) {
     console.error('Create notification error:', error);
     // Don't throw - notifications are non-critical
+    return null;
   }
 };
 

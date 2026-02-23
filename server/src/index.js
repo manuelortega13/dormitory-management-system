@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const initDatabase = require('./config/init-db');
+const { initializeSocket } = require('./services/socket.service');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -16,7 +18,11 @@ const incidentRoutes = require('./routes/incident.routes');
 const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+
+// Initialize Socket.IO
+initializeSocket(server);
 
 // Middleware
 app.use(cors());
@@ -63,9 +69,10 @@ const startServer = async () => {
   await testConnection();
   await initDatabase();
   
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
+    console.log(`🔌 WebSocket ready for connections`);
   });
 };
 

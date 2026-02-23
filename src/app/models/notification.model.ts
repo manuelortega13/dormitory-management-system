@@ -1,4 +1,4 @@
-export interface Notification {
+export interface AppNotification {
   id: number;
   user_id: number;
   type: 'leave_request_new' | 'parent_approval_needed' | 'leave_request_approved' | 'leave_request_declined' | 'child_left_campus' | 'child_returned_campus';
@@ -11,7 +11,7 @@ export interface Notification {
 }
 
 export interface NotificationResponse {
-  data: Notification[];
+  data: AppNotification[];
 }
 
 export interface UnreadCountResponse {

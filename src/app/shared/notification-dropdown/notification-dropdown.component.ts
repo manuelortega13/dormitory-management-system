@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../auth/auth.service';
-import { Notification } from '../../models/notification.model';
+import { AppNotification } from '../../models/notification.model';
 
 @Component({
   selector: 'app-notification-dropdown',
@@ -21,11 +21,12 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   isOpen = signal(false);
 
   ngOnInit(): void {
-    this.notificationService.startPolling();
+    // Connect to WebSocket for real-time notifications
+    this.notificationService.connect();
   }
 
   ngOnDestroy(): void {
-    this.notificationService.stopPolling();
+    this.notificationService.disconnect();
   }
 
   @HostListener('document:click', ['$event'])
@@ -44,7 +45,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     }
   }
 
-  handleNotificationClick(notification: Notification): void {
+  handleNotificationClick(notification: AppNotification): void {
     if (!notification.is_read) {
       this.notificationService.markAsRead(notification.id);
     }
