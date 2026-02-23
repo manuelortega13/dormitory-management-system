@@ -19,9 +19,17 @@ export class NotificationService implements OnDestroy {
   loading = signal<boolean>(false);
   pushEnabled = signal<boolean>(false);
   
-  // Signal to notify components when new leave request arrives
+  // Signal to notify components when new leave request arrives (for admin)
   // Increments each time a new leave_request_new notification is detected
   newLeaveRequestTrigger = signal<number>(0);
+  
+  // Signal to notify components when leave request status changes (for resident)
+  // Increments when leave_request_approved or leave_request_declined notification is detected
+  requestStatusUpdateTrigger = signal<number>(0);
+  
+  // Signal to notify parent dashboard when child's request needs approval
+  // Increments when parent_approval_needed notification is detected
+  parentApprovalNeededTrigger = signal<number>(0);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private registration: ServiceWorkerRegistration | null = null;
@@ -145,18 +153,38 @@ export class NotificationService implements OnDestroy {
       // Only check for new notifications if we've already loaded before (not initial load)
       const isInitialLoad = this.lastNotificationIds.size === 0;
       
-      // Check for new leave_request_new notifications
+      // Check for new notifications by type
       let hasNewLeaveRequest = false;
+      let hasStatusUpdate = false;
+      let hasParentApprovalNeeded = false;
+      
       for (const notif of newNotifications) {
-        if (!isInitialLoad && notif.type === 'leave_request_new' && !this.lastNotificationIds.has(notif.id)) {
-          hasNewLeaveRequest = true;
+        if (!isInitialLoad && !this.lastNotificationIds.has(notif.id)) {
+          // New leave request notification (for admin)
+          if (notif.type === 'leave_request_new') {
+            hasNewLeaveRequest = true;
+          }
+          // Request status update notification (for resident)
+          if (notif.type === 'leave_request_approved' || notif.type === 'leave_request_declined') {
+            hasStatusUpdate = true;
+          }
+          // Parent approval needed notification (for parent)
+          if (notif.type === 'parent_approval_needed') {
+            hasParentApprovalNeeded = true;
+          }
         }
         this.lastNotificationIds.add(notif.id);
       }
       
-      // Trigger update if new leave request notification detected (not on initial load)
+      // Trigger updates for watching components (not on initial load)
       if (hasNewLeaveRequest) {
         this.newLeaveRequestTrigger.update(v => v + 1);
+      }
+      if (hasStatusUpdate) {
+        this.requestStatusUpdateTrigger.update(v => v + 1);
+      }
+      if (hasParentApprovalNeeded) {
+        this.parentApprovalNeededTrigger.update(v => v + 1);
       }
       
       this.notifications.set(newNotifications);

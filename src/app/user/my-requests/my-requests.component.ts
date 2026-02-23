@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LeaveRequestService, LeaveRequest } from '../data/leave-request.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-my-requests',
@@ -13,6 +14,7 @@ import { LeaveRequestService, LeaveRequest } from '../data/leave-request.service
 export class MyRequestsComponent implements OnInit {
   private router = inject(Router);
   private leaveRequestService = inject(LeaveRequestService);
+  private notificationService = inject(NotificationService);
 
   requests = signal<LeaveRequest[]>([]);
   isLoading = signal(true);
@@ -22,6 +24,16 @@ export class MyRequestsComponent implements OnInit {
   activeRequest = signal<LeaveRequest | null>(null);
   showQRModal = signal(false);
   copiedFeedback = signal(false);
+
+  constructor() {
+    // Watch for request status updates and refresh the list
+    effect(() => {
+      const trigger = this.notificationService.requestStatusUpdateTrigger();
+      if (trigger > 0) {
+        this.loadRequests();
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadRequests();

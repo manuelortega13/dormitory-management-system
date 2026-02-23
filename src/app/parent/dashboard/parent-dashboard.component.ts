@@ -1,8 +1,9 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ParentService } from '../data/parent.service';
 import { LeaveRequest } from '../../models/leave-request.model';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-parent-dashboard',
@@ -13,6 +14,7 @@ import { LeaveRequest } from '../../models/leave-request.model';
 })
 export class ParentDashboardComponent implements OnInit {
   private parentService = inject(ParentService);
+  private notificationService = inject(NotificationService);
 
   requests = signal<LeaveRequest[]>([]);
   isLoading = signal(true);
@@ -24,6 +26,16 @@ export class ParentDashboardComponent implements OnInit {
   actionType = signal<'approve' | 'decline'>('approve');
   parentNotes = signal('');
   isProcessing = signal(false);
+
+  constructor() {
+    // Watch for new approval requests and refresh the list
+    effect(() => {
+      const trigger = this.notificationService.parentApprovalNeededTrigger();
+      if (trigger > 0) {
+        this.loadRequests();
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadRequests();
