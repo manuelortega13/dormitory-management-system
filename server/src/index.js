@@ -13,6 +13,7 @@ const leaveRequestRoutes = require('./routes/leave-request.routes');
 const checkLogRoutes = require('./routes/check-log.routes');
 const visitorRoutes = require('./routes/visitor.routes');
 const incidentRoutes = require('./routes/incident.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +37,7 @@ app.use('/api/leave-requests', leaveRequestRoutes);
 app.use('/api/check-logs', checkLogRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

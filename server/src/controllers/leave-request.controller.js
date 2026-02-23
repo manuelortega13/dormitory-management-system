@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { pool } = require('../config/database');
+const notificationController = require('./notification.controller');
 
 // Generate unique QR code
 const generateQRCode = () => {
@@ -193,6 +194,16 @@ exports.create = async (req, res) => {
        emergencyContact || null, emergencyPhone || null, parentStatus]
     );
 
+    // Get resident name for notification
+    const [residentInfo] = await pool.execute(
+      'SELECT first_name, last_name FROM users WHERE id = ?',
+      [userId]
+    );
+    const residentName = `${residentInfo[0].first_name} ${residentInfo[0].last_name}`;
+
+    // Notify all admins/deans about new leave request
+    await notificationController.notifyAdminsNewRequest(residentName, result.insertId);
+
     // Fetch the created request
     const [created] = await pool.execute(
       'SELECT * FROM leave_requests WHERE id = ?',
@@ -260,9 +271,9 @@ exports.adminApprove = async (req, res) => {
     const { notes } = req.body;
     const adminId = req.user.id;
 
-    // Get current request
+    // Get current request with user info
     const [requests] = await pool.execute(
-      `SELECT lr.*, u.parent_id FROM leave_requests lr
+      `SELECT lr.*, u.parent_id, u.first_name, u.last_name FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
        WHERE lr.id = ?`,
       [id]
@@ -284,11 +295,18 @@ exports.adminApprove = async (req, res) => {
     if (hasParent && request.parent_status === 'pending') {
       // Needs parent approval next
       newStatus = 'pending_parent';
+      
+      // Notify parent about approval needed
+      const childName = `${request.first_name} ${request.last_name}`;
+      await notificationController.notifyParentApprovalNeeded(request.parent_id, childName, id);
     } else {
       // No parent or parent already approved - generate QR
       newStatus = 'approved';
       qrCode = generateQRCode();
       qrGeneratedAt = new Date();
+      
+      // Notify resident about full approval
+      await notificationController.notifyResidentRequestStatus(request.user_id, 'approved', 'admin', id);
     }
 
     await pool.execute(
@@ -321,6 +339,9 @@ exports.adminDecline = async (req, res) => {
     const { id } = req.params;
     const { notes } = req.body;
 
+    // Get request user_id for notification
+    const [requests] = await pool.execute('SELECT user_id FROM leave_requests WHERE id = ?', [id]);
+    
     await pool.execute(
       `UPDATE leave_requests SET 
        admin_status = 'declined', 
@@ -331,6 +352,11 @@ exports.adminDecline = async (req, res) => {
        WHERE id = ?`,
       [req.user.id, notes || null, id]
     );
+
+    // Notify resident about decline
+    if (requests.length > 0) {
+      await notificationController.notifyResidentRequestStatus(requests[0].user_id, 'declined', 'admin', id);
+    }
 
     res.json({ message: 'Leave request declined' });
   } catch (error) {
@@ -382,6 +408,9 @@ exports.parentApprove = async (req, res) => {
       [notes || null, qrCode, id]
     );
 
+    // Notify resident about parent approval
+    await notificationController.notifyResidentRequestStatus(request.user_id, 'approved', 'parent', id);
+
     res.json({ 
       message: 'Leave request approved by parent. QR code generated.',
       qrCode: qrCode
@@ -423,6 +452,9 @@ exports.parentDecline = async (req, res) => {
        WHERE id = ?`,
       [notes || null, id]
     );
+
+    // Notify resident about parent decline
+    await notificationController.notifyResidentRequestStatus(requests[0].user_id, 'declined', 'parent', id);
 
     res.json({ message: 'Leave request declined by parent' });
   } catch (error) {
@@ -516,7 +548,10 @@ exports.recordExit = async (req, res) => {
     const guardId = req.user.id;
 
     const [requests] = await pool.execute(
-      'SELECT * FROM leave_requests WHERE id = ?',
+      `SELECT lr.*, u.parent_id, u.first_name, u.last_name 
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       WHERE lr.id = ?`,
       [id]
     );
 
@@ -551,6 +586,12 @@ exports.recordExit = async (req, res) => {
       [request.user_id, id, guardId]
     );
 
+    // Notify parent if exists
+    if (request.parent_id) {
+      const childName = `${request.first_name} ${request.last_name}`;
+      await notificationController.notifyParentChildMovement(request.parent_id, childName, 'exit', id);
+    }
+
     res.json({ message: 'Exit recorded successfully' });
   } catch (error) {
     console.error('Record exit error:', error);
@@ -564,7 +605,10 @@ exports.recordReturn = async (req, res) => {
     const guardId = req.user.id;
 
     const [requests] = await pool.execute(
-      'SELECT * FROM leave_requests WHERE id = ?',
+      `SELECT lr.*, u.parent_id, u.first_name, u.last_name 
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       WHERE lr.id = ?`,
       [id]
     );
 
@@ -598,6 +642,12 @@ exports.recordReturn = async (req, res) => {
        VALUES (?, ?, 'check-in', 'qr_scan', ?)`,
       [request.user_id, id, guardId]
     );
+
+    // Notify parent if exists
+    if (request.parent_id) {
+      const childName = `${request.first_name} ${request.last_name}`;
+      await notificationController.notifyParentChildMovement(request.parent_id, childName, 'return', id);
+    }
 
     res.json({ message: 'Return recorded successfully. Leave request completed.' });
   } catch (error) {

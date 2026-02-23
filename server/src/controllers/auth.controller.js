@@ -14,6 +14,10 @@ exports.register = async (req, res) => {
   try {
     const { email, password, firstName, lastName, role, phone, parentId } = req.body;
 
+    // Only allow certain roles for self-registration
+    const allowedRoles = ['resident', 'parent'];
+    const userRole = allowedRoles.includes(role) ? role : 'resident';
+
     // Check if user exists
     const [existingUsers] = await pool.execute(
       'SELECT id FROM users WHERE email = ?',
@@ -31,10 +35,10 @@ exports.register = async (req, res) => {
     const [result] = await pool.execute(
       `INSERT INTO users (email, password, first_name, last_name, role, phone, parent_id) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [email, hashedPassword, firstName, lastName, role || 'resident', phone || null, parentId || null]
+      [email, hashedPassword, firstName, lastName, userRole, phone || null, parentId || null]
     );
 
-    const token = generateToken({ id: result.insertId, email, role: role || 'resident' });
+    const token = generateToken({ id: result.insertId, email, role: userRole });
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -44,7 +48,7 @@ exports.register = async (req, res) => {
         email,
         firstName,
         lastName,
-        role: role || 'resident'
+        role: userRole
       }
     });
   } catch (error) {

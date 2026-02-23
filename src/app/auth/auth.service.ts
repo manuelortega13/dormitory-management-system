@@ -25,7 +25,7 @@ export interface RegisterData {
   email: string;
   phone: string;
   password: string;
-  role: 'resident';
+  role: 'resident' | 'parent';
 }
 
 @Injectable({

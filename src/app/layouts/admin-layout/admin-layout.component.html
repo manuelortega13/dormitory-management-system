@@ -1,0 +1,25 @@
+<div class="admin-layout" [class.sidebar-open]="isMobileSidebarOpen()">
+  <!-- Mobile overlay -->
+  @if (isMobileSidebarOpen()) {
+    <div class="mobile-overlay" (click)="closeMobileSidebar()"></div>
+  }
+  
+  <!-- Mobile header -->
+  <header class="mobile-header">
+    <button class="menu-toggle" (click)="toggleMobileSidebar()">
+      <span>☰</span>
+    </button>
+    <span class="mobile-logo">🏠 DormHub</span>
+    <div class="header-right">
+      <app-notification-dropdown />
+    </div>
+  </header>
+  
+  <app-sidebar [class.mobile-visible]="isMobileSidebarOpen()" (click)="handleSidebarClick($event)" />
+  <main class="admin-content">
+    <div class="desktop-top-bar">
+      <app-notification-dropdown />
+    </div>
+    <router-outlet />
+  </main>
+</div>

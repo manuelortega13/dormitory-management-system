@@ -2,11 +2,12 @@ import { Component, signal, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../auth/auth.service';
+import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
 
 @Component({
   selector: 'app-security-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, NotificationDropdownComponent],
   template: `
     <div class="security-layout" [class.sidebar-open]="isSidebarOpen()">
       <!-- Mobile Header -->
@@ -17,6 +18,9 @@ import { AuthService } from '../../auth/auth.service';
         <div class="mobile-logo">
           <span class="logo-icon">🛡️</span>
           <span class="logo-text">DormHub Security</span>
+        </div>
+        <div class="header-right">
+          <app-notification-dropdown />
         </div>
       </header>
 
@@ -70,6 +74,9 @@ import { AuthService } from '../../auth/auth.service';
         </div>
       </aside>
       <main class="security-content">
+        <div class="desktop-notification-bar">
+          <app-notification-dropdown />
+        </div>
         <router-outlet />
       </main>
     </div>
@@ -92,6 +99,18 @@ import { AuthService } from '../../auth/auth.service';
       align-items: center;
       padding: 0 1rem;
       gap: 0.75rem;
+    }
+
+    .mobile-header .header-right {
+      margin-left: auto;
+      color: #fff;
+    }
+
+    .desktop-notification-bar {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      z-index: 100;
     }
 
     .menu-toggle {
@@ -295,6 +314,7 @@ import { AuthService } from '../../auth/auth.service';
       margin-left: 240px;
       min-height: 100vh;
       background: #f5f6fa;
+      position: relative;
     }
 
     /* Mobile Responsive */
@@ -320,6 +340,10 @@ import { AuthService } from '../../auth/auth.service';
       .security-content {
         margin-left: 0;
         padding-top: 56px;
+      }
+
+      .desktop-notification-bar {
+        display: none;
       }
 
       .sidebar-open {

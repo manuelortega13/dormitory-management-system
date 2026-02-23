@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../auth.service';
 
+type AccountType = 'resident' | 'parent';
+
 interface RegisterForm {
+  accountType: AccountType;
   firstName: string;
   lastName: string;
   email: string;
@@ -14,6 +17,7 @@ interface RegisterForm {
 }
 
 interface FieldErrors {
+  accountType: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -34,6 +38,7 @@ export class RegisterComponent {
   private router = inject(Router);
 
   form: RegisterForm = {
+    accountType: 'resident',
     firstName: '',
     lastName: '',
     email: '',
@@ -49,6 +54,7 @@ export class RegisterComponent {
   showConfirmPassword = signal(false);
   
   fieldErrors = signal<FieldErrors>({
+    accountType: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -66,6 +72,7 @@ export class RegisterComponent {
 
   validateForm(): boolean {
     const errors: FieldErrors = {
+      accountType: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -75,6 +82,11 @@ export class RegisterComponent {
     };
 
     let isValid = true;
+
+    if (!this.form.accountType) {
+      errors.accountType = 'Please select an account type';
+      isValid = false;
+    }
 
     if (!this.form.firstName.trim()) {
       errors.firstName = 'First name is required';
@@ -145,13 +157,13 @@ export class RegisterComponent {
         email: this.form.email.trim(),
         phone: this.form.phone.trim(),
         password: this.form.password,
-        role: 'resident'
+        role: this.form.accountType
       });
 
       this.successMessage.set('Registration successful! Redirecting to your dashboard...');
       
       setTimeout(() => {
-        this.router.navigate(['/']);
+        this.authService.redirectBasedOnRole();
       }, 1500);
     } catch (error: any) {
       if (error.status === 400) {

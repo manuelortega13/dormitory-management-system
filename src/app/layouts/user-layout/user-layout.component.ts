@@ -2,12 +2,13 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService, User } from '../../auth/auth.service';
+import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-user-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, NotificationDropdownComponent],
   templateUrl: './user-layout.component.html',
   styleUrl: './user-layout.component.scss'
 })
