@@ -39,36 +39,49 @@ export class NotificationService implements OnDestroy {
     }
 
     try {
+      console.log('[PUSH] Requesting notification permission...');
       const permission = await Notification.requestPermission();
+      console.log('[PUSH] Notification permission:', permission);
+      
       if (permission !== 'granted') {
         console.warn('Push notification permission denied');
         return;
       }
 
+      console.log('[PUSH] Registering service worker...');
       this.registration = await navigator.serviceWorker.register('/push-sw.js');
-      console.log('Service Worker registered for push');
+      console.log('[PUSH] Service Worker registered:', this.registration);
 
+      console.log('[PUSH] Getting VAPID public key...');
       const response = await firstValueFrom(
         this.http.get<{ publicKey: string }>(`${this.pushApiUrl}/vapid-public-key`)
       );
+      console.log('[PUSH] VAPID public key received');
 
+      const vapidKey = this.urlBase64ToUint8Array(response.publicKey);
+      console.log('[PUSH] Subscribing to push manager...');
+      
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(response.publicKey)
+        applicationServerKey: vapidKey as any
       });
+      
+      console.log('[PUSH] Subscription created:', subscription);
 
-      await firstValueFrom(
+      console.log('[PUSH] Saving subscription to server...');
+      const subscribeResponse = await firstValueFrom(
         this.http.post(`${this.pushApiUrl}/subscribe`, { subscription })
       );
+      console.log('[PUSH] Subscription saved:', subscribeResponse);
 
       this.pushEnabled.set(true);
-      console.log('Push notifications enabled');
+      console.log('✅ Push notifications enabled successfully!');
     } catch (error) {
-      console.error('Failed to initialize push notifications:', error);
+      console.error('❌ Failed to initialize push notifications:', error);
     }
   }
 
-  private urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  private urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
       .replace(/-/g, '+')
@@ -80,7 +93,7 @@ export class NotificationService implements OnDestroy {
     for (let i = 0; i < rawData.length; ++i) {
       outputArray[i] = rawData.charCodeAt(i);
     }
-    return outputArray.buffer;
+    return outputArray;
   }
 
   async fetchNotifications(): Promise<void> {

@@ -17,6 +17,9 @@ exports.subscribe = async (req, res) => {
     const { subscription } = req.body;
     const userId = req.user.id;
 
+    console.log(`[PUSH] Subscribe request from user ${userId}`);
+    console.log(`[PUSH] Subscription data:`, JSON.stringify(subscription).substring(0, 200));
+
     if (!subscription) {
       return res.status(400).json({ error: 'Subscription is required' });
     }
@@ -30,6 +33,7 @@ exports.subscribe = async (req, res) => {
       [userId, subscriptionStr, subscriptionStr]
     );
 
+    console.log(`[PUSH] Subscription saved for user ${userId}`);
     res.json({ message: 'Push subscription saved' });
   } catch (error) {
     console.error('Subscribe error:', error);
