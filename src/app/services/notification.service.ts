@@ -120,7 +120,7 @@ export class NotificationService implements OnDestroy {
     
     this.pollingInterval = setInterval(() => {
       this.fetchUnreadCount();
-    }, 30000);
+    }, 10000); // Poll every 10 seconds
   }
 
   stopPolling(): void {

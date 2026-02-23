@@ -55,13 +55,15 @@ exports.unsubscribe = async (req, res) => {
 
 exports.sendNotification = async (userId, title, message, icon = '/icons/icon-192.png', badge = '/icons/icon-72.png') => {
   try {
+    console.log(`[PUSH] Attempting to send notification to user ${userId}: ${title}`);
+
     const [subscriptions] = await pool.execute(
       'SELECT subscription FROM push_subscriptions WHERE user_id = ?',
       [userId]
     );
 
     if (subscriptions.length === 0) {
-      console.log(`No push subscription found for user ${userId}`);
+      console.log(`[PUSH] No push subscription found for user ${userId} - user needs to call initPushNotifications()`);
       return;
     }
 
@@ -77,7 +79,7 @@ exports.sendNotification = async (userId, title, message, icon = '/icons/icon-19
     });
 
     await webpush.sendNotification(subscription, payload);
-    console.log(`Push notification sent to user ${userId}`);
+    console.log(`[PUSH] Notification sent successfully to user ${userId}`);
   } catch (error) {
     if (error.statusCode === 410) {
       await pool.execute(

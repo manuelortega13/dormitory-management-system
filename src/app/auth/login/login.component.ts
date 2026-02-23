@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -14,6 +15,7 @@ import { AuthService } from '../auth.service';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private notificationService = inject(NotificationService);
 
   email = signal('');
   password = signal('');
@@ -42,6 +44,11 @@ export class LoginComponent {
 
     try {
       const response = await this.authService.login(email, password);
+      
+      // Initialize push notifications and start polling
+      this.notificationService.initPushNotifications();
+      this.notificationService.startPolling();
+      
       const redirectUrl = this.authService.getRedirectUrl(response.user.role);
       this.router.navigate([redirectUrl]);
     } catch (error: any) {
