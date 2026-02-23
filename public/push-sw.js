@@ -1,8 +1,32 @@
+// Immediately activate service worker
+self.addEventListener('install', function(event) {
+  console.log('[Push SW] Installing...');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+  console.log('[Push SW] Activating...');
+  event.waitUntil(clients.claim());
+});
+
+// Handle messages from the main app
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('push', function(event) {
-  if (!event.data) return;
+  console.log('[Push SW] Push event received');
+  
+  if (!event.data) {
+    console.log('[Push SW] No data in push event');
+    return;
+  }
   
   try {
     const data = event.data.json();
+    console.log('[Push SW] Push data:', data);
     
     const options = {
       body: data.body || data.message || '',
@@ -17,14 +41,17 @@ self.addEventListener('push', function(event) {
       actions: [
         { action: 'view', title: 'View' },
         { action: 'dismiss', title: 'Dismiss' }
-      ]
+      ],
+      requireInteraction: true,
+      tag: 'dormitory-notification-' + Date.now()
     };
     
+    console.log('[Push SW] Showing notification:', data.title);
     event.waitUntil(
       self.registration.showNotification(data.title || 'Dormitory Management', options)
     );
   } catch (error) {
-    console.error('Push notification error:', error);
+    console.error('[Push SW] Push notification error:', error);
   }
 });
 

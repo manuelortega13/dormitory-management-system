@@ -18,9 +18,14 @@ export class NotificationService implements OnDestroy {
   unreadCount = signal<number>(0);
   loading = signal<boolean>(false);
   pushEnabled = signal<boolean>(false);
+  
+  // Signal to notify components when new leave request arrives
+  // Increments each time a new leave_request_new notification is detected
+  newLeaveRequestTrigger = signal<number>(0);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private registration: ServiceWorkerRegistration | null = null;
+  private lastNotificationIds = new Set<number>();
 
   private get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -49,8 +54,31 @@ export class NotificationService implements OnDestroy {
       }
 
       console.log('[PUSH] Registering service worker...');
-      this.registration = await navigator.serviceWorker.register('/push-sw.js');
+      this.registration = await navigator.serviceWorker.register('/push-sw.js', {
+        scope: '/'
+      });
       console.log('[PUSH] Service Worker registered:', this.registration);
+
+      // Wait for the service worker to be ready/active
+      if (this.registration.installing) {
+        console.log('[PUSH] Waiting for service worker to install...');
+        await new Promise<void>((resolve) => {
+          this.registration!.installing!.addEventListener('statechange', (e) => {
+            if ((e.target as ServiceWorker).state === 'activated') {
+              resolve();
+            }
+          });
+        });
+      } else if (this.registration.waiting) {
+        console.log('[PUSH] Service worker waiting, skipping to active...');
+        // Skip waiting and activate
+        this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        await navigator.serviceWorker.ready;
+      }
+
+      // Ensure service worker is ready
+      await navigator.serviceWorker.ready;
+      console.log('[PUSH] Service Worker is ready and active');
 
       console.log('[PUSH] Getting VAPID public key...');
       const response = await firstValueFrom(
@@ -61,12 +89,20 @@ export class NotificationService implements OnDestroy {
       const vapidKey = this.urlBase64ToUint8Array(response.publicKey);
       console.log('[PUSH] Subscribing to push manager...');
       
-      const subscription = await this.registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: vapidKey as any
-      });
+      // Get existing subscription or create new one
+      let subscription = await this.registration.pushManager.getSubscription();
       
-      console.log('[PUSH] Subscription created:', subscription);
+      if (!subscription) {
+        subscription = await this.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidKey.buffer as ArrayBuffer
+        });
+        console.log('[PUSH] New subscription created');
+      } else {
+        console.log('[PUSH] Using existing subscription');
+      }
+      
+      console.log('[PUSH] Subscription:', JSON.stringify(subscription).substring(0, 100));
 
       console.log('[PUSH] Saving subscription to server...');
       const subscribeResponse = await firstValueFrom(
@@ -104,7 +140,26 @@ export class NotificationService implements OnDestroy {
       const response = await firstValueFrom(
         this.http.get<NotificationResponse>(this.apiUrl)
       );
-      this.notifications.set(response.data || []);
+      const newNotifications = response.data || [];
+      
+      // Only check for new notifications if we've already loaded before (not initial load)
+      const isInitialLoad = this.lastNotificationIds.size === 0;
+      
+      // Check for new leave_request_new notifications
+      let hasNewLeaveRequest = false;
+      for (const notif of newNotifications) {
+        if (!isInitialLoad && notif.type === 'leave_request_new' && !this.lastNotificationIds.has(notif.id)) {
+          hasNewLeaveRequest = true;
+        }
+        this.lastNotificationIds.add(notif.id);
+      }
+      
+      // Trigger update if new leave request notification detected (not on initial load)
+      if (hasNewLeaveRequest) {
+        this.newLeaveRequestTrigger.update(v => v + 1);
+      }
+      
+      this.notifications.set(newNotifications);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -133,6 +188,7 @@ export class NotificationService implements OnDestroy {
     
     this.pollingInterval = setInterval(() => {
       this.fetchUnreadCount();
+      this.fetchNotifications(); // Also fetch notifications to detect new ones
     }, 10000); // Poll every 10 seconds
   }
 

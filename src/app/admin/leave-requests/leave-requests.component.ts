@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminLeaveRequestService, LeaveRequest } from './data/admin-leave-request.service';
+import { NotificationService } from '../../services/notification.service';
 
 type TabFilter = 'pending' | 'all';
 
@@ -14,6 +15,7 @@ type TabFilter = 'pending' | 'all';
 })
 export class LeaveRequestsComponent implements OnInit {
   private leaveRequestService = inject(AdminLeaveRequestService);
+  private notificationService = inject(NotificationService);
 
   requests = signal<LeaveRequest[]>([]);
   isLoading = signal(true);
@@ -28,6 +30,16 @@ export class LeaveRequestsComponent implements OnInit {
   actionType = signal<'approve' | 'decline'>('approve');
   adminNotes = signal('');
   isProcessing = signal(false);
+
+  constructor() {
+    // Watch for new leave request notifications and refresh the table
+    effect(() => {
+      const trigger = this.notificationService.newLeaveRequestTrigger();
+      if (trigger > 0) {
+        this.loadRequests();
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadRequests();

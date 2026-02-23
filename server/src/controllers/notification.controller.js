@@ -111,8 +111,10 @@ exports.createNotification = async (userId, type, title, message, referenceId = 
       [userId, type, title, message, referenceId, referenceType]
     );
 
-    // Send push notification
-    pushService.sendNotification(userId, title, message);
+    // Send push notification (fire and forget, but log errors)
+    pushService.sendNotification(userId, title, message).catch(err => {
+      console.error('[PUSH] Error sending push notification:', err.message);
+    });
 
     return {
       id: result.insertId,
