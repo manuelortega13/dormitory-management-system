@@ -141,9 +141,14 @@ export class NotificationService implements OnDestroy {
 
     // Connect directly to socket server (bypasses Vite proxy in dev)
     const serverUrl = environment.socketUrl || environment.apiUrl.replace('/api', '');
+    console.log(`[Socket] Connecting to ${serverUrl}`);
+    
     this.socket = io(serverUrl, {
       auth: { token },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'], // Try websocket first (faster), fallback to polling
+      withCredentials: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
 
     this.socket.on('connect', () => {
@@ -166,6 +171,14 @@ export class NotificationService implements OnDestroy {
     this.socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error.message);
       this.connected.set(false);
+      
+      // Handle token-related errors
+      if (error.message.includes('Token expired') || error.message.includes('Invalid token')) {
+        console.warn('[Socket] Token issue detected, clearing token');
+        // Token is invalid/expired - user needs to re-login
+        // Don't automatically clear token, just fall back to polling
+      }
+      
       // Start polling as fallback on connection error
       if (!this.pollingInterval) {
         this.startPolling();

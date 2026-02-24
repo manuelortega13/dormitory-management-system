@@ -10,9 +10,19 @@ const userSockets = new Map();
  * Initialize Socket.IO with the HTTP server
  */
 function initializeSocket(httpServer) {
+  // Validate JWT_SECRET is available
+  if (!process.env.JWT_SECRET) {
+    console.error('[Socket] WARNING: JWT_SECRET is not set!');
+  }
+
+  // Parse CORS origins (comma-separated in env)
+  const corsOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : true; // true allows all origins
+
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN || '*',
+      origin: corsOrigins,
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -23,16 +33,32 @@ function initializeSocket(httpServer) {
     const token = socket.handshake.auth.token;
     
     if (!token) {
+      console.log('[Socket Auth] No token provided');
       return next(new Error('Authentication required'));
     }
 
+    // Log token info for debugging (first/last 10 chars only for security)
+    const tokenPreview = token.length > 20 
+      ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}`
+      : 'too short';
+    console.log(`[Socket Auth] Attempting auth with token: ${tokenPreview} (length: ${token.length})`);
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log(`[Socket Auth] Success - User ${decoded.id} (${decoded.role})`);
       socket.userId = decoded.id;
       socket.userRole = decoded.role;
       next();
     } catch (error) {
-      return next(new Error('Invalid token'));
+      console.error('[Socket Auth] Token verification failed:', error.name, error.message);
+      
+      if (error.name === 'TokenExpiredError') {
+        return next(new Error('Token expired'));
+      }
+      if (error.name === 'JsonWebTokenError') {
+        return next(new Error('Invalid token: ' + error.message));
+      }
+      return next(new Error('Authentication failed'));
     }
   });
 
