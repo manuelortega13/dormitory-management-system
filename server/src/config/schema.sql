@@ -168,22 +168,5 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Create indexes for better query performance
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_status ON users(status);
-CREATE INDEX idx_users_parent ON users(parent_id);
-CREATE INDEX idx_rooms_status ON rooms(status);
-CREATE INDEX idx_room_assignments_status ON room_assignments(status);
-CREATE INDEX idx_leave_requests_status ON leave_requests(status);
-CREATE INDEX idx_leave_requests_user ON leave_requests(user_id);
-CREATE INDEX idx_leave_requests_qr ON leave_requests(qr_code);
-CREATE INDEX idx_leave_requests_admin_status ON leave_requests(admin_status);
-CREATE INDEX idx_leave_requests_parent_status ON leave_requests(parent_status);
-CREATE INDEX idx_check_logs_user ON check_logs(user_id);
-CREATE INDEX idx_check_logs_created ON check_logs(created_at);
-CREATE INDEX idx_check_logs_leave_request ON check_logs(leave_request_id);
-CREATE INDEX idx_visitors_status ON visitors(status);
-CREATE INDEX idx_incidents_status ON incidents(status);
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(is_read);
-CREATE INDEX idx_notifications_created ON notifications(created_at);
+-- Note: Indexes are created separately in init-db.js with error handling
+-- to avoid duplicate key errors on re-initialization
