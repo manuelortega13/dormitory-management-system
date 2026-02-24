@@ -26,9 +26,11 @@ JWT_SECRET=your_secure_jwt_secret
 ```
 
 ### 3. Create Database
-Run the SQL schema in MySQL:
+The database schema is managed via migrations and runs automatically on server start.
+
+For manual setup, run migrations:
 ```bash
-mysql -u root -p < src/config/schema.sql
+npm run migrate
 ```
 
 ### 4. Start Server

@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     capacity INT NOT NULL DEFAULT 2,
     room_type ENUM('single', 'double', 'triple', 'quad') DEFAULT 'double',
     status ENUM('available', 'occupied', 'maintenance', 'reserved') DEFAULT 'available',
+    price_per_month DECIMAL(10,2) DEFAULT NULL,
     amenities JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS room_assignments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     room_id INT NOT NULL,
-    assigned_date DATE NOT NULL,
+    start_date DATE NOT NULL,
     end_date DATE,
     status ENUM('active', 'ended', 'transferred') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -88,24 +89,27 @@ CREATE TABLE IF NOT EXISTS check_logs (
     method ENUM('manual', 'qr_scan') DEFAULT 'manual',
     recorded_by INT,
     notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (leave_request_id) REFERENCES leave_requests(id) ON DELETE SET NULL,
     FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Visitors
+-- Visitors (external people visiting residents)
 CREATE TABLE IF NOT EXISTS visitors (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    resident_id INT NOT NULL,
-    visitor_name VARCHAR(200) NOT NULL,
+    visiting_user_id INT NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    id_type VARCHAR(50),
+    id_number VARCHAR(100),
     relationship VARCHAR(100),
     phone VARCHAR(20),
     purpose TEXT,
     check_in_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     check_out_time TIMESTAMP NULL,
     recorded_by INT,
-    status ENUM('checked_in', 'checked_out') DEFAULT 'checked_in',
-    FOREIGN KEY (resident_id) REFERENCES users(id) ON DELETE CASCADE,
+    status ENUM('inside', 'left') DEFAULT 'inside',
+    FOREIGN KEY (visiting_user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -114,7 +118,7 @@ CREATE TABLE IF NOT EXISTS incidents (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    incident_type ENUM('safety', 'maintenance', 'behavioral', 'medical', 'other') NOT NULL,
+    incident_type ENUM('safety', 'maintenance', 'behavioral', 'medical', 'other') DEFAULT 'other',
     severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
     status ENUM('reported', 'investigating', 'resolved', 'closed') DEFAULT 'reported',
     location VARCHAR(255),
@@ -129,11 +133,11 @@ CREATE TABLE IF NOT EXISTS incidents (
     FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Notifications (initial version)
+-- Notifications
 CREATE TABLE IF NOT EXISTS notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    type ENUM('leave_request_new', 'leave_request_approved', 'leave_request_declined', 'parent_approval_needed', 'child_left_campus', 'child_returned_campus') NOT NULL,
+    type ENUM('leave_request_new', 'leave_request_admin_approved', 'leave_request_approved', 'leave_request_declined', 'leave_request_cancelled', 'parent_approval_needed', 'child_left_campus', 'child_returned_campus') NOT NULL,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     reference_id INT,
@@ -142,3 +146,21 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Performance indexes
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_users_parent_id ON users(parent_id);
+CREATE INDEX idx_rooms_status ON rooms(status);
+CREATE INDEX idx_room_assignments_status ON room_assignments(status);
+CREATE INDEX idx_room_assignments_user_id ON room_assignments(user_id);
+CREATE INDEX idx_leave_requests_status ON leave_requests(status);
+CREATE INDEX idx_leave_requests_user_id ON leave_requests(user_id);
+CREATE INDEX idx_leave_requests_qr_code ON leave_requests(qr_code);
+CREATE INDEX idx_check_logs_user_id ON check_logs(user_id);
+CREATE INDEX idx_check_logs_created_at ON check_logs(created_at);
+CREATE INDEX idx_visitors_status ON visitors(status);
+CREATE INDEX idx_visitors_visiting_user_id ON visitors(visiting_user_id);
+CREATE INDEX idx_incidents_status ON incidents(status);
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);

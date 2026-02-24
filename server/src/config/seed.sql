@@ -1,7 +1,7 @@
 -- Seed data for Dormitory Management System
--- Run this after schema.sql to create default users
+-- Run this after migrations to create default users
 
-USE railway;
+USE dormitory_db;
 
 -- Default admin user
 -- Username: admin

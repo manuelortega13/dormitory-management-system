@@ -53,11 +53,12 @@ JWT_EXPIRES_IN=24h
 
 ### 3. Setup Database
 
-Create the database and run the schema:
+The database schema is managed via migrations and runs automatically on server start.
 
+For manual setup:
 ```bash
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS dormitory_db;"
-mysql -u root -p dormitory_db < server/src/config/schema.sql
+cd server
+npm run migrate
 ```
 
 ### 4. Run the Server

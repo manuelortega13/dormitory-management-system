@@ -42,7 +42,7 @@ exports.getOpen = async (req, res) => {
       `SELECT i.*, ru.first_name as reporter_first_name, ru.last_name as reporter_last_name
        FROM incidents i
        LEFT JOIN users ru ON i.reported_by = ru.id
-       WHERE i.status IN ('open', 'investigating')
+       WHERE i.status IN ('reported', 'investigating')
        ORDER BY 
          CASE i.severity 
            WHEN 'critical' THEN 1 

@@ -7,6 +7,7 @@ const initDatabase = async () => {
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     multipleStatements: true
   });
 
@@ -25,22 +26,19 @@ const initDatabase = async () => {
       }
     }
 
-    // Legacy: Run schema.sql if migrations haven't been set up yet
+    // Legacy: Run initial migration schema if migrations haven't been set up yet
     console.log('⚠️  No migrations found - running legacy schema initialization');
     
     const fs = require('fs');
     const path = require('path');
     
-    const schemaPath = path.join(__dirname, '..', 'config', 'schema-prod.sql');
+    const schemaPath = path.join(__dirname, '..', 'migrations', '001_initial_schema.sql');
     let schema = fs.readFileSync(schemaPath, 'utf8');
     
     // Remove CREATE DATABASE and USE statements since we already connect to the correct DB
     schema = schema.replace(/CREATE DATABASE.*;/gi, '');
     schema = schema.replace(/USE .*;/gi, '');
-    
-    // Switch to the correct database
-    await connection.query(`USE \`${process.env.DB_NAME}\``);
-    
+
     await connection.query(schema);
     console.log('✅ Database schema initialized successfully');
     
