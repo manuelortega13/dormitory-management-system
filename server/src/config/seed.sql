@@ -57,11 +57,11 @@ VALUES (
 ) ON DUPLICATE KEY UPDATE id=id;
 
 -- Sample rooms
-INSERT INTO rooms (room_number, floor, capacity, status, room_type, price_per_month, amenities)
+INSERT INTO rooms (room_number, floor, capacity, status, room_type, amenities)
 VALUES 
-    ('101', 1, 1, 'available', 'single', 650.00, '["AC", "WiFi"]'),
-    ('102', 1, 2, 'available', 'double', 850.00, '["AC", "WiFi", "Attached Bath"]'),
-    ('103', 1, 2, 'available', 'double', 850.00, '["AC", "WiFi", "Attached Bath"]'),
-    ('201', 2, 2, 'available', 'suite', 1200.00, '["AC", "WiFi", "Attached Bath", "Balcony", "Mini Fridge"]'),
-    ('202', 2, 3, 'available', 'triple', 1050.00, '["AC", "WiFi", "Attached Bath"]')
+    ('101', 1, 1, 'available', 'single', '["AC", "WiFi"]'),
+    ('102', 1, 2, 'available', 'double', '["AC", "WiFi", "Attached Bath"]'),
+    ('103', 1, 2, 'available', 'double', '["AC", "WiFi", "Attached Bath"]'),
+    ('201', 2, 2, 'available', 'quad', '["AC", "WiFi", "Attached Bath", "Balcony", "Mini Fridge"]'),
+    ('202', 2, 3, 'available', 'triple', '["AC", "WiFi", "Attached Bath"]')
 ON DUPLICATE KEY UPDATE id=id;
