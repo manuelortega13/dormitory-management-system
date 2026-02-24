@@ -1,4 +1,6 @@
 -- Dormitory Management System Database Schema
+-- NOTE: This file is kept for reference. Use migrations for actual schema changes.
+-- The canonical schema is defined by the migration files in src/migrations/
 
 CREATE DATABASE IF NOT EXISTS dormitory_db;
 USE dormitory_db;
@@ -10,12 +12,11 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    role ENUM('admin', 'security_guard', 'resident', 'parent', 'dean') NOT NULL DEFAULT 'resident',
     phone VARCHAR(20),
-    photo_url VARCHAR(255),
+    role ENUM('resident', 'parent', 'admin', 'security_guard', 'dean') NOT NULL DEFAULT 'resident',
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
-    -- Parent/Guardian info for residents
     parent_id INT,
+    photo_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
@@ -24,12 +25,11 @@ CREATE TABLE IF NOT EXISTS users (
 -- Rooms table
 CREATE TABLE IF NOT EXISTS rooms (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    room_number VARCHAR(10) UNIQUE NOT NULL,
+    room_number VARCHAR(20) UNIQUE NOT NULL,
     floor INT NOT NULL,
-    capacity INT NOT NULL DEFAULT 1,
+    capacity INT NOT NULL DEFAULT 2,
+    room_type ENUM('single', 'double', 'triple', 'quad') DEFAULT 'double',
     status ENUM('available', 'occupied', 'maintenance', 'reserved') DEFAULT 'available',
-    room_type ENUM('single', 'double', 'triple', 'suite') DEFAULT 'single',
-    price_per_month DECIMAL(10, 2),
     amenities JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -40,9 +40,9 @@ CREATE TABLE IF NOT EXISTS room_assignments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     room_id INT NOT NULL,
-    start_date DATE NOT NULL,
+    assigned_date DATE NOT NULL,
     end_date DATE,
-    status ENUM('active', 'ended', 'pending') DEFAULT 'active',
+    status ENUM('active', 'ended', 'transferred') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
@@ -52,78 +52,63 @@ CREATE TABLE IF NOT EXISTS room_assignments (
 CREATE TABLE IF NOT EXISTS leave_requests (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    leave_type ENUM('errand', 'overnight', 'weekend', 'holiday', 'emergency', 'other') NOT NULL,
+    leave_type ENUM('errand', 'overnight', 'weekend', 'emergency', 'other') NOT NULL,
     start_date DATETIME NOT NULL,
     end_date DATETIME NOT NULL,
     reason TEXT NOT NULL,
-    destination VARCHAR(255) NOT NULL,
-    
-    -- Emergency contact for the trip
+    destination VARCHAR(255),
     emergency_contact VARCHAR(100),
     emergency_phone VARCHAR(20),
-    
-    -- Admin/Dean approval
+    status ENUM('pending_admin', 'pending_parent', 'approved', 'declined', 'cancelled', 'active', 'completed', 'expired') DEFAULT 'pending_admin',
     admin_status ENUM('pending', 'approved', 'declined') DEFAULT 'pending',
     admin_reviewed_by INT,
-    admin_reviewed_at TIMESTAMP,
+    admin_reviewed_at TIMESTAMP NULL,
     admin_notes TEXT,
-    
-    -- Parent/Guardian approval
     parent_status ENUM('pending', 'approved', 'declined', 'not_required') DEFAULT 'pending',
-    parent_reviewed_at TIMESTAMP,
+    parent_reviewed_at TIMESTAMP NULL,
     parent_notes TEXT,
-    
-    -- QR Code for verification (generated after both approvals)
-    qr_code VARCHAR(64) UNIQUE,
-    qr_generated_at TIMESTAMP,
-    
-    -- Exit/Return tracking
-    exit_time TIMESTAMP,
+    qr_code VARCHAR(255) UNIQUE,
+    qr_generated_at TIMESTAMP NULL,
+    exit_time TIMESTAMP NULL,
     exit_recorded_by INT,
-    return_time TIMESTAMP,
+    return_time TIMESTAMP NULL,
     return_recorded_by INT,
-    
-    -- Overall status
-    status ENUM('pending_admin', 'pending_parent', 'approved', 'active', 'completed', 'declined', 'cancelled', 'expired') DEFAULT 'pending_admin',
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (exit_recorded_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (return_recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Check-in/Check-out logs (linked to leave requests)
+-- Check-in/Check-out logs
 CREATE TABLE IF NOT EXISTS check_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     leave_request_id INT,
     type ENUM('check-in', 'check-out') NOT NULL,
-    method ENUM('qr_scan', 'manual', 'card') DEFAULT 'qr_scan',
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    method ENUM('manual', 'qr_scan') DEFAULT 'manual',
     recorded_by INT,
     notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (leave_request_id) REFERENCES leave_requests(id) ON DELETE SET NULL,
     FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Visitor logs
+-- Visitors
 CREATE TABLE IF NOT EXISTS visitors (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    resident_id INT NOT NULL,
+    visitor_name VARCHAR(200) NOT NULL,
+    relationship VARCHAR(100),
     phone VARCHAR(20),
-    id_type ENUM('national_id', 'passport', 'drivers_license', 'other') NOT NULL,
-    id_number VARCHAR(50) NOT NULL,
-    visiting_user_id INT NOT NULL,
-    purpose VARCHAR(255),
+    purpose TEXT,
     check_in_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    check_out_time TIMESTAMP,
+    check_out_time TIMESTAMP NULL,
     recorded_by INT,
-    status ENUM('inside', 'left') DEFAULT 'inside',
-    FOREIGN KEY (visiting_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    status ENUM('checked_in', 'checked_out') DEFAULT 'checked_in',
+    FOREIGN KEY (resident_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -131,13 +116,15 @@ CREATE TABLE IF NOT EXISTS visitors (
 CREATE TABLE IF NOT EXISTS incidents (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
-    description TEXT,
-    severity ENUM('low', 'medium', 'high', 'critical') NOT NULL DEFAULT 'low',
+    description TEXT NOT NULL,
+    incident_type ENUM('safety', 'maintenance', 'behavioral', 'medical', 'other') NOT NULL,
+    severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+    status ENUM('reported', 'investigating', 'resolved', 'closed') DEFAULT 'reported',
     location VARCHAR(255),
     reported_by INT,
-    status ENUM('open', 'investigating', 'resolved', 'closed') DEFAULT 'open',
+    involved_users JSON,
     resolved_by INT,
-    resolved_at TIMESTAMP,
+    resolved_at TIMESTAMP NULL,
     resolution_notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -159,5 +146,4 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Note: Indexes are created separately in init-db.js with error handling
--- to avoid duplicate key errors on re-initialization
+-- Note: Indexes are created by migration 003_add_indexes.sql
