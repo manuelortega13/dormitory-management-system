@@ -31,7 +31,7 @@ const initDatabase = async () => {
     const fs = require('fs');
     const path = require('path');
     
-    const schemaPath = path.join(__dirname, '..', 'config', 'schema.sql');
+    const schemaPath = path.join(__dirname, '..', 'config', 'schema-prod.sql');
     let schema = fs.readFileSync(schemaPath, 'utf8');
     
     // Remove CREATE DATABASE and USE statements since we already connect to the correct DB
