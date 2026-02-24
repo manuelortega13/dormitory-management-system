@@ -22,6 +22,7 @@ export class NotificationService implements OnDestroy {
   loading = signal<boolean>(false);
   connected = signal<boolean>(false);
   browserNotificationPermission = signal<NotificationPermission>('default');
+  soundEnabled = signal<boolean>(true);
   
   // Signal to notify components when new leave request arrives (for admin)
   // Increments each time a new leave_request_new notification is detected
@@ -47,6 +48,54 @@ export class NotificationService implements OnDestroy {
     if (this.isBrowser && 'Notification' in window) {
       this.browserNotificationPermission.set(Notification.permission);
     }
+  }
+  
+  /**
+   * Play notification sound using Web Audio API
+   */
+  private playNotificationSound(): void {
+    if (!this.isBrowser || !this.soundEnabled()) return;
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Create a pleasant notification sound
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Two-tone notification sound
+      oscillator.frequency.setValueAtTime(830, audioContext.currentTime); // First tone
+      oscillator.frequency.setValueAtTime(1050, audioContext.currentTime + 0.1); // Second tone (higher)
+      
+      oscillator.type = 'sine';
+      
+      // Fade in and out for a pleasant sound
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
+      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.12);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.25);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.25);
+      
+      // Clean up
+      oscillator.onended = () => {
+        audioContext.close();
+      };
+    } catch (error) {
+      console.warn('Error playing notification sound:', error);
+    }
+  }
+  
+  /**
+   * Toggle notification sound on/off
+   */
+  toggleSound(): void {
+    this.soundEnabled.update(v => !v);
   }
 
   ngOnDestroy(): void {
@@ -206,6 +255,9 @@ export class NotificationService implements OnDestroy {
     
     // Track notification ID
     this.lastNotificationIds.add(notification.id);
+    
+    // Play notification sound
+    this.playNotificationSound();
     
     // Show in-app toast notification
     this.showToastNotification(notification);
