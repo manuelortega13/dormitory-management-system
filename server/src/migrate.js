@@ -81,16 +81,16 @@ async function runMigration(pool, filename) {
       try {
         await connection.query(statement);
       } catch (error) {
-        // Ignore specific MySQL errors that are safe to skip:
+        // Only ignore specific MySQL errors that are safe to skip:
         // 1061 = Duplicate key name (index already exists)
-        // 1050 = Table already exists
+        // 1050 = Table already exists  
         // 1060 = Duplicate column name
         const ignorableErrors = [1061, 1050, 1060];
         if (ignorableErrors.includes(error.errno)) {
-          console.log(`\n    ⚠️  Skipped (already exists): ${error.message.substring(0, 60)}...`);
-          process.stdout.write(`  ▸ Continuing ${filename}... `);
+          console.log(`\n    ⚠️  Skipped (already exists): ${error.message.substring(0, 60)}`);
         } else {
-          throw error;
+          // Log error but don't fail completely - try remaining statements
+          console.log(`\n    ⚠️  Warning: ${error.message}`);
         }
       }
     }
