@@ -59,8 +59,8 @@ export class NotificationService implements OnDestroy {
     // Disconnect existing socket if any
     this.disconnectSocket();
 
-    // Connect to server with auth token
-    const serverUrl = environment.apiUrl.replace('/api', '');
+    // Connect directly to socket server (bypasses Vite proxy in dev)
+    const serverUrl = environment.socketUrl || environment.apiUrl.replace('/api', '');
     this.socket = io(serverUrl, {
       auth: { token },
       transports: ['websocket', 'polling']
@@ -115,7 +115,7 @@ export class NotificationService implements OnDestroy {
     this.lastNotificationIds.add(notification.id);
     
     // Trigger appropriate component updates based on notification type
-    if (notification.type === 'leave_request_new') {
+    if (notification.type === 'leave_request_new' || notification.type === 'leave_request_cancelled') {
       this.newLeaveRequestTrigger.update(v => v + 1);
     }
     if (notification.type === 'leave_request_approved' || 
@@ -159,8 +159,8 @@ export class NotificationService implements OnDestroy {
       
       for (const notif of newNotifications) {
         if (!isInitialLoad && !this.lastNotificationIds.has(notif.id)) {
-          // New leave request notification (for admin)
-          if (notif.type === 'leave_request_new') {
+          // New leave request or cancelled notification (for admin)
+          if (notif.type === 'leave_request_new' || notif.type === 'leave_request_cancelled') {
             hasNewLeaveRequest = true;
           }
           // Request status update notification (for resident)
@@ -284,8 +284,10 @@ export class NotificationService implements OnDestroy {
         return 'bi-exclamation-circle';
       case 'leave_request_approved':
       case 'leave_request_admin_approved':
-      case 'leave_request_declined':
         return 'bi-check-circle';
+      case 'leave_request_declined':
+      case 'leave_request_cancelled':
+        return 'bi-x-circle';
       case 'child_left_campus':
       case 'child_returned_campus':
         return 'bi-door-open';

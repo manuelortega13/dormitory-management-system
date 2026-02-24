@@ -253,3 +253,25 @@ exports.notifyParentChildMovement = async (parentId, childName, action, leaveReq
     console.error('Notify parent child movement error:', error);
   }
 };
+
+// Notify admins when a resident cancels their leave request
+exports.notifyAdminsRequestCancelled = async (residentName, leaveRequestId) => {
+  try {
+    const [admins] = await pool.execute(
+      "SELECT id FROM users WHERE role IN ('admin', 'dean') AND status = 'active'"
+    );
+
+    for (const admin of admins) {
+      await exports.createNotification(
+        admin.id,
+        'leave_request_cancelled',
+        'Request Cancelled',
+        `${residentName} has cancelled their leave request`,
+        leaveRequestId,
+        'leave_request'
+      );
+    }
+  } catch (error) {
+    console.error('Notify admins request cancelled error:', error);
+  }
+};

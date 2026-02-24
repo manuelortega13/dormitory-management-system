@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://node-server-production-e00e.up.railway.app/api'
+  apiUrl: 'https://node-server-production-e00e.up.railway.app/api',
+  socketUrl: 'https://node-server-production-e00e.up.railway.app'
 };

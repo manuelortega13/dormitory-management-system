@@ -663,9 +663,12 @@ exports.cancel = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check ownership
+    // Check ownership and get user info
     const [existing] = await pool.execute(
-      'SELECT * FROM leave_requests WHERE id = ?',
+      `SELECT lr.*, u.first_name, u.last_name 
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       WHERE lr.id = ?`,
       [id]
     );
 
@@ -688,6 +691,10 @@ exports.cancel = async (req, res) => {
       'UPDATE leave_requests SET status = "cancelled" WHERE id = ?',
       [id]
     );
+
+    // Notify admins about the cancellation
+    const residentName = `${request.first_name} ${request.last_name}`;
+    await notificationController.notifyAdminsRequestCancelled(residentName, id);
 
     res.json({ message: 'Leave request cancelled' });
   } catch (error) {

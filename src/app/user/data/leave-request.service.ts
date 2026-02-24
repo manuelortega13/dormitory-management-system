@@ -42,7 +42,7 @@ export class LeaveRequestService {
   // Cancel a leave request
   async cancel(id: number): Promise<void> {
     await firstValueFrom(
-      this.http.delete(`${this.apiUrl}/${id}`)
+      this.http.post(`${this.apiUrl}/${id}/cancel`, {})
     );
   }
 
