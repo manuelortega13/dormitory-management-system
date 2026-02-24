@@ -32,7 +32,7 @@ export class MyRequestsComponent implements OnInit {
       if (trigger > 0) {
         this.loadRequests();
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {

@@ -21,13 +21,14 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   isOpen = signal(false);
 
   ngOnInit(): void {
-    // Initialize push notifications and start polling
-    this.notificationService.initPushNotifications();
-    this.notificationService.startPolling();
+    // Initialize Socket.IO for real-time notifications
+    // Polling will start automatically as fallback if socket disconnects
+    this.notificationService.initSocket();
   }
 
   ngOnDestroy(): void {
     this.notificationService.stopPolling();
+    this.notificationService.disconnectSocket();
   }
 
   @HostListener('document:click', ['$event'])

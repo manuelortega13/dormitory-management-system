@@ -2,6 +2,7 @@ import { Injectable, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/cor
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
+import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 import { AppNotification, NotificationResponse, UnreadCountResponse } from '../models/notification.model';
 
@@ -12,12 +13,12 @@ export class NotificationService implements OnDestroy {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.apiUrl}/notifications`;
-  private pushApiUrl = `${environment.apiUrl}/push`;
+  private socket: Socket | null = null;
 
   notifications = signal<AppNotification[]>([]);
   unreadCount = signal<number>(0);
   loading = signal<boolean>(false);
-  pushEnabled = signal<boolean>(false);
+  connected = signal<boolean>(false);
   
   // Signal to notify components when new leave request arrives (for admin)
   // Increments each time a new leave_request_new notification is detected
@@ -32,7 +33,6 @@ export class NotificationService implements OnDestroy {
   parentApprovalNeededTrigger = signal<number>(0);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
-  private registration: ServiceWorkerRegistration | null = null;
   private lastNotificationIds = new Set<number>();
 
   private get isBrowser(): boolean {
@@ -41,103 +41,102 @@ export class NotificationService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.stopPolling();
+    this.disconnectSocket();
   }
 
-  async initPushNotifications(): Promise<void> {
+  /**
+   * Initialize Socket.IO connection for real-time notifications
+   */
+  initSocket(): void {
     if (!this.isBrowser) return;
-
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('Push notifications not supported');
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('[Socket] No auth token available');
       return;
     }
 
-    try {
-      console.log('[PUSH] Requesting notification permission...');
-      const permission = await Notification.requestPermission();
-      console.log('[PUSH] Notification permission:', permission);
-      
-      if (permission !== 'granted') {
-        console.warn('Push notification permission denied');
-        return;
+    // Disconnect existing socket if any
+    this.disconnectSocket();
+
+    // Connect to server with auth token
+    const serverUrl = environment.apiUrl.replace('/api', '');
+    this.socket = io(serverUrl, {
+      auth: { token },
+      transports: ['websocket', 'polling']
+    });
+
+    this.socket.on('connect', () => {
+      console.log('🔌 Socket connected');
+      this.connected.set(true);
+      // Stop polling when socket is connected
+      this.stopPolling();
+      // Fetch initial data
+      this.fetchUnreadCount();
+      this.fetchNotifications();
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('🔌 Socket disconnected');
+      this.connected.set(false);
+      // Start polling as fallback when socket disconnects
+      this.startPolling();
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error.message);
+      this.connected.set(false);
+      // Start polling as fallback on connection error
+      if (!this.pollingInterval) {
+        this.startPolling();
       }
+    });
 
-      console.log('[PUSH] Registering service worker...');
-      this.registration = await navigator.serviceWorker.register('/push-sw.js', {
-        scope: '/'
-      });
-      console.log('[PUSH] Service Worker registered:', this.registration);
+    // Listen for real-time notifications
+    this.socket.on('notification', (notification: AppNotification) => {
+      console.log('📬 Real-time notification received:', notification);
+      this.handleNewNotification(notification);
+    });
+  }
 
-      // Wait for the service worker to be ready/active
-      if (this.registration.installing) {
-        console.log('[PUSH] Waiting for service worker to install...');
-        await new Promise<void>((resolve) => {
-          this.registration!.installing!.addEventListener('statechange', (e) => {
-            if ((e.target as ServiceWorker).state === 'activated') {
-              resolve();
-            }
-          });
-        });
-      } else if (this.registration.waiting) {
-        console.log('[PUSH] Service worker waiting, skipping to active...');
-        // Skip waiting and activate
-        this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        await navigator.serviceWorker.ready;
-      }
-
-      // Ensure service worker is ready
-      await navigator.serviceWorker.ready;
-      console.log('[PUSH] Service Worker is ready and active');
-
-      console.log('[PUSH] Getting VAPID public key...');
-      const response = await firstValueFrom(
-        this.http.get<{ publicKey: string }>(`${this.pushApiUrl}/vapid-public-key`)
-      );
-      console.log('[PUSH] VAPID public key received');
-
-      const vapidKey = this.urlBase64ToUint8Array(response.publicKey);
-      console.log('[PUSH] Subscribing to push manager...');
-      
-      // Get existing subscription or create new one
-      let subscription = await this.registration.pushManager.getSubscription();
-      
-      if (!subscription) {
-        subscription = await this.registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: vapidKey.buffer as ArrayBuffer
-        });
-        console.log('[PUSH] New subscription created');
-      } else {
-        console.log('[PUSH] Using existing subscription');
-      }
-      
-      console.log('[PUSH] Subscription:', JSON.stringify(subscription).substring(0, 100));
-
-      console.log('[PUSH] Saving subscription to server...');
-      const subscribeResponse = await firstValueFrom(
-        this.http.post(`${this.pushApiUrl}/subscribe`, { subscription })
-      );
-      console.log('[PUSH] Subscription saved:', subscribeResponse);
-
-      this.pushEnabled.set(true);
-      console.log('✅ Push notifications enabled successfully!');
-    } catch (error) {
-      console.error('❌ Failed to initialize push notifications:', error);
+  /**
+   * Handle incoming real-time notification
+   */
+  private handleNewNotification(notification: AppNotification): void {
+    // Add to notifications list
+    this.notifications.update(notifs => [notification, ...notifs]);
+    
+    // Update unread count
+    if (!notification.is_read) {
+      this.unreadCount.update(count => count + 1);
+    }
+    
+    // Track notification ID
+    this.lastNotificationIds.add(notification.id);
+    
+    // Trigger appropriate component updates based on notification type
+    if (notification.type === 'leave_request_new') {
+      this.newLeaveRequestTrigger.update(v => v + 1);
+    }
+    if (notification.type === 'leave_request_approved' || 
+        notification.type === 'leave_request_declined' ||
+        notification.type === 'leave_request_admin_approved') {
+      this.requestStatusUpdateTrigger.update(v => v + 1);
+    }
+    if (notification.type === 'parent_approval_needed') {
+      this.parentApprovalNeededTrigger.update(v => v + 1);
     }
   }
 
-  private urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+  /**
+   * Disconnect Socket.IO connection
+   */
+  disconnectSocket(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      this.connected.set(false);
     }
-    return outputArray;
   }
 
   async fetchNotifications(): Promise<void> {
@@ -165,7 +164,9 @@ export class NotificationService implements OnDestroy {
             hasNewLeaveRequest = true;
           }
           // Request status update notification (for resident)
-          if (notif.type === 'leave_request_approved' || notif.type === 'leave_request_declined') {
+          if (notif.type === 'leave_request_approved' || 
+              notif.type === 'leave_request_declined' ||
+              notif.type === 'leave_request_admin_approved') {
             hasStatusUpdate = true;
           }
           // Parent approval needed notification (for parent)
@@ -282,6 +283,7 @@ export class NotificationService implements OnDestroy {
       case 'parent_approval_needed':
         return 'bi-exclamation-circle';
       case 'leave_request_approved':
+      case 'leave_request_admin_approved':
       case 'leave_request_declined':
         return 'bi-check-circle';
       case 'child_left_campus':

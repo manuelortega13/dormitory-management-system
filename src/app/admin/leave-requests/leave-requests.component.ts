@@ -38,7 +38,7 @@ export class LeaveRequestsComponent implements OnInit {
       if (trigger > 0) {
         this.loadRequests();
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {

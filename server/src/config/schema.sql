@@ -149,21 +149,12 @@ CREATE TABLE IF NOT EXISTS incidents (
 CREATE TABLE IF NOT EXISTS notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    type ENUM('leave_request_new', 'leave_request_approved', 'leave_request_declined', 'parent_approval_needed', 'child_left_campus', 'child_returned_campus') NOT NULL,
+    type ENUM('leave_request_new', 'leave_request_admin_approved', 'leave_request_approved', 'leave_request_declined', 'parent_approval_needed', 'child_left_campus', 'child_returned_campus') NOT NULL,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     reference_id INT,
     reference_type VARCHAR(50),
     is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Push subscriptions for web push notifications
-CREATE TABLE IF NOT EXISTS push_subscriptions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL UNIQUE,
-    subscription JSON NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

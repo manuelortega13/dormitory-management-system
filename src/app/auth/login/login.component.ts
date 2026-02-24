@@ -45,9 +45,9 @@ export class LoginComponent {
     try {
       const response = await this.authService.login(email, password);
       
-      // Initialize push notifications and start polling
-      this.notificationService.initPushNotifications();
-      this.notificationService.startPolling();
+      // Initialize Socket.IO for real-time notifications
+      // Polling will start automatically as fallback if socket disconnects
+      this.notificationService.initSocket();
       
       const redirectUrl = this.authService.getRedirectUrl(response.user.role);
       this.router.navigate([redirectUrl]);

@@ -1,5 +1,5 @@
 const { pool } = require('../config/database');
-const pushService = require('../services/push.service');
+const { sendNotificationToUser } = require('../services/socket.service');
 
 // Get all notifications for the current user
 exports.getAll = async (req, res) => {
@@ -111,12 +111,7 @@ exports.createNotification = async (userId, type, title, message, referenceId = 
       [userId, type, title, message, referenceId, referenceType]
     );
 
-    // Send push notification (fire and forget, but log errors)
-    pushService.sendNotification(userId, title, message).catch(err => {
-      console.error('[PUSH] Error sending push notification:', err.message);
-    });
-
-    return {
+    const notification = {
       id: result.insertId,
       user_id: userId,
       type,
@@ -127,6 +122,11 @@ exports.createNotification = async (userId, type, title, message, referenceId = 
       is_read: false,
       created_at: new Date().toISOString()
     };
+
+    // Send real-time notification via Socket.IO
+    sendNotificationToUser(userId, notification);
+
+    return notification;
   } catch (error) {
     console.error('Create notification error:', error);
     // Don't throw - notifications are non-critical
@@ -169,6 +169,42 @@ exports.notifyParentApprovalNeeded = async (parentId, childName, leaveRequestId)
     );
   } catch (error) {
     console.error('Notify parent error:', error);
+  }
+};
+
+// Notify resident that admin approved but awaiting parent approval
+exports.notifyResidentAdminApproved = async (residentId, leaveRequestId) => {
+  try {
+    await exports.createNotification(
+      residentId,
+      'leave_request_admin_approved',
+      'Admin Approved',
+      'Your leave request has been approved by admin. Awaiting parent approval.',
+      leaveRequestId,
+      'leave_request'
+    );
+  } catch (error) {
+    console.error('Notify resident admin approved error:', error);
+  }
+};
+
+// Notify resident that request is fully approved with QR code generated
+exports.notifyResidentFullyApproved = async (residentId, approverRole, leaveRequestId) => {
+  try {
+    const message = approverRole === 'parent' 
+      ? 'Your leave request has been approved by your parent. QR code is now available!'
+      : 'Your leave request has been fully approved. QR code is now available!';
+
+    await exports.createNotification(
+      residentId,
+      'leave_request_approved',
+      'Request Approved - QR Ready',
+      message,
+      leaveRequestId,
+      'leave_request'
+    );
+  } catch (error) {
+    console.error('Notify resident fully approved error:', error);
   }
 };
 

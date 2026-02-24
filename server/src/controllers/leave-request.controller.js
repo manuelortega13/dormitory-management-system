@@ -299,14 +299,17 @@ exports.adminApprove = async (req, res) => {
       // Notify parent about approval needed
       const childName = `${request.first_name} ${request.last_name}`;
       await notificationController.notifyParentApprovalNeeded(request.parent_id, childName, id);
+      
+      // Notify resident that admin approved (awaiting parent)
+      await notificationController.notifyResidentAdminApproved(request.user_id, id);
     } else {
       // No parent or parent already approved - generate QR
       newStatus = 'approved';
       qrCode = generateQRCode();
       qrGeneratedAt = new Date();
       
-      // Notify resident about full approval
-      await notificationController.notifyResidentRequestStatus(request.user_id, 'approved', 'admin', id);
+      // Notify resident about full approval with QR ready
+      await notificationController.notifyResidentFullyApproved(request.user_id, 'admin', id);
     }
 
     await pool.execute(
@@ -408,8 +411,8 @@ exports.parentApprove = async (req, res) => {
       [notes || null, qrCode, id]
     );
 
-    // Notify resident about parent approval
-    await notificationController.notifyResidentRequestStatus(request.user_id, 'approved', 'parent', id);
+    // Notify resident about parent approval with QR ready
+    await notificationController.notifyResidentFullyApproved(request.user_id, 'parent', id);
 
     res.json({ 
       message: 'Leave request approved by parent. QR code generated.',
