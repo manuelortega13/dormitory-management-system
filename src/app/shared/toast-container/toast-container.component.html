@@ -1,0 +1,24 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div 
+      class="toast-item toast-{{ toast.type }}"
+      (click)="onToastClick(toast)"
+      [class.clickable]="toast.onClick"
+    >
+      <div class="toast-icon">
+        <i class="bi" [ngClass]="toast.icon || 'bi-bell'"></i>
+      </div>
+      <div class="toast-content">
+        <div class="toast-title">{{ toast.title }}</div>
+        <div class="toast-message">{{ toast.message }}</div>
+      </div>
+      <button 
+        class="toast-close" 
+        (click)="dismiss(toast.id); $event.stopPropagation()"
+        aria-label="Dismiss"
+      >
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  }
+</div>

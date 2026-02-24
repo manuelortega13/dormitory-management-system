@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 import { AppNotification, NotificationResponse, UnreadCountResponse } from '../models/notification.model';
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,7 @@ import { AppNotification, NotificationResponse, UnreadCountResponse } from '../m
 export class NotificationService implements OnDestroy {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
+  private toastService = inject(ToastService);
   private apiUrl = `${environment.apiUrl}/notifications`;
   private socket: Socket | null = null;
 
@@ -19,6 +21,7 @@ export class NotificationService implements OnDestroy {
   unreadCount = signal<number>(0);
   loading = signal<boolean>(false);
   connected = signal<boolean>(false);
+  browserNotificationPermission = signal<NotificationPermission>('default');
   
   // Signal to notify components when new leave request arrives (for admin)
   // Increments each time a new leave_request_new notification is detected
@@ -39,9 +42,86 @@ export class NotificationService implements OnDestroy {
     return isPlatformBrowser(this.platformId);
   }
 
+  constructor() {
+    // Check browser notification permission on init
+    if (this.isBrowser && 'Notification' in window) {
+      this.browserNotificationPermission.set(Notification.permission);
+    }
+  }
+
   ngOnDestroy(): void {
     this.stopPolling();
     this.disconnectSocket();
+  }
+
+  /**
+   * Request browser notification permission
+   */
+  async requestBrowserNotificationPermission(): Promise<NotificationPermission> {
+    if (!this.isBrowser || !('Notification' in window)) {
+      console.warn('Browser notifications not supported');
+      return 'denied';
+    }
+
+    if (Notification.permission === 'granted') {
+      this.browserNotificationPermission.set('granted');
+      return 'granted';
+    }
+
+    if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      this.browserNotificationPermission.set(permission);
+      return permission;
+    }
+
+    return Notification.permission;
+  }
+
+  /**
+   * Show browser notification (for PWA/background)
+   */
+  private showBrowserNotification(notification: AppNotification): void {
+    if (!this.isBrowser || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    // Don't show browser notification if page is visible/focused
+    if (document.visibilityState === 'visible' && document.hasFocus()) {
+      return;
+    }
+
+    const options: NotificationOptions = {
+      body: notification.message,
+      icon: '/icons/icon.svg',
+      badge: '/icons/icon.svg',
+      tag: `notification-${notification.id}`,
+      data: {
+        notificationId: notification.id,
+        referenceId: notification.reference_id,
+        referenceType: notification.reference_type
+      }
+    };
+
+    const browserNotif = new Notification(notification.title, options);
+
+    browserNotif.onclick = () => {
+      window.focus();
+      browserNotif.close();
+      // Navigate based on notification type if needed
+    };
+
+    // Auto-close after 10 seconds
+    setTimeout(() => browserNotif.close(), 10000);
+  }
+
+  /**
+   * Show in-app toast notification
+   */
+  private showToastNotification(notification: AppNotification): void {
+    this.toastService.notification(
+      notification.title,
+      notification.message,
+      notification.type
+    );
   }
 
   /**
@@ -113,6 +193,12 @@ export class NotificationService implements OnDestroy {
     
     // Track notification ID
     this.lastNotificationIds.add(notification.id);
+    
+    // Show in-app toast notification
+    this.showToastNotification(notification);
+    
+    // Show browser notification (for background/PWA)
+    this.showBrowserNotification(notification);
     
     // Trigger appropriate component updates based on notification type
     if (notification.type === 'leave_request_new' || notification.type === 'leave_request_cancelled') {
