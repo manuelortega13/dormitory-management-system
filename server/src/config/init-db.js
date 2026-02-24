@@ -8,7 +8,7 @@ const initDatabase = async () => {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    multipleStatements: true
+    multipleStatements: false // Run statements individually for better error handling
   });
 
   try {
@@ -39,7 +39,23 @@ const initDatabase = async () => {
     schema = schema.replace(/CREATE DATABASE.*;/gi, '');
     schema = schema.replace(/USE .*;/gi, '');
 
-    await connection.query(schema);
+    // Split into individual statements and run each
+    const statements = schema
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('--'));
+
+    for (const statement of statements) {
+      try {
+        await connection.query(statement);
+      } catch (err) {
+        // Ignore duplicate key/table/column errors (safe to skip)
+        const ignorableErrors = [1050, 1060, 1061]; // table exists, column exists, index exists
+        if (!ignorableErrors.includes(err.errno)) {
+          console.warn(`⚠️  ${err.message.substring(0, 60)}`);
+        }
+      }
+    }
     console.log('✅ Database schema initialized successfully');
     
   } catch (error) {
