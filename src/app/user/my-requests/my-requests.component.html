@@ -17,11 +17,11 @@
 
   <!-- Active QR Code Banner -->
   @if (activeQRCode() && activeRequest() && !isExpired(activeRequest()!)) {
-    <div class="active-qr-banner" (click)="showQRModal.set(true)">
+    <div class="active-qr-banner" (click)="viewQRCode(activeRequest()!)">
       <div class="banner-icon">🎫</div>
       <div class="banner-content">
         <h3>You have an active pass!</h3>
-        <p>Tap to view your QR code for: {{ getLeaveTypeLabel(activeRequest()!.leave_type) }}</p>
+        <p>Tap to view your Campus Leave Pass: {{ getLeaveTypeLabel(activeRequest()!.leave_type) }}</p>
       </div>
       <span class="banner-arrow">→</span>
     </div>

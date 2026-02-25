@@ -33,4 +33,7 @@ router.get('/agents/list', authMiddleware, roleMiddleware('admin'), userControll
 // POST /api/users/agents - Create agent (admin only)
 router.post('/agents', authMiddleware, roleMiddleware('admin'), userController.createAgent);
 
+// PUT /api/users/agents/:id - Update agent (admin only)
+router.put('/agents/:id', authMiddleware, roleMiddleware('admin'), userController.updateAgent);
+
 module.exports = router;

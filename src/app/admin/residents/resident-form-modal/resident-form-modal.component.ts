@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Resident, CreateResidentDto, UpdateResidentDto, Parent } from '../data';
+import { Resident, CreateResidentDto, UpdateResidentDto, Parent, Gender } from '../data';
 
 export interface ResidentFormData {
   email: string;
@@ -10,6 +10,10 @@ export interface ResidentFormData {
   lastName: string;
   phone: string;
   parentId: number | null;
+  gender: Gender | null;
+  address: string;
+  course: string;
+  yearLevel: number | null;
 }
 
 @Component({
@@ -34,7 +38,11 @@ export class ResidentFormModalComponent implements OnChanges {
     firstName: '',
     lastName: '',
     phone: '',
-    parentId: null
+    parentId: null,
+    gender: null,
+    address: '',
+    course: '',
+    yearLevel: null
   });
 
   localError = signal('');
@@ -47,7 +55,11 @@ export class ResidentFormModalComponent implements OnChanges {
         firstName: this.resident.first_name,
         lastName: this.resident.last_name,
         phone: this.resident.phone || '',
-        parentId: this.resident.parent_id
+        parentId: this.resident.parent_id,
+        gender: this.resident.gender,
+        address: this.resident.address || '',
+        course: this.resident.course || '',
+        yearLevel: this.resident.year_level
       });
     }
   }
@@ -61,6 +73,18 @@ export class ResidentFormModalComponent implements OnChanges {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
     this.formData.update(form => ({ ...form, parentId: value ? parseInt(value) : null }));
+  }
+
+  updateGender(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value as Gender | '';
+    this.formData.update(form => ({ ...form, gender: value || null }));
+  }
+
+  updateYearLevel(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
+    this.formData.update(form => ({ ...form, yearLevel: value ? parseInt(value) : null }));
   }
 
   getParentFullName(parent: Parent): string {
@@ -83,7 +107,11 @@ export class ResidentFormModalComponent implements OnChanges {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
-        parentId: form.parentId
+        parentId: form.parentId,
+        gender: form.gender,
+        address: form.address || undefined,
+        course: form.course || undefined,
+        yearLevel: form.yearLevel
       };
       
       this.save.emit(data);
@@ -98,7 +126,11 @@ export class ResidentFormModalComponent implements OnChanges {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
-        parentId: form.parentId
+        parentId: form.parentId,
+        gender: form.gender,
+        address: form.address || undefined,
+        course: form.course || undefined,
+        yearLevel: form.yearLevel
       };
 
       if (form.password) {

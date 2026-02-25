@@ -12,6 +12,9 @@
     <span class="mobile-logo">🏠 DormHub</span>
     <div class="header-right">
       <app-notification-dropdown />
+      <button class="mobile-logout-btn" (click)="logout()" title="Logout">
+        <span>🚪</span>
+      </button>
     </div>
   </header>
   
@@ -19,6 +22,10 @@
   <main class="admin-content">
     <div class="desktop-top-bar">
       <app-notification-dropdown />
+      <button class="logout-btn" (click)="logout()" title="Logout">
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text">Logout</span>
+      </button>
     </div>
     <router-outlet />
   </main>

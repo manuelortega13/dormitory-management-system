@@ -43,7 +43,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (!user) return '';
     switch (user.role) {
       case 'admin': return 'Administrator';
-      case 'dean': return 'Dean';
+      case 'home_dean': return 'Home Dean';
       case 'security_guard': return 'Security Guard';
       default: return user.role;
     }

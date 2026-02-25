@@ -78,6 +78,58 @@
         />
       </div>
 
+      <div class="form-row">
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select 
+            id="gender"
+            [value]="formData().gender ?? ''"
+            (change)="updateGender($event)"
+          >
+            <option value="">Select gender</option>
+            <option value="male" [selected]="formData().gender === 'male'">Male</option>
+            <option value="female" [selected]="formData().gender === 'female'">Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="yearLevel">Year Level</label>
+          <select 
+            id="yearLevel"
+            [value]="formData().yearLevel ?? ''"
+            (change)="updateYearLevel($event)"
+          >
+            <option value="">Select year</option>
+            <option value="1" [selected]="formData().yearLevel === 1">1st Year</option>
+            <option value="2" [selected]="formData().yearLevel === 2">2nd Year</option>
+            <option value="3" [selected]="formData().yearLevel === 3">3rd Year</option>
+            <option value="4" [selected]="formData().yearLevel === 4">4th Year</option>
+            <option value="5" [selected]="formData().yearLevel === 5">5th Year</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="course">Course/Program</label>
+        <input 
+          type="text" 
+          id="course"
+          [value]="formData().course"
+          (input)="updateField('course', $event)"
+          placeholder="e.g. BS Computer Science"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="address">Home Address</label>
+        <textarea 
+          id="address"
+          rows="2"
+          [value]="formData().address"
+          (input)="updateField('address', $event)"
+          placeholder="Enter home address"
+        ></textarea>
+      </div>
+
       <div class="form-group">
         <label for="parent">Parent/Guardian</label>
         <select 

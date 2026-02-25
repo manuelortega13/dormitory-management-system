@@ -29,6 +29,14 @@ export const routes: Routes = [
       {
         path: 'my-requests',
         loadComponent: () => import('./user/my-requests/my-requests.component').then(m => m.MyRequestsComponent)
+      },
+      {
+        path: 'leave-pass',
+        loadComponent: () => import('./user/leave-pass/leave-pass.component').then(m => m.LeavePassComponent)
+      },
+      {
+        path: 'leave-pass/:id',
+        loadComponent: () => import('./user/leave-pass/leave-pass.component').then(m => m.LeavePassComponent)
       }
     ]
   },

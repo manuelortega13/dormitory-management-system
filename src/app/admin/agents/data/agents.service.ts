@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Agent, AgentFilters, CreateAgentDto } from './agent.model';
+import { Agent, AgentFilters, CreateAgentDto, UpdateAgentDto } from './agent.model';
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
@@ -32,6 +32,13 @@ export class AgentsService {
   createAgent(data: CreateAgentDto): Observable<{ message: string; data: Agent }> {
     return this.http.post<{ message: string; data: Agent }>(
       `${this.apiUrl}/agents`,
+      data
+    );
+  }
+
+  updateAgent(id: number, data: UpdateAgentDto): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(
+      `${this.apiUrl}/agents/${id}`,
       data
     );
   }

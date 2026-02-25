@@ -61,7 +61,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     switch (notification.type) {
       case 'leave_request_new':
         // Admin receives this for new leave requests
-        if (user.role === 'admin' || user.role === 'dean') {
+        if (user.role === 'admin' || user.role === 'home_dean' || user.role === 'vpsas') {
           this.router.navigate(['/manage/leave-requests']);
         }
         break;

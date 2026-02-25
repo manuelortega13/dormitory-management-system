@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../../sidebar/sidebar.component';
 import { CommonModule } from '@angular/common';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -12,6 +13,7 @@ import { NotificationDropdownComponent } from '../../shared/notification-dropdow
   styleUrl: './admin-layout.component.scss'
 })
 export class AdminLayoutComponent {
+  private readonly authService = inject(AuthService);
   protected readonly isMobileSidebarOpen = signal(false);
 
   toggleMobileSidebar(): void {
@@ -30,5 +32,9 @@ export class AdminLayoutComponent {
         this.closeMobileSidebar();
       }
     }
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 }

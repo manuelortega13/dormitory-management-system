@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ResidentsService, Resident, ResidentStatus, CreateResidentDto, UpdateResidentDto, Parent } from './data';
 import { ResidentFormModalComponent } from './resident-form-modal/resident-form-modal.component';
+import { ResidentDetailModalComponent } from './resident-detail-modal/resident-detail-modal.component';
 import { SuspendModalComponent } from './suspend-modal/suspend-modal.component';
 import { AssignRoomModalComponent, AssignRoomData } from './assign-room-modal/assign-room-modal.component';
 import { RoomsService } from '../rooms/data/rooms.service';
@@ -10,7 +11,7 @@ import { RoomsService } from '../rooms/data/rooms.service';
 @Component({
   selector: 'app-residents',
   standalone: true,
-  imports: [CommonModule, FormsModule, ResidentFormModalComponent, SuspendModalComponent, AssignRoomModalComponent],
+  imports: [CommonModule, FormsModule, ResidentFormModalComponent, ResidentDetailModalComponent, SuspendModalComponent, AssignRoomModalComponent],
   templateUrl: './residents.component.html',
   styleUrl: './residents.component.scss'
 })
@@ -144,6 +145,17 @@ export class ResidentsComponent implements OnInit {
     ];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
+  }
+
+  getYearLevelLabel(level: number): string {
+    const labels: { [key: number]: string } = {
+      1: '1st Year',
+      2: '2nd Year',
+      3: '3rd Year',
+      4: '4th Year',
+      5: '5th Year'
+    };
+    return labels[level] || `${level}th Year`;
   }
 
   openAddModal(): void {

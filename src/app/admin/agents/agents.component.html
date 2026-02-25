@@ -23,9 +23,9 @@
       <span class="stat-value">{{ stats().securityGuards }}</span>
       <span class="stat-label">Security Guards</span>
     </div>
-    <div class="stat-item dean">
-      <span class="stat-value">{{ stats().deans }}</span>
-      <span class="stat-label">Deans</span>
+    <div class="stat-item home-dean">
+      <span class="stat-value">{{ stats().homeDeans }}</span>
+      <span class="stat-label">Home Deans</span>
     </div>
     <div class="stat-item active">
       <span class="stat-value">{{ stats().active }}</span>
@@ -54,7 +54,8 @@
         <option value="all">All Roles</option>
         <option value="admin">Admin</option>
         <option value="security_guard">Security Guard</option>
-        <option value="dean">Dean</option>
+        <option value="home_dean">Home Dean</option>
+        <option value="vpsas">VPSAS</option>
       </select>
 
       <select (change)="updateStatus($event)">
@@ -108,7 +109,7 @@
           </div>
           <div class="col-role" data-label="Role">
             <span class="role-badge" [class]="getRoleClass(agent.role)">
-              {{ getRoleLabel(agent.role) }}
+              {{ getRoleLabel(agent.role, agent.dean_type) }}
             </span>
           </div>
           <div class="col-status" data-label="Status">
@@ -120,6 +121,7 @@
             <span class="date">{{ agent.created_at | date:'mediumDate' }}</span>
           </div>
           <div class="col-actions" data-label="Actions">
+            <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
             @if (agent.status !== 'suspended') {
               <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">🚫</button>
             } @else {
@@ -205,9 +207,25 @@
           >
             <option value="security_guard">Security Guard</option>
             <option value="admin">Admin</option>
-            <option value="dean">Dean</option>
+            <option value="home_dean">Home Dean</option>
+            <option value="vpsas">VPSAS</option>
           </select>
         </div>
+
+        @if (newAgent().role === 'home_dean') {
+          <div class="form-group">
+            <label for="deanType">Dean Type <span class="required">*</span></label>
+            <select 
+              id="deanType"
+              [value]="newAgent().deanType || ''"
+              (change)="updateNewAgentField('deanType', $event)"
+            >
+              <option value="" disabled>Select dean type</option>
+              <option value="male">Dean for Males</option>
+              <option value="female">Dean for Females</option>
+            </select>
+          </div>
+        }
 
         <div class="form-group">
           <label for="phone">Phone</label>
@@ -235,6 +253,15 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Edit Agent Modal -->
+@if (showEditModal() && editingAgent()) {
+  <app-agent-edit-modal
+    [agent]="editingAgent()!"
+    (close)="closeEditModal()"
+    (save)="saveAgentEdit($event)"
+  />
 }
 
 <!-- Suspend Modal -->

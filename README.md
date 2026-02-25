@@ -173,7 +173,7 @@ For more information on using the Angular CLI, including detailed command refere
 ## Leave Request Workflow
 
 1. **Resident** creates a go-out request
-2. **Admin/Dean** reviews and approves/declines
+2. **Admin/Home Dean** reviews and approves/declines
 3. **Parent** receives notification and approves/declines
 4. **QR Code** is generated after both approvals
 5. **Resident** shows QR to security guard when leaving

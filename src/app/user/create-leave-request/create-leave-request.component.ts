@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -34,7 +34,7 @@ interface FieldErrors {
   templateUrl: './create-leave-request.component.html',
   styleUrl: './create-leave-request.component.scss'
 })
-export class CreateLeaveRequestComponent {
+export class CreateLeaveRequestComponent implements OnInit {
   private router = inject(Router);
   private leaveRequestService = inject(LeaveRequestService);
 
@@ -56,9 +56,9 @@ export class CreateLeaveRequestComponent {
   form: GoOutRequestForm = {
     leaveType: 'errand',
     startDate: this.getTodayDate(),
-    startTime: this.getCurrentTime(),
+    startTime: this.getTimePlusMins(5),
     endDate: this.getTodayDate(),
-    endTime: '18:00',
+    endTime: this.getTimePlusMins(60),
     destination: '',
     reason: '',
     emergencyContact: '',
@@ -73,6 +73,29 @@ export class CreateLeaveRequestComponent {
     { value: 'other', label: 'Other', description: 'Other reasons' }
   ];
 
+  ngOnInit(): void {
+    this.prefillEmergencyContact();
+  }
+
+  private async prefillEmergencyContact(): Promise<void> {
+    try {
+      const requests = await this.leaveRequestService.getMyRequests();
+      if (requests.length > 0) {
+        // Get the most recent request (already sorted by created_at DESC from backend)
+        const lastRequest = requests[0];
+        if (lastRequest.emergency_contact) {
+          this.form.emergencyContact = lastRequest.emergency_contact;
+        }
+        if (lastRequest.emergency_phone) {
+          this.form.emergencyPhone = lastRequest.emergency_phone;
+        }
+      }
+    } catch (error) {
+      // Silently fail - prefill is not critical
+      console.error('Failed to prefill emergency contact:', error);
+    }
+  }
+
   getTodayDate(): string {
     return new Date().toISOString().split('T')[0];
   }
@@ -82,8 +105,58 @@ export class CreateLeaveRequestComponent {
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   }
 
+  getTimePlusMins(minutes: number): string {
+    const time = new Date();
+    time.setMinutes(time.getMinutes() + minutes);
+    return `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+  }
+
   getMinEndDate(): string {
     return this.form.startDate || this.getTodayDate();
+  }
+
+  getMinEndTime(): string {
+    // If return date equals departure date, return time must be after departure time
+    if (this.form.endDate === this.form.startDate && this.form.startTime) {
+      // Add 1 minute to departure time as minimum
+      const [hours, minutes] = this.form.startTime.split(':').map(Number);
+      const minTime = new Date();
+      minTime.setHours(hours, minutes + 1, 0, 0);
+      return `${String(minTime.getHours()).padStart(2, '0')}:${String(minTime.getMinutes()).padStart(2, '0')}`;
+    }
+    return '';
+  }
+
+  onStartDateTimeChange(): void {
+    // Auto-adjust return date if it's before departure date
+    if (this.form.endDate < this.form.startDate) {
+      this.form.endDate = this.form.startDate;
+    }
+    
+    // Auto-adjust return time if same date and return time is not after departure time
+    if (this.form.endDate === this.form.startDate && this.form.startTime && this.form.endTime) {
+      if (this.form.endTime <= this.form.startTime) {
+        // Set return time to 1 hour after departure time
+        const [hours, minutes] = this.form.startTime.split(':').map(Number);
+        const newEndTime = new Date();
+        newEndTime.setHours(hours + 1, minutes, 0, 0);
+        this.form.endTime = `${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+  }
+
+  onEndDateChange(): void {
+    this.clearFieldError('endDate');
+    // If end date changed to same as start date, check time conflict
+    if (this.form.endDate === this.form.startDate && this.form.startTime && this.form.endTime) {
+      if (this.form.endTime <= this.form.startTime) {
+        // Set return time to 1 hour after departure time
+        const [hours, minutes] = this.form.startTime.split(':').map(Number);
+        const newEndTime = new Date();
+        newEndTime.setHours(hours + 1, minutes, 0, 0);
+        this.form.endTime = `${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')}`;
+      }
+    }
   }
 
   getMinStartTime(): string {
@@ -222,7 +295,7 @@ export class CreateLeaveRequestComponent {
 
       await this.leaveRequestService.create(requestData);
       
-      this.successMessage.set('Your go-out request has been submitted successfully! It will be reviewed by the admin/dean.');
+      this.successMessage.set('Your go-out request has been submitted successfully! It will be reviewed by the admin/home dean.');
       this.scrollToTop();
       
       // Reset form

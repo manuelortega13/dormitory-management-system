@@ -63,7 +63,7 @@ exports.getById = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, password, parentId } = req.body;
+    const { firstName, lastName, phone, password, parentId, gender, address, course, yearLevel } = req.body;
 
     // Users can only update their own profile unless admin
     if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
@@ -83,6 +83,24 @@ exports.update = async (req, res) => {
     if (req.user.role === 'admin' && parentId !== undefined) {
       query += ', parent_id = ?';
       params.push(parentId === '' ? null : parentId);
+    }
+
+    // Handle additional resident fields
+    if (gender !== undefined) {
+      query += ', gender = ?';
+      params.push(gender || null);
+    }
+    if (address !== undefined) {
+      query += ', address = ?';
+      params.push(address || null);
+    }
+    if (course !== undefined) {
+      query += ', course = ?';
+      params.push(course || null);
+    }
+    if (yearLevel !== undefined) {
+      query += ', year_level = ?';
+      params.push(yearLevel || null);
     }
 
     query += ' WHERE id = ?';
@@ -136,10 +154,13 @@ exports.getUserRoom = async (req, res) => {
 exports.getResidents = async (req, res) => {
   try {
     const { status, search, floor } = req.query;
+    const userRole = req.user.role;
+    const deanType = req.user.deanType;
 
     let query = `
       SELECT 
         u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url, u.status, u.created_at,
+        u.gender, u.address, u.course, u.year_level,
         r.room_number, r.floor, r.room_type,
         ra.start_date, ra.end_date,
         p.id as parent_id, p.first_name as parent_first_name, p.last_name as parent_last_name, p.email as parent_email, p.phone as parent_phone
@@ -150,6 +171,12 @@ exports.getResidents = async (req, res) => {
       WHERE u.role = 'resident'
     `;
     const params = [];
+
+    // Filter by gender if home_dean with dean_type
+    if (userRole === 'home_dean' && deanType) {
+      query += ' AND u.gender = ?';
+      params.push(deanType);
+    }
 
     if (status) {
       query += ' AND u.status = ?';
@@ -256,20 +283,27 @@ exports.reactivateResident = async (req, res) => {
   }
 };
 
-// Create agent (admin, security_guard, dean) - admin only
+// Create agent (admin, security_guard, home_dean, vpsas) - admin only
 exports.createAgent = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, phone } = req.body;
+    const { email, password, firstName, lastName, role, phone, deanType } = req.body;
 
     // Validate role - only allow agent roles
-    const allowedRoles = ['admin', 'security_guard', 'dean'];
+    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas'];
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, dean' });
+      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, home_dean, vpsas' });
     }
 
     // Validate required fields
     if (!email || !password || !firstName || !lastName || !role) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate deanType for home_dean role
+    if (role === 'home_dean') {
+      if (!deanType || !['male', 'female'].includes(deanType)) {
+        return res.status(400).json({ error: 'Dean type is required for Home Dean role. Must be "male" or "female"' });
+      }
     }
 
     // Check if user exists
@@ -287,9 +321,9 @@ exports.createAgent = async (req, res) => {
 
     // Create user
     const [result] = await pool.execute(
-      `INSERT INTO users (email, password, first_name, last_name, role, phone, status) 
-       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
-      [email, hashedPassword, firstName, lastName, role, phone || null]
+      `INSERT INTO users (email, password, first_name, last_name, role, dean_type, phone, status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
+      [email, hashedPassword, firstName, lastName, role, role === 'home_dean' ? deanType : null, phone || null]
     );
 
     res.status(201).json({
@@ -309,13 +343,13 @@ exports.createAgent = async (req, res) => {
   }
 };
 
-// Get all agents (admin, security_guard, dean)
+// Get all agents (admin, security_guard, home_dean, vpsas)
 exports.getAgents = async (req, res) => {
   try {
     const { role, status, search } = req.query;
 
-    let query = `SELECT id, email, first_name, last_name, role, phone, photo_url, status, created_at 
-                 FROM users WHERE role IN ('admin', 'security_guard', 'dean')`;
+    let query = `SELECT id, email, first_name, last_name, role, dean_type, phone, photo_url, status, created_at 
+                 FROM users WHERE role IN ('admin', 'security_guard', 'home_dean', 'vpsas')`;
     const params = [];
 
     if (role) {
@@ -342,5 +376,73 @@ exports.getAgents = async (req, res) => {
   } catch (error) {
     console.error('Get agents error:', error);
     res.status(500).json({ error: 'Failed to fetch agents' });
+  }
+};
+
+// Update agent (admin, security_guard, home_dean, vpsas) - admin only
+exports.updateAgent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, role, phone, deanType } = req.body;
+
+    // Validate role - only allow agent roles
+    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, home_dean, vpsas' });
+    }
+
+    // Validate required fields
+    if (!email || !firstName || !lastName || !role) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate deanType for home_dean role
+    if (role === 'home_dean') {
+      if (!deanType || !['male', 'female'].includes(deanType)) {
+        return res.status(400).json({ error: 'Dean type is required for Home Dean role. Must be "male" or "female"' });
+      }
+    }
+
+    // Check if user exists and is an agent
+    const [existingUsers] = await pool.execute(
+      'SELECT id, role FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (existingUsers.length === 0) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    if (!allowedRoles.includes(existingUsers[0].role)) {
+      return res.status(400).json({ error: 'Cannot update non-agent users with this endpoint' });
+    }
+
+    // Check if email already exists for another user
+    const [emailCheck] = await pool.execute(
+      'SELECT id FROM users WHERE email = ? AND id != ?',
+      [email, id]
+    );
+
+    if (emailCheck.length > 0) {
+      return res.status(400).json({ error: 'Email already registered to another user' });
+    }
+
+    // Update user
+    await pool.execute(
+      `UPDATE users SET 
+        first_name = ?, 
+        last_name = ?, 
+        email = ?, 
+        role = ?, 
+        dean_type = ?, 
+        phone = ?
+       WHERE id = ?`,
+      [firstName, lastName, email, role, role === 'home_dean' ? deanType : null, phone || null, id]
+    );
+
+    res.json({ message: 'Agent updated successfully' });
+  } catch (error) {
+    console.error('Update agent error:', error);
+    res.status(500).json({ error: 'Failed to update agent' });
   }
 };

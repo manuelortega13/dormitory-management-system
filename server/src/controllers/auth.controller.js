@@ -4,7 +4,7 @@ const { pool } = require('../config/database');
 
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, deanType: user.dean_type || null },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
@@ -12,7 +12,7 @@ const generateToken = (user) => {
 
 exports.register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, phone, parentId } = req.body;
+    const { email, password, firstName, lastName, role, phone, parentId, gender, address, course, yearLevel } = req.body;
 
     // Only allow certain roles for self-registration
     const allowedRoles = ['resident', 'parent'];
@@ -31,11 +31,11 @@ exports.register = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with additional resident fields
     const [result] = await pool.execute(
-      `INSERT INTO users (email, password, first_name, last_name, role, phone, parent_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [email, hashedPassword, firstName, lastName, userRole, phone || null, parentId || null]
+      `INSERT INTO users (email, password, first_name, last_name, role, phone, parent_id, gender, address, course, year_level) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [email, hashedPassword, firstName, lastName, userRole, phone || null, parentId || null, gender || null, address || null, course || null, yearLevel || null]
     );
 
     const token = generateToken({ id: result.insertId, email, role: userRole });
@@ -89,7 +89,8 @@ exports.login = async (req, res) => {
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
-        role: user.role
+        role: user.role,
+        deanType: user.dean_type || null
       }
     });
   } catch (error) {

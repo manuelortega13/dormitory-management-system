@@ -133,6 +133,86 @@
         }
       </div>
 
+      <!-- Resident-only fields -->
+      @if (form.accountType === 'resident') {
+        <div class="form-row">
+          <div class="form-group" [class.has-error]="fieldErrors().gender">
+            <label for="gender">Gender *</label>
+            <div class="input-wrapper select-wrapper">
+              <span class="input-icon">⚧</span>
+              <select 
+                id="gender"
+                [(ngModel)]="form.gender"
+                name="gender"
+                (change)="clearFieldError('gender')"
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            @if (fieldErrors().gender) {
+              <span class="field-error">{{ fieldErrors().gender }}</span>
+            }
+          </div>
+
+          <div class="form-group" [class.has-error]="fieldErrors().yearLevel">
+            <label for="yearLevel">Year Level *</label>
+            <div class="input-wrapper select-wrapper">
+              <span class="input-icon">📚</span>
+              <select 
+                id="yearLevel"
+                [(ngModel)]="form.yearLevel"
+                name="yearLevel"
+                (change)="clearFieldError('yearLevel')"
+              >
+                <option [ngValue]="null">Select year level</option>
+                <option [ngValue]="1">1st Year</option>
+                <option [ngValue]="2">2nd Year</option>
+                <option [ngValue]="3">3rd Year</option>
+                <option [ngValue]="4">4th Year</option>
+                <option [ngValue]="5">5th Year</option>
+              </select>
+            </div>
+            @if (fieldErrors().yearLevel) {
+              <span class="field-error">{{ fieldErrors().yearLevel }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-group" [class.has-error]="fieldErrors().course">
+          <label for="course">Course/Program *</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🎓</span>
+            <input 
+              type="text" 
+              id="course" 
+              placeholder="e.g., BS Computer Science"
+              [(ngModel)]="form.course"
+              name="course"
+              (input)="clearFieldError('course')"
+            />
+          </div>
+          @if (fieldErrors().course) {
+            <span class="field-error">{{ fieldErrors().course }}</span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="fieldErrors().address">
+          <label for="address">Home Address</label>
+          <div class="input-wrapper textarea-wrapper">
+            <span class="input-icon">🏠</span>
+            <textarea 
+              id="address" 
+              placeholder="Enter your home address (optional)"
+              [(ngModel)]="form.address"
+              name="address"
+              rows="2"
+            ></textarea>
+          </div>
+        </div>
+      }
+
       <div class="form-group" [class.has-error]="fieldErrors().password">
         <label for="password">Password *</label>
         <div class="input-wrapper">

@@ -50,7 +50,7 @@ export const roleGuard = (allowedRoles: User['role'][]): CanActivateFn => {
 };
 
 // Pre-configured role guards
-export const adminGuard: CanActivateFn = roleGuard(['admin', 'dean']);
+export const adminGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas']);
 export const residentGuard: CanActivateFn = roleGuard(['resident']);
 export const securityGuard: CanActivateFn = roleGuard(['security_guard']);
 export const parentGuard: CanActivateFn = roleGuard(['parent']);

@@ -234,124 +234,14 @@
 
   <!-- Resident Detail Modal -->
   @if (selectedResident()) {
-    <div class="modal-overlay" (click)="closeResidentDetail()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <button class="modal-close" (click)="closeResidentDetail()">✕</button>
-        
-        <div class="modal-header">
-          <div 
-            class="resident-avatar xlarge" 
-            [style.background]="getAvatarColor(selectedResident()!.first_name)"
-          >
-            {{ getInitials(selectedResident()!) }}
-          </div>
-          <div class="resident-title">
-            <h2>{{ getFullName(selectedResident()!) }}</h2>
-            <p class="resident-id">ID: {{ selectedResident()!.id }}</p>
-            <span class="status-badge" [class]="selectedResident()!.status">
-              {{ selectedResident()!.status | titlecase }}
-            </span>
-          </div>
-        </div>
-
-        <div class="modal-body">
-          <div class="detail-section">
-            <h4>Personal Information</h4>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">Email</span>
-                <span class="value">{{ selectedResident()!.email }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Phone</span>
-                <span class="value">{{ selectedResident()!.phone }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Status</span>
-                <span class="value">{{ selectedResident()!.status | titlecase }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Registered</span>
-                <span class="value">{{ selectedResident()!.created_at | date:'mediumDate' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h4>Room Assignment</h4>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">Room Number</span>
-                <span class="value">{{ selectedResident()!.room_number || 'Not Assigned' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Floor</span>
-                <span class="value">{{ selectedResident()!.floor || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Room Type</span>
-                <span class="value">{{ selectedResident()!.room_type || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Check-in Date</span>
-                <span class="value">
-                  @if (selectedResident()!.start_date) {
-                    {{ selectedResident()!.start_date | date:'mediumDate' }}
-                  } @else {
-                    —
-                  }
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Check-out Date</span>
-                <span class="value">
-                  @if (selectedResident()!.end_date) {
-                    {{ selectedResident()!.end_date | date:'mediumDate' }}
-                  } @else {
-                    —
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h4>Parent/Guardian</h4>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">Name</span>
-                <span class="value">
-                  @if (selectedResident()!.parent_first_name) {
-                    {{ selectedResident()!.parent_first_name }} {{ selectedResident()!.parent_last_name }}
-                  } @else {
-                    Not Assigned
-                  }
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Email</span>
-                <span class="value">{{ selectedResident()!.parent_email || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Phone</span>
-                <span class="value">{{ selectedResident()!.parent_phone || '—' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn-secondary" (click)="closeResidentDetail()">Close</button>
-          @if (selectedResident()!.status !== 'suspended') {
-            <button class="btn-suspend" (click)="openSuspendModal(selectedResident()!)">Suspend</button>
-          } @else {
-            <button class="btn-reactivate" (click)="reactivateResident(selectedResident()!)">Reactivate</button>
-          }
-          <button class="btn-danger" (click)="deleteResident(selectedResident()!)">Delete</button>
-          <button class="btn-primary" (click)="editResident(selectedResident()!)">Edit Resident</button>
-        </div>
-      </div>
-    </div>
+    <app-resident-detail-modal
+      [resident]="selectedResident()!"
+      (close)="closeResidentDetail()"
+      (edit)="editResident($event)"
+      (delete)="deleteResident($event)"
+      (suspend)="openSuspendModal($event)"
+      (reactivate)="reactivateResident($event)"
+    />
   }
 
   <!-- Add Resident Modal -->

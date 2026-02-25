@@ -1,0 +1,195 @@
+<div class="leave-pass-page">
+  <!-- Header with Back Button -->
+  <header class="pass-header">
+    <button class="back-btn" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back</span>
+    </button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading leave pass...</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-circle"></i>
+      <p>{{ errorMessage() }}</p>
+      <button class="btn-primary" (click)="goBack()">Go Back</button>
+    </div>
+  } @else if (leaveRequest() && qrCode()) {
+    <div class="pass-card">
+      <!-- Institution Header -->
+      <div class="institution-header">
+        <div class="logo-placeholder">
+          <i class="bi bi-mortarboard-fill"></i>
+        </div>
+        <h1 class="pass-title">Campus Leave Pass</h1>
+        <h2 class="institution-name">Philippine Advent College</h2>
+        <p class="institution-address">Sindangan, Zamboanga del Norte</p>
+      </div>
+
+      <!-- Pass Content -->
+      <div class="pass-content">
+        <!-- QR Code Section -->
+        <div class="qr-section">
+          <div class="qr-wrapper">
+            <img 
+              [src]="getQRCodeUrl(qrCode()!)" 
+              alt="Leave Pass QR Code" 
+              class="qr-image"
+            />
+          </div>
+          <p class="qr-instruction">Present this QR code to the security guard</p>
+          <div class="qr-code-text">
+            <code>{{ qrCode() }}</code>
+            <button class="copy-btn" (click)="copyQRCode()" [class.copied]="copiedFeedback()" title="Copy QR Code">
+              @if (copiedFeedback()) {
+                <i class="bi bi-check2"></i>
+              } @else {
+                <i class="bi bi-clipboard"></i>
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Leave Type Badge -->
+        <div class="leave-type-badge">
+          {{ getLeaveTypeLabel(leaveRequest()!.leave_type) }}
+        </div>
+
+        <!-- Resident Details Section -->
+        <div class="details-section">
+          <h3 class="section-title">
+            <i class="bi bi-person-fill"></i>
+            Resident Information
+          </h3>
+          
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label">Name of Resident</span>
+              <span class="detail-value">{{ getResidentName() }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Address</span>
+              <span class="detail-value placeholder">{{ placeholderData.address }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Course/Year Level</span>
+              <span class="detail-value placeholder">{{ placeholderData.courseYearLevel }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leave Details Section -->
+        <div class="details-section">
+          <h3 class="section-title">
+            <i class="bi bi-calendar-event"></i>
+            Leave Details
+          </h3>
+          
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label">Date of Leave</span>
+              <span class="detail-value">{{ formatDateOnly(leaveRequest()!.start_date) }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Date of Return</span>
+              <span class="detail-value">{{ formatDateOnly(leaveRequest()!.end_date) }}</span>
+            </div>
+            
+            <div class="detail-item full-width">
+              <span class="detail-label">Destination</span>
+              <span class="detail-value">{{ leaveRequest()!.destination }}</span>
+            </div>
+            
+            <div class="detail-item full-width">
+              <span class="detail-label">Spending Leave With</span>
+              <span class="detail-value placeholder">{{ placeholderData.spendingLeaveWith }}</span>
+            </div>
+            
+            <div class="detail-item full-width">
+              <span class="detail-label">Purpose</span>
+              <span class="detail-value">{{ leaveRequest()!.reason }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Information Section -->
+        <div class="details-section">
+          <h3 class="section-title">
+            <i class="bi bi-telephone-fill"></i>
+            Contact Information
+          </h3>
+          
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label">Emergency Contact</span>
+              <span class="detail-value">{{ leaveRequest()!.emergency_contact }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Emergency Phone</span>
+              <span class="detail-value">{{ leaveRequest()!.emergency_phone }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Parent Phone Number</span>
+              <span class="detail-value placeholder">{{ placeholderData.parentPhone }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approval Section -->
+        <div class="details-section approval-section">
+          <h3 class="section-title">
+            <i class="bi bi-check-circle-fill"></i>
+            Approvals
+          </h3>
+          
+          <div class="approval-grid">
+            <div class="approval-item">
+              <span class="approval-label">Adviser/Work Supervisor</span>
+              <span class="approval-value placeholder">{{ placeholderData.adviser }}</span>
+              <span class="approval-status approved">
+                <i class="bi bi-check-circle-fill"></i> Approved
+              </span>
+            </div>
+            
+            <div class="approval-item">
+              <span class="approval-label">Home Dean</span>
+              <span class="approval-value placeholder">{{ placeholderData.homeDean }}</span>
+              <span class="approval-status approved">
+                <i class="bi bi-check-circle-fill"></i> Approved
+              </span>
+            </div>
+            
+            <div class="approval-item">
+              <span class="approval-label">VPSAS</span>
+              <span class="approval-value placeholder">{{ placeholderData.vpsas }}</span>
+              <span class="approval-status approved">
+                <i class="bi bi-check-circle-fill"></i> Approved
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="pass-footer">
+          <p class="validity-notice">
+            <i class="bi bi-info-circle"></i>
+            This pass is valid from <strong>{{ formatDate(leaveRequest()!.start_date) }}</strong> 
+            to <strong>{{ formatDate(leaveRequest()!.end_date) }}</strong>
+          </p>
+          <p class="generated-date">
+            Generated: {{ formatDate(leaveRequest()!.qr_generated_at || leaveRequest()!.updated_at) }}
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+</div>

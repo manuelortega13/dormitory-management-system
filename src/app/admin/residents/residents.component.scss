@@ -608,6 +608,11 @@
     font-size: 0.95rem;
     color: #1a1a2e;
   }
+
+  &.full-width {
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+  }
 }
 
 .modal-footer {

@@ -1,0 +1,148 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="onClose()">✕</button>
+    
+    <div class="modal-header">
+      <div 
+        class="resident-avatar xlarge" 
+        [style.background]="getAvatarColor()"
+      >
+        {{ getInitials() }}
+      </div>
+      <div class="resident-title">
+        <h2>{{ getFullName() }}</h2>
+        <p class="resident-id">ID: {{ resident.id }}</p>
+        <span class="status-badge" [class]="resident.status">
+          {{ resident.status | titlecase }}
+        </span>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="detail-section">
+        <h4>Personal Information</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Email</span>
+            <span class="value">{{ resident.email }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Phone</span>
+            <span class="value">{{ resident.phone || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Gender</span>
+            <span class="value">{{ resident.gender ? (resident.gender | titlecase) : '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Status</span>
+            <span class="value">{{ resident.status | titlecase }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Registered</span>
+            <span class="value">{{ resident.created_at | date:'mediumDate' }}</span>
+          </div>
+          @if (resident.address) {
+            <div class="detail-item full-width">
+              <span class="label">Home Address</span>
+              <span class="value">{{ resident.address }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>Academic Information</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Course/Program</span>
+            <span class="value">{{ resident.course || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Year Level</span>
+            <span class="value">
+              @if (resident.year_level) {
+                {{ getYearLevelLabel(resident.year_level) }}
+              } @else {
+                —
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>Room Assignment</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Room Number</span>
+            <span class="value">{{ resident.room_number || 'Not Assigned' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Floor</span>
+            <span class="value">{{ resident.floor || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Room Type</span>
+            <span class="value">{{ resident.room_type || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Check-in Date</span>
+            <span class="value">
+              @if (resident.start_date) {
+                {{ resident.start_date | date:'mediumDate' }}
+              } @else {
+                —
+              }
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Check-out Date</span>
+            <span class="value">
+              @if (resident.end_date) {
+                {{ resident.end_date | date:'mediumDate' }}
+              } @else {
+                —
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>Parent/Guardian</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Name</span>
+            <span class="value">
+              @if (resident.parent_first_name) {
+                {{ resident.parent_first_name }} {{ resident.parent_last_name }}
+              } @else {
+                Not Assigned
+              }
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Email</span>
+            <span class="value">{{ resident.parent_email || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Phone</span>
+            <span class="value">{{ resident.parent_phone || '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="onClose()">Close</button>
+      @if (resident.status !== 'suspended') {
+        <button class="btn-suspend" (click)="onSuspend()">Suspend</button>
+      } @else {
+        <button class="btn-reactivate" (click)="onReactivate()">Reactivate</button>
+      }
+      <button class="btn-danger" (click)="onDelete()">Delete</button>
+      <button class="btn-primary" (click)="onEdit()">Edit Resident</button>
+    </div>
+  </div>
+</div>

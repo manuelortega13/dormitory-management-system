@@ -10,7 +10,8 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'security_guard' | 'resident' | 'parent' | 'dean';
+  role: 'admin' | 'security_guard' | 'resident' | 'parent' | 'home_dean' | 'vpsas';
+  deanType?: 'male' | 'female' | null;
 }
 
 export interface LoginResponse {
@@ -100,7 +101,8 @@ export class AuthService {
   getRedirectUrl(role: string): string {
     switch (role) {
       case 'admin':
-      case 'dean':
+      case 'home_dean':
+      case 'vpsas':
         return '/manage';
       case 'security_guard':
         return '/security-guard/check-in-out';

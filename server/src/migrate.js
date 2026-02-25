@@ -5,9 +5,10 @@
  * Tracks executed migrations in a `migrations` table.
  * 
  * Usage:
- *   node migrate.js        - Run all pending migrations
- *   node migrate.js status - Show migration status
- *   node migrate.js reset  - Reset migrations table (dangerous!)
+ *   node migrate.js              - Run all pending migrations
+ *   node migrate.js status       - Show migration status
+ *   node migrate.js rerun <name> - Re-run a specific migration
+ *   node migrate.js reset        - Reset migrations table (dangerous!)
  */
 
 const fs = require('fs');
@@ -70,16 +71,26 @@ async function runMigration(pool, filename) {
   try {
     await connection.beginTransaction();
     
-    // Split SQL into individual statements and run each
-    // This allows us to handle specific errors gracefully
-    const statements = sql
-      .split(';')
+    // Remove SQL comments and clean up the file content
+    const cleanedSql = sql
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
+      .trim();
+    
+    // Split by semicolon, handling multi-line statements
+    const statements = cleanedSql
+      .split(/;[\s]*\n/)
       .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .filter(s => s.length > 0);
     
     for (const statement of statements) {
+      // Skip if statement is empty or only whitespace
+      if (!statement || statement.length === 0) continue;
+      
       try {
         await connection.query(statement);
+        console.log(`    ✓ Executed: ${statement.substring(0, 50).replace(/\n/g, ' ')}...`);
       } catch (error) {
         // Only ignore specific MySQL errors that are safe to skip:
         // 1054 = Unknown column (CHANGE on already renamed column)
@@ -88,10 +99,10 @@ async function runMigration(pool, filename) {
         // 1050 = Table already exists
         const ignorableErrors = [1054, 1060, 1061, 1050];
         if (ignorableErrors.includes(error.errno)) {
-          console.log(`\n    ⚠️  Skipped (already applied): ${error.message.substring(0, 60)}`);
+          console.log(`    ⚠️  Skipped (already applied): ${error.message.substring(0, 60)}`);
         } else {
-          // Log error but don't fail completely - try remaining statements
-          console.log(`\n    ⚠️  Warning: ${error.message}`);
+          // Rethrow non-ignorable errors to fail the migration
+          throw error;
         }
       }
     }
@@ -203,8 +214,47 @@ async function reset() {
   }
 }
 
+// Rerun a specific migration (useful for fixing failed migrations)
+async function rerun(migrationName) {
+  const pool = createPool();
+
+  try {
+    console.log(`\n🔄 Re-running migration: ${migrationName}\n`);
+
+    await ensureMigrationsTable(pool);
+
+    // Remove the migration record if it exists
+    await pool.execute('DELETE FROM migrations WHERE name = ?', [migrationName]);
+    console.log('  ▸ Removed previous migration record (if any)');
+
+    // Check if the migration file exists
+    const allMigrations = getMigrationFiles();
+    if (!allMigrations.includes(migrationName)) {
+      console.error(`\n❌ Migration file not found: ${migrationName}`);
+      console.log(`\nAvailable migrations:`);
+      allMigrations.forEach(m => console.log(`  - ${m}`));
+      process.exit(1);
+    }
+
+    // Run the migration
+    process.stdout.write(`  ▸ Running ${migrationName}...\n`);
+    
+    try {
+      await runMigration(pool, migrationName);
+      console.log(`\n✅ Successfully re-ran migration: ${migrationName}\n`);
+    } catch (error) {
+      console.error(`\n❌ Migration failed: ${migrationName}`);
+      console.error(`   Error: ${error.message}\n`);
+      process.exit(1);
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
 // CLI handler
 const command = process.argv[2];
+const arg = process.argv[3];
 
 switch (command) {
   case 'status':
@@ -212,6 +262,14 @@ switch (command) {
     break;
   case 'reset':
     reset();
+    break;
+  case 'rerun':
+    if (!arg) {
+      console.error('\n❌ Usage: node migrate.js rerun <migration_name>');
+      console.log('   Example: node migrate.js rerun 003_rename_dean_to_home_dean.sql\n');
+      process.exit(1);
+    }
+    rerun(arg);
     break;
   default:
     migrate();

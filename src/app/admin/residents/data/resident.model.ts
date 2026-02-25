@@ -1,5 +1,5 @@
 export type ResidentStatus = 'active' | 'inactive' | 'pending' | 'suspended';
-export type Gender = 'male' | 'female' | 'other';
+export type Gender = 'male' | 'female';
 
 export interface EmergencyContact {
   name: string;
@@ -16,6 +16,10 @@ export interface Resident {
   photo_url: string | null;
   status: ResidentStatus;
   created_at: string;
+  gender: Gender | null;
+  address: string | null;
+  course: string | null;
+  year_level: number | null;
   room_number: string | null;
   floor: number | null;
   room_type: string | null;
@@ -41,6 +45,10 @@ export interface CreateResidentDto {
   lastName: string;
   phone?: string;
   parentId?: number | null;
+  gender?: Gender | null;
+  address?: string | null;
+  course?: string | null;
+  yearLevel?: number | null;
 }
 
 export interface UpdateResidentDto {
@@ -49,6 +57,10 @@ export interface UpdateResidentDto {
   phone?: string;
   password?: string;
   parentId?: number | null;
+  gender?: Gender | null;
+  address?: string | null;
+  course?: string | null;
+  yearLevel?: number | null;
 }
 
 export interface Parent {

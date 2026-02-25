@@ -158,9 +158,8 @@ export class MyRequestsComponent implements OnInit {
 
   viewQRCode(request: LeaveRequest) {
     if (request.qr_code) {
-      this.activeQRCode.set(request.qr_code);
-      this.activeRequest.set(request);
-      this.showQRModal.set(true);
+      // Navigate to the leave pass page
+      this.router.navigate(['/leave-pass']);
     }
   }
 

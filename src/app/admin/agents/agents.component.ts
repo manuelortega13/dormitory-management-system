@@ -1,13 +1,14 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgentsService } from './data/agents.service';
-import { Agent, CreateAgentDto } from './data/agent.model';
+import { Agent, CreateAgentDto, UpdateAgentDto } from './data/agent.model';
+import { AgentEditModalComponent } from './agent-edit-modal/agent-edit-modal.component';
 
 @Component({
   selector: 'app-agents',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AgentEditModalComponent],
   templateUrl: './agents.component.html',
   styleUrl: './agents.component.scss'
 })
@@ -15,7 +16,7 @@ export class AgentsComponent implements OnInit {
   private readonly agentsService = inject(AgentsService);
 
   protected readonly searchQuery = signal('');
-  protected readonly selectedRole = signal<'admin' | 'security_guard' | 'dean' | 'all'>('all');
+  protected readonly selectedRole = signal<'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'all'>('all');
   protected readonly selectedStatus = signal<'active' | 'suspended' | 'all'>('all');
   protected readonly isLoading = signal(false);
   protected readonly showAddModal = signal(false);
@@ -27,6 +28,11 @@ export class AgentsComponent implements OnInit {
   protected readonly suspendSaving = signal(false);
   protected readonly suspendError = signal('');
   protected readonly showPassword = signal(false);
+
+  protected readonly showEditModal = signal(false);
+  protected readonly editingAgent = signal<Agent | null>(null);
+
+  @ViewChild(AgentEditModalComponent) editModalComponent?: AgentEditModalComponent;
 
   protected readonly agents = signal<Agent[]>([]);
 
@@ -64,7 +70,7 @@ export class AgentsComponent implements OnInit {
       total: all.length,
       admins: all.filter(a => a.role === 'admin').length,
       securityGuards: all.filter(a => a.role === 'security_guard').length,
-      deans: all.filter(a => a.role === 'dean').length,
+      homeDeans: all.filter(a => a.role === 'home_dean').length,
       active: all.filter(a => a.status === 'active').length,
       suspended: all.filter(a => a.status === 'suspended').length
     };
@@ -102,7 +108,7 @@ export class AgentsComponent implements OnInit {
 
   updateRole(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    this.selectedRole.set(select.value as 'admin' | 'security_guard' | 'dean' | 'all');
+    this.selectedRole.set(select.value as 'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'all');
   }
 
   updateStatus(event: Event): void {
@@ -110,11 +116,15 @@ export class AgentsComponent implements OnInit {
     this.selectedStatus.set(select.value as 'active' | 'suspended' | 'all');
   }
 
-  getRoleLabel(role: string): string {
+  getRoleLabel(role: string, deanType?: 'male' | 'female' | null): string {
     switch (role) {
       case 'admin': return 'Admin';
       case 'security_guard': return 'Security Guard';
-      case 'dean': return 'Dean';
+      case 'home_dean':
+        if (deanType === 'male') return 'Dean for Males';
+        if (deanType === 'female') return 'Dean for Females';
+        return 'Home Dean';
+      case 'vpsas': return 'VPSAS';
       default: return role;
     }
   }
@@ -154,6 +164,7 @@ export class AgentsComponent implements OnInit {
       firstName: '',
       lastName: '',
       role: 'security_guard',
+      deanType: undefined,
       phone: ''
     });
     this.modalError.set('');
@@ -167,10 +178,17 @@ export class AgentsComponent implements OnInit {
 
   updateNewAgentField(field: keyof CreateAgentDto, event: Event): void {
     const input = event.target as HTMLInputElement | HTMLSelectElement;
-    this.newAgent.update(current => ({
-      ...current,
-      [field]: input.value
-    }));
+    this.newAgent.update(current => {
+      const updated = {
+        ...current,
+        [field]: input.value
+      };
+      // Reset deanType when role changes to non-home_dean
+      if (field === 'role' && input.value !== 'home_dean') {
+        updated.deanType = undefined;
+      }
+      return updated;
+    });
   }
 
   togglePasswordVisibility(): void {
@@ -183,6 +201,12 @@ export class AgentsComponent implements OnInit {
     // Validation
     if (!agent.email || !agent.password || !agent.firstName || !agent.lastName || !agent.role) {
       this.modalError.set('Please fill in all required fields');
+      return;
+    }
+
+    // Validate deanType for home_dean role
+    if (agent.role === 'home_dean' && !agent.deanType) {
+      this.modalError.set('Please select a dean type');
       return;
     }
 
@@ -203,6 +227,32 @@ export class AgentsComponent implements OnInit {
       error: (err) => {
         this.modalSaving.set(false);
         this.modalError.set(err.error?.error || 'Failed to create agent');
+      }
+    });
+  }
+
+  // Edit agent methods
+  openEditModal(agent: Agent): void {
+    this.editingAgent.set(agent);
+    this.showEditModal.set(true);
+  }
+
+  closeEditModal(): void {
+    this.showEditModal.set(false);
+    this.editingAgent.set(null);
+  }
+
+  saveAgentEdit(event: { id: number; data: UpdateAgentDto }): void {
+    this.agentsService.updateAgent(event.id, event.data).subscribe({
+      next: () => {
+        this.showEditModal.set(false);
+        this.editingAgent.set(null);
+        this.loadAgents();
+      },
+      error: (err) => {
+        if (this.editModalComponent) {
+          this.editModalComponent.setError(err.error?.error || 'Failed to update agent');
+        }
       }
     });
   }

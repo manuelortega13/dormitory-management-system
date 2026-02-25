@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../auth.service';
 
 type AccountType = 'resident' | 'parent';
+type Gender = 'male' | 'female' | '';
 
 interface RegisterForm {
   accountType: AccountType;
@@ -14,6 +15,11 @@ interface RegisterForm {
   phone: string;
   password: string;
   confirmPassword: string;
+  // Resident-only fields
+  gender: Gender;
+  address: string;
+  course: string;
+  yearLevel: number | null;
 }
 
 interface FieldErrors {
@@ -24,6 +30,10 @@ interface FieldErrors {
   phone: string;
   password: string;
   confirmPassword: string;
+  gender: string;
+  address: string;
+  course: string;
+  yearLevel: string;
 }
 
 @Component({
@@ -44,7 +54,11 @@ export class RegisterComponent {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    gender: '',
+    address: '',
+    course: '',
+    yearLevel: null
   };
 
   isLoading = signal(false);
@@ -60,7 +74,11 @@ export class RegisterComponent {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    gender: '',
+    address: '',
+    course: '',
+    yearLevel: ''
   });
 
   constructor() {
@@ -78,7 +96,11 @@ export class RegisterComponent {
       email: '',
       phone: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      gender: '',
+      address: '',
+      course: '',
+      yearLevel: ''
     };
 
     let isValid = true;
@@ -130,6 +152,24 @@ export class RegisterComponent {
       isValid = false;
     }
 
+    // Validate resident-only fields
+    if (this.form.accountType === 'resident') {
+      if (!this.form.gender) {
+        errors.gender = 'Please select your gender';
+        isValid = false;
+      }
+
+      if (!this.form.course.trim()) {
+        errors.course = 'Course/Program is required';
+        isValid = false;
+      }
+
+      if (!this.form.yearLevel) {
+        errors.yearLevel = 'Please select your year level';
+        isValid = false;
+      }
+    }
+
     this.fieldErrors.set(errors);
     return isValid;
   }
@@ -151,14 +191,24 @@ export class RegisterComponent {
     this.isLoading.set(true);
 
     try {
-      await this.authService.register({
+      const registerData: any = {
         firstName: this.form.firstName.trim(),
         lastName: this.form.lastName.trim(),
         email: this.form.email.trim(),
         phone: this.form.phone.trim(),
         password: this.form.password,
         role: this.form.accountType
-      });
+      };
+
+      // Add resident-only fields
+      if (this.form.accountType === 'resident') {
+        registerData.gender = this.form.gender || null;
+        registerData.address = this.form.address.trim() || null;
+        registerData.course = this.form.course.trim() || null;
+        registerData.yearLevel = this.form.yearLevel;
+      }
+
+      await this.authService.register(registerData);
 
       this.successMessage.set('Registration successful! Redirecting to your dashboard...');
       

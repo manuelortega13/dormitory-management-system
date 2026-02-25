@@ -131,7 +131,7 @@
     color: #4a90d9;
   }
 
-  &.dean .stat-value {
+  &.home-dean .stat-value {
     color: #9b59b6;
   }
 
@@ -304,9 +304,14 @@
       color: #4a90d9;
     }
 
-    &.role-dean {
+    &.role-home-dean {
       background: rgba(155, 89, 182, 0.15);
       color: #9b59b6;
+    }
+
+    &.role-vpsas {
+      background: rgba(230, 126, 34, 0.15);
+      color: #e67e22;
     }
   }
 }
@@ -354,6 +359,10 @@
 
     &:hover {
       transform: scale(1.1);
+    }
+
+    &.edit:hover {
+      background: #e8f4ff;
     }
 
     &.suspend:hover {

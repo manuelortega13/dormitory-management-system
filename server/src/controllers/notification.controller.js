@@ -134,14 +134,30 @@ exports.createNotification = async (userId, type, title, message, referenceId = 
   }
 };
 
-// Notify all admins/deans about new leave request
-exports.notifyAdminsNewRequest = async (residentName, leaveRequestId) => {
+// Notify all admins/home_deans/vpsas about new leave request
+// Home deans only receive notifications for residents matching their dean_type (gender)
+exports.notifyAdminsNewRequest = async (residentName, leaveRequestId, residentGender = null) => {
   try {
-    const [admins] = await pool.execute(
-      "SELECT id FROM users WHERE role IN ('admin', 'dean') AND status = 'active'"
+    // Get admin and vpsas users - they receive all notifications
+    const [generalAdmins] = await pool.execute(
+      "SELECT id FROM users WHERE role IN ('admin', 'vpsas') AND status = 'active'"
     );
 
-    for (const admin of admins) {
+    // Get home_dean users with gender filtering
+    let homeDeanQuery = "SELECT id FROM users WHERE role = 'home_dean' AND status = 'active'";
+    const homeDeanParams = [];
+
+    if (residentGender) {
+      // Only notify home_deans whose dean_type matches the resident's gender
+      homeDeanQuery += " AND (dean_type = ? OR dean_type IS NULL)";
+      homeDeanParams.push(residentGender);
+    }
+
+    const [homeDeans] = await pool.execute(homeDeanQuery, homeDeanParams);
+
+    const allRecipients = [...generalAdmins, ...homeDeans];
+
+    for (const admin of allRecipients) {
       await exports.createNotification(
         admin.id,
         'leave_request_new',
@@ -255,13 +271,29 @@ exports.notifyParentChildMovement = async (parentId, childName, action, leaveReq
 };
 
 // Notify admins when a resident cancels their leave request
-exports.notifyAdminsRequestCancelled = async (residentName, leaveRequestId) => {
+// Home deans only receive notifications for residents matching their dean_type (gender)
+exports.notifyAdminsRequestCancelled = async (residentName, leaveRequestId, residentGender = null) => {
   try {
-    const [admins] = await pool.execute(
-      "SELECT id FROM users WHERE role IN ('admin', 'dean') AND status = 'active'"
+    // Get admin and vpsas users - they receive all notifications
+    const [generalAdmins] = await pool.execute(
+      "SELECT id FROM users WHERE role IN ('admin', 'vpsas') AND status = 'active'"
     );
 
-    for (const admin of admins) {
+    // Get home_dean users with gender filtering
+    let homeDeanQuery = "SELECT id FROM users WHERE role = 'home_dean' AND status = 'active'";
+    const homeDeanParams = [];
+
+    if (residentGender) {
+      // Only notify home_deans whose dean_type matches the resident's gender
+      homeDeanQuery += " AND (dean_type = ? OR dean_type IS NULL)";
+      homeDeanParams.push(residentGender);
+    }
+
+    const [homeDeans] = await pool.execute(homeDeanQuery, homeDeanParams);
+
+    const allRecipients = [...generalAdmins, ...homeDeans];
+
+    for (const admin of allRecipients) {
       await exports.createNotification(
         admin.id,
         'leave_request_cancelled',

@@ -1,0 +1,100 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Agent</h2>
+      <button class="btn-close" (click)="onClose()">✕</button>
+    </div>
+    
+    <div class="modal-body">
+      @if (error()) {
+        <div class="error-message">{{ error() }}</div>
+      }
+
+      <div class="form-group">
+        <label for="editFirstName">First Name <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="editFirstName"
+          placeholder="Enter first name"
+          [value]="formData().firstName"
+          (input)="updateField('firstName', $event)"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editLastName">Last Name <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="editLastName"
+          placeholder="Enter last name"
+          [value]="formData().lastName"
+          (input)="updateField('lastName', $event)"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editEmail">Email <span class="required">*</span></label>
+        <input 
+          type="email" 
+          id="editEmail"
+          placeholder="Enter email address"
+          [value]="formData().email"
+          (input)="updateField('email', $event)"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="editRole">Role <span class="required">*</span></label>
+        <select 
+          id="editRole"
+          [value]="formData().role"
+          (change)="updateField('role', $event)"
+        >
+          <option value="security_guard">Security Guard</option>
+          <option value="admin">Admin</option>
+          <option value="home_dean">Home Dean</option>
+          <option value="vpsas">VPSAS</option>
+        </select>
+      </div>
+
+      @if (formData().role === 'home_dean') {
+        <div class="form-group">
+          <label for="editDeanType">Dean Type <span class="required">*</span></label>
+          <select 
+            id="editDeanType"
+            [value]="formData().deanType || ''"
+            (change)="updateField('deanType', $event)"
+          >
+            <option value="" disabled>Select dean type</option>
+            <option value="male">Dean for Males</option>
+            <option value="female">Dean for Females</option>
+          </select>
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="editPhone">Phone</label>
+        <input 
+          type="tel" 
+          id="editPhone"
+          placeholder="Enter phone number (optional)"
+          [value]="formData().phone"
+          (input)="updateField('phone', $event)"
+        />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="onClose()" [disabled]="saving()">
+        Cancel
+      </button>
+      <button class="btn-primary" (click)="onSave()" [disabled]="saving()">
+        @if (saving()) {
+          <span class="spinner">⏳</span> Saving...
+        } @else {
+          Save Changes
+        }
+      </button>
+    </div>
+  </div>
+</div>

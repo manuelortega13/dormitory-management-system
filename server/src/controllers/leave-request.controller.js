@@ -12,10 +12,11 @@ exports.getAll = async (req, res) => {
     const { status, adminStatus, parentStatus, limit } = req.query;
     const userId = req.user.id;
     const userRole = req.user.role;
+    const deanType = req.user.deanType;
 
     let query = `
       SELECT lr.*, 
-             u.first_name, u.last_name,
+             u.first_name, u.last_name, u.gender,
              CONCAT(u.first_name, ' ', u.last_name) as user_name,
              u.email as user_email, u.phone as user_phone,
              r.room_number,
@@ -39,8 +40,12 @@ exports.getAll = async (req, res) => {
       // Parents see requests from their children
       query += ' AND u.parent_id = ?';
       params.push(userId);
+    } else if (userRole === 'home_dean' && deanType) {
+      // Home dean can only see requests from residents matching their dean_type (gender)
+      query += ' AND u.gender = ?';
+      params.push(deanType);
     }
-    // Admin and security can see all
+    // Admin, vpsas, and security can see all
 
     if (status) {
       query += ' AND lr.status = ?';
@@ -74,18 +79,31 @@ exports.getAll = async (req, res) => {
 
 exports.getPendingAdmin = async (req, res) => {
   try {
-    const [requests] = await pool.execute(
-      `SELECT lr.*, 
+    const userRole = req.user.role;
+    const deanType = req.user.deanType;
+
+    let query = `
+      SELECT lr.*, 
               CONCAT(u.first_name, ' ', u.last_name) as user_name,
-              u.email as user_email, 
+              u.email as user_email, u.gender,
               r.room_number
        FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
        LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
        LEFT JOIN rooms r ON ra.room_id = r.id
        WHERE lr.status = 'pending_admin'
-       ORDER BY lr.created_at ASC`
-    );
+    `;
+    const params = [];
+
+    // Filter by gender if home_dean with dean_type
+    if (userRole === 'home_dean' && deanType) {
+      query += ' AND u.gender = ?';
+      params.push(deanType);
+    }
+
+    query += ' ORDER BY lr.created_at ASC';
+
+    const [requests] = await pool.execute(query, params);
 
     res.json({ data: requests });
   } catch (error) {
@@ -194,15 +212,16 @@ exports.create = async (req, res) => {
        emergencyContact || null, emergencyPhone || null, parentStatus]
     );
 
-    // Get resident name for notification
+    // Get resident name and gender for notification
     const [residentInfo] = await pool.execute(
-      'SELECT first_name, last_name FROM users WHERE id = ?',
+      'SELECT first_name, last_name, gender FROM users WHERE id = ?',
       [userId]
     );
     const residentName = `${residentInfo[0].first_name} ${residentInfo[0].last_name}`;
+    const residentGender = residentInfo[0].gender;
 
     // Notify all admins/deans about new leave request
-    await notificationController.notifyAdminsNewRequest(residentName, result.insertId);
+    await notificationController.notifyAdminsNewRequest(residentName, result.insertId, residentGender);
 
     // Fetch the created request
     const [created] = await pool.execute(
@@ -663,9 +682,9 @@ exports.cancel = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check ownership and get user info
+    // Check ownership and get user info including gender
     const [existing] = await pool.execute(
-      `SELECT lr.*, u.first_name, u.last_name 
+      `SELECT lr.*, u.first_name, u.last_name, u.gender 
        FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
        WHERE lr.id = ?`,
@@ -694,7 +713,7 @@ exports.cancel = async (req, res) => {
 
     // Notify admins about the cancellation
     const residentName = `${request.first_name} ${request.last_name}`;
-    await notificationController.notifyAdminsRequestCancelled(residentName, id);
+    await notificationController.notifyAdminsRequestCancelled(residentName, id, request.gender);
 
     res.json({ message: 'Leave request cancelled' });
   } catch (error) {
