@@ -6,7 +6,7 @@
     </button>
     <div class="header-content">
       <h1>Request to Go Out</h1>
-      <p>Submit your request to leave campus. Your request will be reviewed by the admin/home dean and your parent.</p>
+      <p>Submit your request to leave campus. Your request will be reviewed by the Home Dean, your parent, and VPSAS.</p>
     </div>
   </div>
 
@@ -131,6 +131,16 @@
           <span class="field-error">{{ fieldErrors().destination }}</span>
         }
       </div>
+      <div class="form-group">
+        <label for="spendingLeaveWith">Spending Leave With <span class="optional-label">(Optional)</span></label>
+        <input 
+          type="text" 
+          id="spendingLeaveWith" 
+          [(ngModel)]="form.spendingLeaveWith" 
+          name="spendingLeaveWith"
+          placeholder="Who will you be with? (e.g., Family, Friend - John Doe)"
+        />
+      </div>
       <div class="form-group" [class.has-error]="fieldErrors().reason">
         <label for="reason">Reason for Leave *</label>
         <textarea 
@@ -190,9 +200,10 @@
     <div class="info-box">
       <h4>📋 Approval Process</h4>
       <ol>
-        <li><strong>Admin/Home Dean Review:</strong> Your request will first be reviewed by the dormitory admin or home dean.</li>
-        <li><strong>Parent Approval:</strong> Once admin approves, your parent/guardian will be notified to approve.</li>
-        <li><strong>QR Code Generated:</strong> After both approvals, a QR code will be generated for you.</li>
+        <li><strong>Home Dean Review:</strong> Your request will first be reviewed by the Home Dean.</li>
+        <li><strong>Parent Approval:</strong> Once Home Dean approves, your parent/guardian will be notified to approve.</li>
+        <li><strong>VPSAS Final Approval:</strong> After parent approval, VPSAS will give final approval.</li>
+        <li><strong>QR Code Generated:</strong> After all approvals, a QR code will be generated for you.</li>
         <li><strong>Security Scan:</strong> Show your QR code to the security guard when leaving and returning.</li>
       </ol>
     </div>

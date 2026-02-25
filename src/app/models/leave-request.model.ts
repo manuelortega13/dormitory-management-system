@@ -1,13 +1,22 @@
 export interface LeaveRequest {
   id: number;
   user_id: number;
+  first_name?: string;
+  last_name?: string;
   user_name?: string;
   user_email?: string;
+  user_phone?: string;
   room_number?: string;
+  gender?: 'male' | 'female';
+  parent_name?: string;
+  parent_phone?: string;
+  admin_reviewer_name?: string;
+  vpsas_reviewer_name?: string;
   leave_type: 'errand' | 'overnight' | 'weekend' | 'emergency' | 'other';
   start_date: string;
   end_date: string;
   destination: string;
+  spending_leave_with?: string;
   reason: string;
   emergency_contact: string;
   emergency_phone: string;
@@ -18,13 +27,17 @@ export interface LeaveRequest {
   parent_status: 'pending' | 'approved' | 'declined' | 'not_required';
   parent_reviewed_at?: string;
   parent_notes?: string;
+  vpsas_status: 'pending' | 'approved' | 'declined' | 'not_required';
+  vpsas_reviewed_by?: number;
+  vpsas_reviewed_at?: string;
+  vpsas_notes?: string;
   qr_code?: string;
   qr_generated_at?: string;
   exit_time?: string;
   exit_recorded_by?: number;
   return_time?: string;
   return_recorded_by?: number;
-  status: 'pending_admin' | 'pending_parent' | 'approved' | 'active' | 'completed' | 'declined' | 'cancelled' | 'expired';
+  status: 'pending_dean' | 'pending_admin' | 'pending_parent' | 'pending_vpsas' | 'approved' | 'active' | 'completed' | 'declined' | 'cancelled' | 'expired';
   created_at: string;
   updated_at: string;
 }

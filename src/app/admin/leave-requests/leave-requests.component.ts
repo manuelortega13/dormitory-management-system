@@ -1,8 +1,9 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminLeaveRequestService, LeaveRequest } from './data/admin-leave-request.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../auth/auth.service';
 
 type TabFilter = 'pending' | 'all';
 
@@ -16,6 +17,7 @@ type TabFilter = 'pending' | 'all';
 export class LeaveRequestsComponent implements OnInit {
   private leaveRequestService = inject(AdminLeaveRequestService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
 
   requests = signal<LeaveRequest[]>([]);
   isLoading = signal(true);
@@ -23,6 +25,10 @@ export class LeaveRequestsComponent implements OnInit {
 
   activeTab = signal<TabFilter>('pending');
   searchQuery = signal('');
+  
+  // User role detection
+  currentUserRole = computed(() => this.authService.getCurrentUser()?.role || 'admin');
+  isVpsas = computed(() => this.currentUserRole() === 'vpsas');
 
   // Modal state
   showActionModal = signal(false);
@@ -83,8 +89,10 @@ export class LeaveRequestsComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
+      case 'pending_dean':
       case 'pending_admin':
       case 'pending_parent':
+      case 'pending_vpsas':
         return 'status-pending';
       case 'approved':
         return 'status-approved';
@@ -102,11 +110,15 @@ export class LeaveRequestsComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
+    const userRole = this.currentUserRole();
     switch (status) {
+      case 'pending_dean':
       case 'pending_admin':
-        return 'Pending Your Review';
+        return userRole === 'home_dean' || userRole === 'admin' ? 'Pending Your Review' : 'Awaiting Home Dean';
       case 'pending_parent':
         return 'Awaiting Parent';
+      case 'pending_vpsas':
+        return userRole === 'vpsas' ? 'Pending Your Review' : 'Awaiting VPSAS';
       case 'approved':
         return 'Fully Approved';
       case 'active':

@@ -103,7 +103,14 @@
                 </span>
               </td>
               <td class="actions-cell" data-label="Actions">
-                @if (request.status === 'pending_admin') {
+                @if (!isVpsas() && (request.status === 'pending_dean' || request.status === 'pending_admin')) {
+                  <button class="btn-approve" (click)="openApproveModal(request)">
+                    ✓ Approve
+                  </button>
+                  <button class="btn-decline" (click)="openDeclineModal(request)">
+                    ✗ Decline
+                  </button>
+                } @else if (isVpsas() && request.status === 'pending_vpsas') {
                   <button class="btn-approve" (click)="openApproveModal(request)">
                     ✓ Approve
                   </button>
@@ -112,7 +119,9 @@
                   </button>
                 } @else {
                   <span class="processed-info">
-                    @if (request.admin_reviewed_at) {
+                    @if (isVpsas() && request.vpsas_reviewed_at) {
+                      Reviewed {{ formatDate(request.vpsas_reviewed_at) }}
+                    } @else if (request.admin_reviewed_at) {
                       Reviewed {{ formatDate(request.admin_reviewed_at) }}
                     }
                   </span>
@@ -138,13 +147,19 @@
                   </div>
                   @if (request.admin_notes) {
                     <div class="detail-item">
-                      <span class="label">💬 Admin Notes:</span>
+                      <span class="label">💬 Home Dean Notes:</span>
                       <span class="value">{{ request.admin_notes }}</span>
+                    </div>
+                  }
+                  @if (request.vpsas_notes) {
+                    <div class="detail-item">
+                      <span class="label">💬 VPSAS Notes:</span>
+                      <span class="value">{{ request.vpsas_notes }}</span>
                     </div>
                   }
                   <div class="approval-status">
                     <div class="status-item">
-                      <span class="status-label">Admin:</span>
+                      <span class="status-label">Home Dean:</span>
                       <span class="status-value" [class]="request.admin_status === 'approved' ? 'approved' : request.admin_status === 'declined' ? 'declined' : 'pending'">
                         {{ request.admin_status | titlecase }}
                       </span>
@@ -153,6 +168,12 @@
                       <span class="status-label">Parent:</span>
                       <span class="status-value" [class]="request.parent_status === 'approved' ? 'approved' : request.parent_status === 'declined' ? 'declined' : request.parent_status === 'not_required' ? 'na' : 'pending'">
                         {{ request.parent_status === 'not_required' ? 'N/A' : (request.parent_status | titlecase) }}
+                      </span>
+                    </div>
+                    <div class="status-item">
+                      <span class="status-label">VPSAS:</span>
+                      <span class="status-value" [class]="request.vpsas_status === 'approved' ? 'approved' : request.vpsas_status === 'declined' ? 'declined' : 'pending'">
+                        {{ request.vpsas_status | titlecase }}
                       </span>
                     </div>
                     <div class="status-item">
@@ -190,6 +211,9 @@
             <p><strong>Resident:</strong> {{ selectedRequest()!.user_name }}</p>
             <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
             <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
+            @if (selectedRequest()!.spending_leave_with) {
+              <p><strong>Spending Leave With:</strong> {{ selectedRequest()!.spending_leave_with }}</p>
+            }
             <p><strong>Schedule:</strong> {{ formatDate(selectedRequest()!.start_date) }} - {{ formatDate(selectedRequest()!.end_date) }}</p>
           </div>
 

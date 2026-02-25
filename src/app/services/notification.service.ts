@@ -271,11 +271,17 @@ export class NotificationService implements OnDestroy {
     }
     if (notification.type === 'leave_request_approved' || 
         notification.type === 'leave_request_declined' ||
-        notification.type === 'leave_request_admin_approved') {
+        notification.type === 'leave_request_admin_approved' ||
+        notification.type === 'leave_request_dean_approved' ||
+        notification.type === 'leave_request_parent_approved' ||
+        notification.type === 'leave_request_vpsas_approved') {
       this.requestStatusUpdateTrigger.update(v => v + 1);
     }
     if (notification.type === 'parent_approval_needed') {
       this.parentApprovalNeededTrigger.update(v => v + 1);
+    }
+    if (notification.type === 'vpsas_approval_needed') {
+      this.newLeaveRequestTrigger.update(v => v + 1);
     }
   }
 
@@ -307,6 +313,7 @@ export class NotificationService implements OnDestroy {
       let hasNewLeaveRequest = false;
       let hasStatusUpdate = false;
       let hasParentApprovalNeeded = false;
+      let hasVpsasApprovalNeeded = false;
       
       for (const notif of newNotifications) {
         if (!isInitialLoad && !this.lastNotificationIds.has(notif.id)) {
@@ -317,19 +324,26 @@ export class NotificationService implements OnDestroy {
           // Request status update notification (for resident)
           if (notif.type === 'leave_request_approved' || 
               notif.type === 'leave_request_declined' ||
-              notif.type === 'leave_request_admin_approved') {
+              notif.type === 'leave_request_admin_approved' ||
+              notif.type === 'leave_request_dean_approved' ||
+              notif.type === 'leave_request_parent_approved' ||
+              notif.type === 'leave_request_vpsas_approved') {
             hasStatusUpdate = true;
           }
           // Parent approval needed notification (for parent)
           if (notif.type === 'parent_approval_needed') {
             hasParentApprovalNeeded = true;
           }
+          // VPSAS approval needed notification (for vpsas)
+          if (notif.type === 'vpsas_approval_needed') {
+            hasVpsasApprovalNeeded = true;
+          }
         }
         this.lastNotificationIds.add(notif.id);
       }
       
       // Trigger updates for watching components (not on initial load)
-      if (hasNewLeaveRequest) {
+      if (hasNewLeaveRequest || hasVpsasApprovalNeeded) {
         this.newLeaveRequestTrigger.update(v => v + 1);
       }
       if (hasStatusUpdate) {
@@ -430,11 +444,15 @@ export class NotificationService implements OnDestroy {
     switch (type) {
       case 'leave_request':
       case 'leave_request_new':
+      case 'vpsas_approval_needed':
         return 'bi-file-text';
       case 'parent_approval_needed':
         return 'bi-exclamation-circle';
       case 'leave_request_approved':
       case 'leave_request_admin_approved':
+      case 'leave_request_dean_approved':
+      case 'leave_request_parent_approved':
+      case 'leave_request_vpsas_approved':
         return 'bi-check-circle';
       case 'leave_request_declined':
       case 'leave_request_cancelled':

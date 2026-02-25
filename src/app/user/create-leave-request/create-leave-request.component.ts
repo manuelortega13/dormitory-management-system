@@ -11,6 +11,7 @@ interface GoOutRequestForm {
   endDate: string;
   endTime: string;
   destination: string;
+  spendingLeaveWith: string;
   reason: string;
   emergencyContact: string;
   emergencyPhone: string;
@@ -55,11 +56,12 @@ export class CreateLeaveRequestComponent implements OnInit {
 
   form: GoOutRequestForm = {
     leaveType: 'errand',
-    startDate: this.getTodayDate(),
-    startTime: this.getTimePlusMins(5),
-    endDate: this.getTodayDate(),
-    endTime: this.getTimePlusMins(60),
+    startDate: this.getInitialStartDate(),
+    startTime: this.getInitialStartTime(),
+    endDate: this.getInitialEndDate(),
+    endTime: this.getInitialEndTime(),
     destination: '',
+    spendingLeaveWith: '',
     reason: '',
     emergencyContact: '',
     emergencyPhone: ''
@@ -97,7 +99,43 @@ export class CreateLeaveRequestComponent implements OnInit {
   }
 
   getTodayDate(): string {
-    return new Date().toISOString().split('T')[0];
+    const now = new Date();
+    return this.formatDateLocal(now);
+  }
+
+  private formatDateLocal(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatTimeLocal(date: Date): string {
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+
+  getInitialStartDate(): string {
+    const startDateTime = new Date();
+    startDateTime.setMinutes(startDateTime.getMinutes() + 5);
+    return this.formatDateLocal(startDateTime);
+  }
+
+  getInitialStartTime(): string {
+    const startDateTime = new Date();
+    startDateTime.setMinutes(startDateTime.getMinutes() + 5);
+    return this.formatTimeLocal(startDateTime);
+  }
+
+  getInitialEndDate(): string {
+    const endDateTime = new Date();
+    endDateTime.setMinutes(endDateTime.getMinutes() + 65); // 5 mins for start + 60 mins for return
+    return this.formatDateLocal(endDateTime);
+  }
+
+  getInitialEndTime(): string {
+    const endDateTime = new Date();
+    endDateTime.setMinutes(endDateTime.getMinutes() + 65); // 5 mins for start + 60 mins for return
+    return this.formatTimeLocal(endDateTime);
   }
 
   getCurrentTime(): string {
@@ -288,6 +326,7 @@ export class CreateLeaveRequestComponent implements OnInit {
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
         destination: this.form.destination.trim(),
+        spendingLeaveWith: this.form.spendingLeaveWith.trim() || undefined,
         reason: this.form.reason.trim(),
         emergencyContact: this.form.emergencyContact.trim(),
         emergencyPhone: this.form.emergencyPhone.trim()
@@ -295,7 +334,7 @@ export class CreateLeaveRequestComponent implements OnInit {
 
       await this.leaveRequestService.create(requestData);
       
-      this.successMessage.set('Your go-out request has been submitted successfully! It will be reviewed by the admin/home dean.');
+      this.successMessage.set('Your go-out request has been submitted successfully! It will be reviewed by the Home Dean.');
       this.scrollToTop();
       
       // Reset form
@@ -306,6 +345,7 @@ export class CreateLeaveRequestComponent implements OnInit {
         endDate: this.getTodayDate(),
         endTime: '18:00',
         destination: '',
+        spendingLeaveWith: '',
         reason: '',
         emergencyContact: '',
         emergencyPhone: ''

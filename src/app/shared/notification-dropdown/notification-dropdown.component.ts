@@ -60,8 +60,15 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     // Navigate based on notification type and user role
     switch (notification.type) {
       case 'leave_request_new':
-        // Admin receives this for new leave requests
+        // Admin/Home Dean receives this for new leave requests
         if (user.role === 'admin' || user.role === 'home_dean' || user.role === 'vpsas') {
+          this.router.navigate(['/manage/leave-requests']);
+        }
+        break;
+
+      case 'vpsas_approval_needed':
+        // VPSAS receives this when a request needs final approval
+        if (user.role === 'vpsas' || user.role === 'admin') {
           this.router.navigate(['/manage/leave-requests']);
         }
         break;
@@ -75,6 +82,9 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
       case 'leave_request_approved':
       case 'leave_request_declined':
+      case 'leave_request_dean_approved':
+      case 'leave_request_parent_approved':
+      case 'leave_request_vpsas_approved':
         // Resident receives this when their request is approved/declined
         if (user.role === 'resident') {
           this.router.navigate(['/my-requests']);

@@ -67,6 +67,12 @@
               <span class="label">📍 Destination:</span>
               <span class="value">{{ request.destination }}</span>
             </div>
+            @if (request.spending_leave_with) {
+              <div class="info-row">
+                <span class="label">👥 With:</span>
+                <span class="value">{{ request.spending_leave_with }}</span>
+              </div>
+            }
             <div class="info-row">
               <span class="label">📅 Schedule:</span>
               <span class="value">{{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</span>
@@ -85,7 +91,7 @@
                 @else if (request.admin_status === 'declined') { ✗ }
                 @else { ○ }
               </span>
-              <span class="timeline-label">Admin</span>
+              <span class="timeline-label">Home Dean</span>
             </div>
             <div class="timeline-line" [class.completed]="request.admin_status === 'approved'"></div>
             <div class="timeline-item" [class.completed]="request.parent_status === 'approved'" [class.declined]="request.parent_status === 'declined'" [class.na]="request.parent_status === 'not_required'">
@@ -97,6 +103,15 @@
               </span>
               <span class="timeline-label">Parent</span>
             </div>
+            <div class="timeline-line" [class.completed]="request.parent_status === 'approved' || request.parent_status === 'not_required'"></div>
+            <div class="timeline-item" [class.completed]="request.vpsas_status === 'approved'" [class.declined]="request.vpsas_status === 'declined'">
+              <span class="timeline-icon">
+                @if (request.vpsas_status === 'approved') { ✓ }
+                @else if (request.vpsas_status === 'declined') { ✗ }
+                @else { ○ }
+              </span>
+              <span class="timeline-label">VPSAS</span>
+            </div>
             <div class="timeline-line" [class.completed]="request.qr_code"></div>
             <div class="timeline-item" [class.completed]="request.qr_code">
               <span class="timeline-icon">
@@ -106,10 +121,10 @@
             </div>
           </div>
 
-          <!-- Admin/Parent Notes -->
+          <!-- Approval Notes -->
           @if (request.admin_notes) {
             <div class="notes-section">
-              <span class="notes-label">Admin Notes:</span>
+              <span class="notes-label">Home Dean Notes:</span>
               <span class="notes-text">{{ request.admin_notes }}</span>
             </div>
           }
@@ -117,6 +132,12 @@
             <div class="notes-section">
               <span class="notes-label">Parent Notes:</span>
               <span class="notes-text">{{ request.parent_notes }}</span>
+            </div>
+          }
+          @if (request.vpsas_notes) {
+            <div class="notes-section">
+              <span class="notes-label">VPSAS Notes:</span>
+              <span class="notes-text">{{ request.vpsas_notes }}</span>
             </div>
           }
 
@@ -127,7 +148,7 @@
                 🎫 View QR Code
               </button>
             }
-            @if (!isExpired(request) && (request.status === 'pending_admin' || request.status === 'pending_parent')) {
+            @if (!isExpired(request) && (request.status === 'pending_dean' || request.status === 'pending_admin' || request.status === 'pending_parent' || request.status === 'pending_vpsas')) {
               <button class="btn-cancel" (click)="cancelRequest(request)">
                 Cancel Request
               </button>

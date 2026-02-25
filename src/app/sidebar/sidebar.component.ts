@@ -1,9 +1,10 @@
-import { Component, signal, inject, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService, User } from '../auth/auth.service';
 import { AdminLeaveRequestService } from '../admin/leave-requests/data/admin-leave-request.service';
+import { NotificationService } from '../services/notification.service';
 
 interface MenuItem {
   label: string;
@@ -27,10 +28,21 @@ interface MenuSection {
 export class SidebarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private leaveRequestService = inject(AdminLeaveRequestService);
+  private notificationService = inject(NotificationService);
   private subscription: Subscription | null = null;
   protected readonly isCollapsed = signal(false);
   protected readonly pendingLeaveRequestsCount = signal(0);
   protected readonly currentUser = signal<User | null>(null);
+
+  constructor() {
+    // Watch for new leave request notifications
+    effect(() => {
+      const trigger = this.notificationService.newLeaveRequestTrigger();
+      if (trigger > 0) {
+        this.loadPendingLeaveRequestsCount();
+      }
+    });
+  }
 
   protected readonly userDisplayName = computed(() => {
     const user = this.currentUser();

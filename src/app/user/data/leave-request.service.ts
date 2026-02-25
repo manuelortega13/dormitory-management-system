@@ -11,6 +11,7 @@ export interface CreateLeaveRequestDto {
   startDate: string;
   endDate: string;
   destination: string;
+  spendingLeaveWith?: string;
   reason: string;
   emergencyContact: string;
   emergencyPhone: string;

@@ -165,11 +165,22 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   label {
     font-size: 0.9rem;
     font-weight: 500;
     color: #333;
+
+    .optional-label {
+      font-weight: 400;
+      color: #777;
+      font-size: 0.85rem;
+    }
   }
 
   input[type="text"],

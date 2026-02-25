@@ -91,7 +91,7 @@ exports.getPendingAdmin = async (req, res) => {
        JOIN users u ON lr.user_id = u.id
        LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
        LEFT JOIN rooms r ON ra.room_id = r.id
-       WHERE lr.status = 'pending_admin'
+       WHERE lr.status = 'pending_dean'
     `;
     const params = [];
 
@@ -180,7 +180,7 @@ exports.create = async (req, res) => {
   try {
     const { 
       leaveType, startDate, endDate, reason, destination, 
-      emergencyContact, emergencyPhone 
+      spendingLeaveWith, emergencyContact, emergencyPhone 
     } = req.body;
     const userId = req.user.id;
 
@@ -206,10 +206,10 @@ exports.create = async (req, res) => {
     const [result] = await pool.execute(
       `INSERT INTO leave_requests 
        (user_id, leave_type, start_date, end_date, reason, destination, 
-        emergency_contact, emergency_phone, status, admin_status, parent_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_admin', 'pending', ?)`,
+        spending_leave_with, emergency_contact, emergency_phone, status, admin_status, parent_status, vpsas_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_dean', 'pending', ?, 'pending')`,
       [userId, leaveType, formattedStartDate, formattedEndDate, reason, destination, 
-       emergencyContact || null, emergencyPhone || null, parentStatus]
+       spendingLeaveWith || null, emergencyContact || null, emergencyPhone || null, parentStatus]
     );
 
     // Get resident name and gender for notification
@@ -220,8 +220,8 @@ exports.create = async (req, res) => {
     const residentName = `${residentInfo[0].first_name} ${residentInfo[0].last_name}`;
     const residentGender = residentInfo[0].gender;
 
-    // Notify all admins/deans about new leave request
-    await notificationController.notifyAdminsNewRequest(residentName, result.insertId, residentGender);
+    // Notify home deans about new leave request (filtered by gender)
+    await notificationController.notifyHomeDeanNewRequest(residentName, result.insertId, residentGender);
 
     // Fetch the created request
     const [created] = await pool.execute(
@@ -230,7 +230,7 @@ exports.create = async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Leave request submitted successfully. Awaiting admin approval.',
+      message: 'Leave request submitted successfully. Awaiting Home Dean approval.',
       data: created[0]
     });
   } catch (error) {
@@ -304,31 +304,32 @@ exports.adminApprove = async (req, res) => {
 
     const request = requests[0];
     
-    if (request.status !== 'pending_admin') {
-      return res.status(400).json({ error: 'Request is not pending admin approval' });
+    if (request.status !== 'pending_dean') {
+      return res.status(400).json({ error: 'Request is not pending Home Dean approval' });
     }
 
     const hasParent = request.parent_id != null;
-    let newStatus, qrCode = null, qrGeneratedAt = null;
+    let newStatus;
+    const childName = `${request.first_name} ${request.last_name}`;
 
     if (hasParent && request.parent_status === 'pending') {
       // Needs parent approval next
       newStatus = 'pending_parent';
       
       // Notify parent about approval needed
-      const childName = `${request.first_name} ${request.last_name}`;
       await notificationController.notifyParentApprovalNeeded(request.parent_id, childName, id);
       
-      // Notify resident that admin approved (awaiting parent)
-      await notificationController.notifyResidentAdminApproved(request.user_id, id);
+      // Notify resident that dean approved (awaiting parent)
+      await notificationController.notifyResidentDeanApproved(request.user_id, id);
     } else {
-      // No parent or parent already approved - generate QR
-      newStatus = 'approved';
-      qrCode = generateQRCode();
-      qrGeneratedAt = new Date();
+      // No parent - skip to VPSAS approval
+      newStatus = 'pending_vpsas';
       
-      // Notify resident about full approval with QR ready
-      await notificationController.notifyResidentFullyApproved(request.user_id, 'admin', id);
+      // Notify VPSAS about approval needed
+      await notificationController.notifyVpsasApprovalNeeded(childName, id);
+      
+      // Notify resident that dean approved (awaiting VPSAS)
+      await notificationController.notifyResidentDeanApproved(request.user_id, id);
     }
 
     await pool.execute(
@@ -337,18 +338,15 @@ exports.adminApprove = async (req, res) => {
        admin_reviewed_by = ?, 
        admin_reviewed_at = NOW(), 
        admin_notes = ?,
-       status = ?,
-       qr_code = ?,
-       qr_generated_at = ?
+       status = ?
        WHERE id = ?`,
-      [adminId, notes || null, newStatus, qrCode, qrGeneratedAt, id]
+      [adminId, notes || null, newStatus, id]
     );
 
     res.json({ 
       message: hasParent && request.parent_status === 'pending' 
-        ? 'Admin approved. Awaiting parent approval.' 
-        : 'Leave request fully approved. QR code generated.',
-      qrCode: qrCode
+        ? 'Home Dean approved. Awaiting parent approval.' 
+        : 'Home Dean approved. Awaiting VPSAS approval.'
     });
   } catch (error) {
     console.error('Admin approve request error:', error);
@@ -361,8 +359,19 @@ exports.adminDecline = async (req, res) => {
     const { id } = req.params;
     const { notes } = req.body;
 
-    // Get request user_id for notification
-    const [requests] = await pool.execute('SELECT user_id FROM leave_requests WHERE id = ?', [id]);
+    // Get request user_id for notification and verify status
+    const [requests] = await pool.execute(
+      'SELECT user_id, status FROM leave_requests WHERE id = ?', 
+      [id]
+    );
+
+    if (requests.length === 0) {
+      return res.status(404).json({ error: 'Leave request not found' });
+    }
+
+    if (requests[0].status !== 'pending_dean') {
+      return res.status(400).json({ error: 'Request is not pending Home Dean approval' });
+    }
     
     await pool.execute(
       `UPDATE leave_requests SET 
@@ -376,9 +385,7 @@ exports.adminDecline = async (req, res) => {
     );
 
     // Notify resident about decline
-    if (requests.length > 0) {
-      await notificationController.notifyResidentRequestStatus(requests[0].user_id, 'declined', 'admin', id);
-    }
+    await notificationController.notifyResidentRequestStatus(requests[0].user_id, 'declined', 'the Home Dean', id);
 
     res.json({ message: 'Leave request declined' });
   } catch (error) {
@@ -395,7 +402,7 @@ exports.parentApprove = async (req, res) => {
 
     // Verify this parent owns this request's resident
     const [requests] = await pool.execute(
-      `SELECT lr.*, u.parent_id FROM leave_requests lr
+      `SELECT lr.*, u.parent_id, u.first_name, u.last_name FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
        WHERE lr.id = ?`,
       [id]
@@ -415,27 +422,27 @@ exports.parentApprove = async (req, res) => {
       return res.status(400).json({ error: 'Request is not pending parent approval' });
     }
 
-    // Generate QR code since both approvals are now complete
-    const qrCode = generateQRCode();
+    // After parent approval, move to VPSAS approval
+    const childName = `${request.first_name} ${request.last_name}`;
 
     await pool.execute(
       `UPDATE leave_requests SET 
        parent_status = 'approved', 
        parent_reviewed_at = NOW(), 
        parent_notes = ?,
-       status = 'approved',
-       qr_code = ?,
-       qr_generated_at = NOW()
+       status = 'pending_vpsas'
        WHERE id = ?`,
-      [notes || null, qrCode, id]
+      [notes || null, id]
     );
 
-    // Notify resident about parent approval with QR ready
-    await notificationController.notifyResidentFullyApproved(request.user_id, 'parent', id);
+    // Notify VPSAS about approval needed
+    await notificationController.notifyVpsasApprovalNeeded(childName, id);
+
+    // Notify resident about parent approval (awaiting VPSAS)
+    await notificationController.notifyResidentParentApproved(request.user_id, id);
 
     res.json({ 
-      message: 'Leave request approved by parent. QR code generated.',
-      qrCode: qrCode
+      message: 'Parent approved. Awaiting VPSAS approval.'
     });
   } catch (error) {
     console.error('Parent approve request error:', error);
@@ -481,6 +488,121 @@ exports.parentDecline = async (req, res) => {
     res.json({ message: 'Leave request declined by parent' });
   } catch (error) {
     console.error('Parent decline request error:', error);
+    res.status(500).json({ error: 'Failed to decline leave request' });
+  }
+};
+
+// Get requests pending VPSAS approval
+exports.getPendingVpsas = async (req, res) => {
+  try {
+    const [requests] = await pool.execute(
+      `SELECT lr.*, 
+              CONCAT(u.first_name, ' ', u.last_name) as user_name,
+              u.email as user_email, u.gender,
+              r.room_number
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
+       LEFT JOIN rooms r ON ra.room_id = r.id
+       WHERE lr.status = 'pending_vpsas'
+       ORDER BY lr.created_at ASC`
+    );
+
+    res.json({ data: requests });
+  } catch (error) {
+    console.error('Get pending VPSAS requests error:', error);
+    res.status(500).json({ error: 'Failed to fetch pending requests' });
+  }
+};
+
+// VPSAS approves the leave request - final step, generates QR code
+exports.vpsasApprove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+    const vpsasId = req.user.id;
+
+    // Get current request with user info
+    const [requests] = await pool.execute(
+      `SELECT lr.*, u.first_name, u.last_name FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       WHERE lr.id = ?`,
+      [id]
+    );
+
+    if (requests.length === 0) {
+      return res.status(404).json({ error: 'Leave request not found' });
+    }
+
+    const request = requests[0];
+    
+    if (request.status !== 'pending_vpsas') {
+      return res.status(400).json({ error: 'Request is not pending VPSAS approval' });
+    }
+
+    // Generate QR code - all approvals complete
+    const qrCode = generateQRCode();
+
+    await pool.execute(
+      `UPDATE leave_requests SET 
+       vpsas_status = 'approved', 
+       vpsas_reviewed_by = ?, 
+       vpsas_reviewed_at = NOW(), 
+       vpsas_notes = ?,
+       status = 'approved',
+       qr_code = ?,
+       qr_generated_at = NOW()
+       WHERE id = ?`,
+      [vpsasId, notes || null, qrCode, id]
+    );
+
+    // Notify resident about full approval with QR ready
+    await notificationController.notifyResidentFullyApproved(request.user_id, 'vpsas', id);
+
+    res.json({ 
+      message: 'Leave request fully approved by VPSAS. QR code generated.',
+      qrCode: qrCode
+    });
+  } catch (error) {
+    console.error('VPSAS approve request error:', error);
+    res.status(500).json({ error: 'Failed to approve leave request' });
+  }
+};
+
+// VPSAS declines the leave request
+exports.vpsasDecline = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+    const vpsasId = req.user.id;
+
+    // Get request user_id for notification
+    const [requests] = await pool.execute(
+      'SELECT user_id FROM leave_requests WHERE id = ? AND status = ?',
+      [id, 'pending_vpsas']
+    );
+
+    if (requests.length === 0) {
+      return res.status(404).json({ error: 'Leave request not found or not pending VPSAS approval' });
+    }
+
+    await pool.execute(
+      `UPDATE leave_requests SET 
+       vpsas_status = 'declined', 
+       vpsas_reviewed_by = ?, 
+       vpsas_reviewed_at = NOW(), 
+       vpsas_notes = ?,
+       status = 'declined'
+       WHERE id = ?`,
+      [vpsasId, notes || null, id]
+    );
+
+    // Notify resident about VPSAS decline
+    await notificationController.notifyResidentRequestStatus(requests[0].user_id, 'declined', 'vpsas', id);
+
+    res.json({ message: 'Leave request declined by VPSAS' });
+  } catch (error) {
+    console.error('VPSAS decline request error:', error);
     res.status(500).json({ error: 'Failed to decline leave request' });
   }
 };
@@ -726,12 +848,24 @@ exports.getMyQRCode = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get the most recent approved/active leave request with QR code
+    // Get the most recent approved/active leave request with QR code and all related data
     const [requests] = await pool.execute(
-      `SELECT id, qr_code, status, start_date, end_date, destination, leave_type
-       FROM leave_requests 
-       WHERE user_id = ? AND qr_code IS NOT NULL AND status IN ('approved', 'active')
-       ORDER BY created_at DESC
+      `SELECT lr.*, 
+              u.first_name, u.last_name, u.email as user_email, u.phone as user_phone,
+              r.room_number,
+              parent.phone as parent_phone,
+              CONCAT(parent.first_name, ' ', parent.last_name) as parent_name,
+              CONCAT(dean.first_name, ' ', dean.last_name) as admin_reviewer_name,
+              CONCAT(vpsas_user.first_name, ' ', vpsas_user.last_name) as vpsas_reviewer_name
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
+       LEFT JOIN rooms r ON ra.room_id = r.id
+       LEFT JOIN users parent ON u.parent_id = parent.id
+       LEFT JOIN users dean ON lr.admin_reviewed_by = dean.id
+       LEFT JOIN users vpsas_user ON lr.vpsas_reviewed_by = vpsas_user.id
+       WHERE lr.user_id = ? AND lr.qr_code IS NOT NULL AND lr.status IN ('approved', 'active')
+       ORDER BY lr.created_at DESC
        LIMIT 1`,
       [userId]
     );

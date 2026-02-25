@@ -48,6 +48,13 @@
               <span class="detail-value">{{ request.destination }}</span>
             </div>
 
+            @if (request.spending_leave_with) {
+              <div class="detail-group">
+                <span class="detail-label">👥 Spending Leave With</span>
+                <span class="detail-value">{{ request.spending_leave_with }}</span>
+              </div>
+            }
+
             <div class="detail-group">
               <span class="detail-label">📅 Schedule</span>
               <div class="schedule-block">
@@ -76,7 +83,7 @@
           <div class="admin-approval">
             <span class="approval-icon">✓</span>
             <span class="approval-text">
-              Approved by Admin
+              Approved by Home Dean
               @if (request.admin_reviewed_at) {
                 <span class="approval-date">on {{ formatShortDate(request.admin_reviewed_at) }}</span>
               }
@@ -85,7 +92,7 @@
 
           @if (request.admin_notes) {
             <div class="admin-notes">
-              <span class="notes-label">Admin Notes:</span>
+              <span class="notes-label">Home Dean Notes:</span>
               <span class="notes-text">{{ request.admin_notes }}</span>
             </div>
           }
@@ -124,13 +131,16 @@
             <p><strong>Child:</strong> {{ selectedRequest()!.user_name }}</p>
             <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
             <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
+            @if (selectedRequest()!.spending_leave_with) {
+              <p><strong>Spending Leave With:</strong> {{ selectedRequest()!.spending_leave_with }}</p>
+            }
             <p><strong>When:</strong> {{ formatShortDate(selectedRequest()!.start_date) }} - {{ formatShortDate(selectedRequest()!.end_date) }}</p>
           </div>
 
           @if (actionType() === 'approve') {
             <div class="info-message approve">
               <span class="info-icon">ℹ️</span>
-              <p>After your approval, a QR code will be generated for your child to use at the campus gate.</p>
+              <p>After your approval, the request will be sent to VPSAS for final approval. Once VPSAS approves, a QR code will be generated for your child.</p>
             </div>
           } @else {
             <div class="info-message decline">

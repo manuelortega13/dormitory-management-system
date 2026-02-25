@@ -49,6 +49,12 @@
                   {{ activity.destination }}
                 </span>
               }
+              @if (activity.spending_leave_with) {
+                <span class="detail-item">
+                  <span class="detail-icon">👥</span>
+                  {{ activity.spending_leave_with }}
+                </span>
+              }
               @if (activity.leave_type) {
                 <span class="detail-item">
                   <span class="detail-icon">📋</span>

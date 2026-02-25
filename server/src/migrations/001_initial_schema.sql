@@ -1,6 +1,7 @@
 -- Migration: 001_initial_schema
--- Description: Initial database schema
+-- Description: Initial database schema (consolidated)
 -- Created: 2026-02-24
+-- Updated: 2026-02-26 (consolidated all migrations)
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
@@ -10,7 +11,12 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role ENUM('resident', 'parent', 'admin', 'security_guard', 'dean') NOT NULL DEFAULT 'resident',
+    gender ENUM('male', 'female') NULL,
+    address TEXT NULL,
+    course VARCHAR(255) NULL,
+    year_level INT NULL,
+    role ENUM('resident', 'parent', 'admin', 'security_guard', 'home_dean', 'vpsas') NOT NULL DEFAULT 'resident',
+    dean_type ENUM('male', 'female') NULL,
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
     parent_id INT,
     photo_url VARCHAR(500),
@@ -55,9 +61,10 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     end_date DATETIME NOT NULL,
     reason TEXT NOT NULL,
     destination VARCHAR(255),
+    spending_leave_with VARCHAR(255),
     emergency_contact VARCHAR(100),
     emergency_phone VARCHAR(20),
-    status ENUM('pending_admin', 'pending_parent', 'approved', 'declined', 'cancelled', 'active', 'completed', 'expired') DEFAULT 'pending_admin',
+    status ENUM('pending_dean', 'pending_admin', 'pending_parent', 'pending_vpsas', 'approved', 'declined', 'cancelled', 'active', 'completed', 'expired') DEFAULT 'pending_dean',
     admin_status ENUM('pending', 'approved', 'declined') DEFAULT 'pending',
     admin_reviewed_by INT,
     admin_reviewed_at TIMESTAMP NULL,
@@ -65,6 +72,10 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     parent_status ENUM('pending', 'approved', 'declined', 'not_required') DEFAULT 'pending',
     parent_reviewed_at TIMESTAMP NULL,
     parent_notes TEXT,
+    vpsas_status ENUM('pending', 'approved', 'declined', 'not_required') DEFAULT 'pending',
+    vpsas_reviewed_by INT,
+    vpsas_reviewed_at TIMESTAMP NULL,
+    vpsas_notes TEXT,
     qr_code VARCHAR(255) UNIQUE,
     qr_generated_at TIMESTAMP NULL,
     exit_time TIMESTAMP NULL,
@@ -75,6 +86,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (vpsas_reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (exit_recorded_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (return_recorded_by) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -137,7 +149,7 @@ CREATE TABLE IF NOT EXISTS incidents (
 CREATE TABLE IF NOT EXISTS notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    type ENUM('leave_request_new', 'leave_request_admin_approved', 'leave_request_approved', 'leave_request_declined', 'leave_request_cancelled', 'parent_approval_needed', 'child_left_campus', 'child_returned_campus') NOT NULL,
+    type ENUM('leave_request_new', 'leave_request_admin_approved', 'leave_request_dean_approved', 'leave_request_parent_approved', 'leave_request_vpsas_approved', 'leave_request_approved', 'leave_request_declined', 'leave_request_cancelled', 'parent_approval_needed', 'vpsas_approval_needed', 'child_left_campus', 'child_returned_campus') NOT NULL,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     reference_id INT,

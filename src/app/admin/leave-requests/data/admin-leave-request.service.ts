@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Subject } from 'rxjs';
 import { LeaveRequest } from '../../../models/leave-request.model';
 import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../auth/auth.service';
 
 export type { LeaveRequest };
 
@@ -11,6 +12,7 @@ export type { LeaveRequest };
 })
 export class AdminLeaveRequestService {
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private apiUrl = `${environment.apiUrl}/leave-requests`;
   
   // Subject to notify when leave requests are updated
@@ -25,10 +27,12 @@ export class AdminLeaveRequestService {
     return response.data;
   }
 
-  // Get pending requests for admin approval
+  // Get pending requests based on user role (Home Dean gets pending_dean, VPSAS gets pending_vpsas)
   async getPendingRequests(): Promise<LeaveRequest[]> {
+    const user = this.authService.getCurrentUser();
+    const endpoint = user?.role === 'vpsas' ? 'pending-vpsas' : 'pending-admin';
     const response = await firstValueFrom(
-      this.http.get<{ data: LeaveRequest[] }>(`${this.apiUrl}/pending-admin`)
+      this.http.get<{ data: LeaveRequest[] }>(`${this.apiUrl}/${endpoint}`)
     );
     return response.data;
   }
@@ -41,18 +45,22 @@ export class AdminLeaveRequestService {
     return response.data;
   }
 
-  // Approve request
+  // Approve request (Home Dean or VPSAS based on current user role)
   async approve(id: number, notes?: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    const endpoint = user?.role === 'vpsas' ? 'vpsas-approve' : 'admin-approve';
     await firstValueFrom(
-      this.http.post(`${this.apiUrl}/${id}/admin-approve`, { notes })
+      this.http.post(`${this.apiUrl}/${id}/${endpoint}`, { notes })
     );
     this.leaveRequestUpdated.next();
   }
 
-  // Decline request
+  // Decline request (Home Dean or VPSAS based on current user role)
   async decline(id: number, notes?: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    const endpoint = user?.role === 'vpsas' ? 'vpsas-decline' : 'admin-decline';
     await firstValueFrom(
-      this.http.post(`${this.apiUrl}/${id}/admin-decline`, { notes })
+      this.http.post(`${this.apiUrl}/${id}/${endpoint}`, { notes })
     );
     this.leaveRequestUpdated.next();
   }

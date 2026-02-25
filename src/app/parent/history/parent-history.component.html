@@ -38,6 +38,9 @@
           </div>
           <div class="item-body">
             <p><strong>Destination:</strong> {{ request.destination }}</p>
+            @if (request.spending_leave_with) {
+              <p><strong>Spending Leave With:</strong> {{ request.spending_leave_with }}</p>
+            }
             <p><strong>Schedule:</strong> {{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</p>
             <p><strong>Reason:</strong> {{ request.reason }}</p>
             @if (request.room_number) {
@@ -47,7 +50,10 @@
               <p><strong>Your Note:</strong> {{ request.parent_notes }}</p>
             }
             @if (request.admin_notes) {
-              <p><strong>Admin Note:</strong> {{ request.admin_notes }}</p>
+              <p><strong>Home Dean Note:</strong> {{ request.admin_notes }}</p>
+            }
+            @if (request.vpsas_notes) {
+              <p><strong>VPSAS Note:</strong> {{ request.vpsas_notes }}</p>
             }
           </div>
         </div>

@@ -74,12 +74,12 @@
             
             <div class="detail-item">
               <span class="detail-label">Address</span>
-              <span class="detail-value placeholder">{{ placeholderData.address }}</span>
+              <span class="detail-value">{{ leaveRequest()!.room_number ? 'Room ' + leaveRequest()!.room_number : 'N/A' }}</span>
             </div>
             
             <div class="detail-item">
               <span class="detail-label">Course/Year Level</span>
-              <span class="detail-value placeholder">{{ placeholderData.courseYearLevel }}</span>
+              <span class="detail-value">N/A</span>
             </div>
           </div>
         </div>
@@ -93,13 +93,13 @@
           
           <div class="details-grid">
             <div class="detail-item">
-              <span class="detail-label">Date of Leave</span>
-              <span class="detail-value">{{ formatDateOnly(leaveRequest()!.start_date) }}</span>
+              <span class="detail-label">Date & Time of Leave</span>
+              <span class="detail-value">{{ formatDate(leaveRequest()!.start_date) }}</span>
             </div>
             
             <div class="detail-item">
-              <span class="detail-label">Date of Return</span>
-              <span class="detail-value">{{ formatDateOnly(leaveRequest()!.end_date) }}</span>
+              <span class="detail-label">Date & Time of Return</span>
+              <span class="detail-value">{{ formatDate(leaveRequest()!.end_date) }}</span>
             </div>
             
             <div class="detail-item full-width">
@@ -109,7 +109,7 @@
             
             <div class="detail-item full-width">
               <span class="detail-label">Spending Leave With</span>
-              <span class="detail-value placeholder">{{ placeholderData.spendingLeaveWith }}</span>
+              <span class="detail-value">{{ leaveRequest()!.spending_leave_with || 'N/A' }}</span>
             </div>
             
             <div class="detail-item full-width">
@@ -139,7 +139,7 @@
             
             <div class="detail-item">
               <span class="detail-label">Parent Phone Number</span>
-              <span class="detail-value placeholder">{{ placeholderData.parentPhone }}</span>
+              <span class="detail-value">{{ leaveRequest()!.parent_phone || 'N/A' }}</span>
             </div>
           </div>
         </div>
@@ -153,24 +153,24 @@
           
           <div class="approval-grid">
             <div class="approval-item">
-              <span class="approval-label">Adviser/Work Supervisor</span>
-              <span class="approval-value placeholder">{{ placeholderData.adviser }}</span>
+              <span class="approval-label">Home Dean</span>
+              <span class="approval-value">{{ leaveRequest()!.admin_reviewer_name || 'N/A' }}</span>
               <span class="approval-status approved">
                 <i class="bi bi-check-circle-fill"></i> Approved
               </span>
             </div>
             
             <div class="approval-item">
-              <span class="approval-label">Home Dean</span>
-              <span class="approval-value placeholder">{{ placeholderData.homeDean }}</span>
-              <span class="approval-status approved">
-                <i class="bi bi-check-circle-fill"></i> Approved
+              <span class="approval-label">Parent/Guardian</span>
+              <span class="approval-value">{{ leaveRequest()!.parent_name || 'N/A' }}</span>
+              <span class="approval-status" [class.approved]="leaveRequest()!.parent_status === 'approved'" [class.not-required]="leaveRequest()!.parent_status === 'not_required'">
+                <i class="bi bi-check-circle-fill"></i> {{ leaveRequest()!.parent_status === 'not_required' ? 'Not Required' : 'Approved' }}
               </span>
             </div>
             
             <div class="approval-item">
               <span class="approval-label">VPSAS</span>
-              <span class="approval-value placeholder">{{ placeholderData.vpsas }}</span>
+              <span class="approval-value">{{ leaveRequest()!.vpsas_reviewer_name || 'N/A' }}</span>
               <span class="approval-status approved">
                 <i class="bi bi-check-circle-fill"></i> Approved
               </span>

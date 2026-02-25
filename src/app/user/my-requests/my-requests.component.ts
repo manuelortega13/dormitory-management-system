@@ -78,8 +78,10 @@ export class MyRequestsComponent implements OnInit {
   getStatusClass(request: LeaveRequest): string {
     const status = this.getEffectiveStatus(request);
     switch (status) {
+      case 'pending_dean':
       case 'pending_admin':
       case 'pending_parent':
+      case 'pending_vpsas':
         return 'status-pending';
       case 'approved':
         return 'status-approved';
@@ -99,10 +101,13 @@ export class MyRequestsComponent implements OnInit {
   getStatusLabel(request: LeaveRequest): string {
     const status = this.getEffectiveStatus(request);
     switch (status) {
+      case 'pending_dean':
       case 'pending_admin':
-        return 'Awaiting Admin Approval';
+        return 'Awaiting Home Dean Approval';
       case 'pending_parent':
         return 'Awaiting Parent Approval';
+      case 'pending_vpsas':
+        return 'Awaiting VPSAS Approval';
       case 'approved':
         return 'Approved - Ready to Go';
       case 'active':

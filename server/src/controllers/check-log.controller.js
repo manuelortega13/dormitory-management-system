@@ -95,7 +95,7 @@ exports.getChildrenLogs = async (req, res) => {
     const [logs] = await pool.execute(
       `SELECT cl.*, 
               CONCAT(u.first_name, ' ', u.last_name) as user_name,
-              u.email, r.room_number, lr.leave_type, lr.destination
+              u.email, r.room_number, lr.leave_type, lr.destination, lr.spending_leave_with
        FROM check_logs cl
        JOIN users u ON cl.user_id = u.id
        LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'

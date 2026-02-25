@@ -25,17 +25,6 @@ export class LeavePassComponent implements OnInit {
   errorMessage = signal('');
   copiedFeedback = signal(false);
 
-  // Temporary placeholder data for fields not in schema
-  placeholderData = {
-    address: 'Dormitory Block A, Room 101',
-    courseYearLevel: 'BSCS - 3rd Year',
-    spendingLeaveWith: 'Family',
-    parentPhone: '+63 912 345 6789',
-    adviser: 'Prof. Maria Santos',
-    homeDean: 'Dr. Juan Dela Cruz',
-    vpsas: 'Dr. Roberto Garcia'
-  };
-
   ngOnInit(): void {
     this.user.set(this.authService.getCurrentUser());
     this.loadLeavePass();

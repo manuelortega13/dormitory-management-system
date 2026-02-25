@@ -13,6 +13,7 @@ export interface ChildActivityLog {
   leave_request_id: number;
   leave_type?: string;
   destination?: string;
+  spending_leave_with?: string;
   type: 'check-in' | 'check-out';
   method: string;
   recorded_by: number;

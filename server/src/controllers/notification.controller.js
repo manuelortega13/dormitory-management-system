@@ -172,6 +172,89 @@ exports.notifyAdminsNewRequest = async (residentName, leaveRequestId, residentGe
   }
 };
 
+// Notify home deans about new leave request (filtered by resident gender)
+exports.notifyHomeDeanNewRequest = async (residentName, leaveRequestId, residentGender = null) => {
+  try {
+    let homeDeanQuery = "SELECT id FROM users WHERE role = 'home_dean' AND status = 'active'";
+    const homeDeanParams = [];
+
+    if (residentGender) {
+      // Only notify home_deans whose dean_type matches the resident's gender
+      homeDeanQuery += " AND (dean_type = ? OR dean_type IS NULL)";
+      homeDeanParams.push(residentGender);
+    }
+
+    const [homeDeans] = await pool.execute(homeDeanQuery, homeDeanParams);
+
+    for (const dean of homeDeans) {
+      await exports.createNotification(
+        dean.id,
+        'leave_request_new',
+        'New Leave Request',
+        `${residentName} has submitted a new leave request requiring your approval`,
+        leaveRequestId,
+        'leave_request'
+      );
+    }
+  } catch (error) {
+    console.error('Notify home dean error:', error);
+  }
+};
+
+// Notify resident that home dean approved (awaiting next step)
+exports.notifyResidentDeanApproved = async (residentId, leaveRequestId) => {
+  try {
+    await exports.createNotification(
+      residentId,
+      'leave_request_dean_approved',
+      'Home Dean Approved',
+      'Your leave request has been approved by the Home Dean. Awaiting next approval.',
+      leaveRequestId,
+      'leave_request'
+    );
+  } catch (error) {
+    console.error('Notify resident dean approved error:', error);
+  }
+};
+
+// Notify VPSAS about pending approval
+exports.notifyVpsasApprovalNeeded = async (residentName, leaveRequestId) => {
+  try {
+    const [vpsasUsers] = await pool.execute(
+      "SELECT id FROM users WHERE role = 'vpsas' AND status = 'active'"
+    );
+
+    for (const vpsas of vpsasUsers) {
+      await exports.createNotification(
+        vpsas.id,
+        'vpsas_approval_needed',
+        'Approval Required',
+        `${residentName}'s leave request needs your final approval`,
+        leaveRequestId,
+        'leave_request'
+      );
+    }
+  } catch (error) {
+    console.error('Notify VPSAS error:', error);
+  }
+};
+
+// Notify resident that parent approved (awaiting VPSAS)
+exports.notifyResidentParentApproved = async (residentId, leaveRequestId) => {
+  try {
+    await exports.createNotification(
+      residentId,
+      'leave_request_parent_approved',
+      'Parent Approved',
+      'Your leave request has been approved by your parent. Awaiting VPSAS approval.',
+      leaveRequestId,
+      'leave_request'
+    );
+  } catch (error) {
+    console.error('Notify resident parent approved error:', error);
+  }
+};
+
 // Notify parent about child's leave request needing approval
 exports.notifyParentApprovalNeeded = async (parentId, childName, leaveRequestId) => {
   try {
@@ -188,14 +271,14 @@ exports.notifyParentApprovalNeeded = async (parentId, childName, leaveRequestId)
   }
 };
 
-// Notify resident that admin approved but awaiting parent approval
+// Notify resident that Home Dean approved but awaiting parent approval
 exports.notifyResidentAdminApproved = async (residentId, leaveRequestId) => {
   try {
     await exports.createNotification(
       residentId,
       'leave_request_admin_approved',
-      'Admin Approved',
-      'Your leave request has been approved by admin. Awaiting parent approval.',
+      'Home Dean Approved',
+      'Your leave request has been approved by the Home Dean. Awaiting parent approval.',
       leaveRequestId,
       'leave_request'
     );

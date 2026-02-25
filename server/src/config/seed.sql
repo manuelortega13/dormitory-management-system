@@ -1,7 +1,7 @@
 -- Seed data for Dormitory Management System
 -- Run this after migrations to create default users
 
-USE railway;
+USE dormitory_db;
 
 -- Default admin user
 -- Username: admin
@@ -13,32 +13,6 @@ VALUES (
     'System',
     'Administrator',
     'admin',
-    'active'
-) ON DUPLICATE KEY UPDATE id=id;
-
--- Default parent user
--- Username: parent
--- Password: pass123
-INSERT INTO users (email, password, first_name, last_name, role, status)
-VALUES (
-    'parent',
-    '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
-    'John',
-    'Parent',
-    'parent',
-    'active'
-) ON DUPLICATE KEY UPDATE id=id;
-
--- Default security guard user
--- Username: guard
--- Password: pass123
-INSERT INTO users (email, password, first_name, last_name, role, status)
-VALUES (
-    'guard',
-    '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
-    'Security',
-    'Guard',
-    'security_guard',
     'active'
 ) ON DUPLICATE KEY UPDATE id=id;
 
@@ -70,6 +44,32 @@ VALUES (
     'active'
 ) ON DUPLICATE KEY UPDATE id=id;
 
+-- Default parent user
+-- Username: parent
+-- Password: pass123
+INSERT INTO users (email, password, first_name, last_name, role, status)
+VALUES (
+    'parent',
+    '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
+    'John',
+    'Parent',
+    'parent',
+    'active'
+) ON DUPLICATE KEY UPDATE id=id;
+
+-- Default security guard user
+-- Username: guard
+-- Password: pass123
+INSERT INTO users (email, password, first_name, last_name, role, status)
+VALUES (
+    'guard',
+    '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
+    'Security',
+    'Guard',
+    'security_guard',
+    'active'
+) ON DUPLICATE KEY UPDATE id=id;
+
 -- Default VPSAS user
 -- Username: vpsas
 -- Password: pass123
@@ -83,14 +83,14 @@ VALUES (
     'active'
 ) ON DUPLICATE KEY UPDATE id=id;
 
--- Default resident user (linked to parent)
--- Username: resident
+-- Default female resident user (linked to parent)
+-- Username: resident_f
 -- Password: pass123
 INSERT INTO users (email, password, first_name, last_name, role, status, parent_id, gender, address, course, year_level)
 VALUES (
-    'resident',
+    'resident_f',
     '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
-    'Jane',
+    'Christine',
     'Student',
     'resident',
     'active',
@@ -101,12 +101,31 @@ VALUES (
     2
 ) ON DUPLICATE KEY UPDATE id=id;
 
--- Sample rooms
+-- Default male resident user (linked to parent)
+-- Username: resident_m
+-- Password: pass123
+INSERT INTO users (email, password, first_name, last_name, role, status, parent_id, gender, address, course, year_level)
+VALUES (
+    'resident_m',
+    '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
+    'Max',
+    'Student',
+    'resident',
+    'active',
+    (SELECT id FROM (SELECT id FROM users WHERE email = 'parent') AS tmp),
+    'male',
+    '456 Oak Avenue, City',
+    'BS Information Technology',
+    3
+) ON DUPLICATE KEY UPDATE id=id;
+
+-- 6 Sample rooms
 INSERT INTO rooms (room_number, floor, capacity, status, room_type, amenities)
 VALUES 
     ('101', 1, 1, 'available', 'single', '["AC", "WiFi"]'),
     ('102', 1, 2, 'available', 'double', '["AC", "WiFi", "Attached Bath"]'),
     ('103', 1, 2, 'available', 'double', '["AC", "WiFi", "Attached Bath"]'),
-    ('201', 2, 2, 'available', 'quad', '["AC", "WiFi", "Attached Bath", "Balcony", "Mini Fridge"]'),
-    ('202', 2, 3, 'available', 'triple', '["AC", "WiFi", "Attached Bath"]')
+    ('201', 2, 2, 'available', 'double', '["AC", "WiFi", "Attached Bath"]'),
+    ('202', 2, 3, 'available', 'triple', '["AC", "WiFi", "Attached Bath"]'),
+    ('203', 2, 4, 'available', 'quad', '["AC", "WiFi", "Attached Bath", "Balcony", "Mini Fridge"]')
 ON DUPLICATE KEY UPDATE id=id;

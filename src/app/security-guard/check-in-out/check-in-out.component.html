@@ -145,6 +145,12 @@
                   <span class="label">Destination:</span>
                   <span class="value">{{ request.destination }}</span>
                 </div>
+                @if (request.spending_leave_with) {
+                  <div class="detail-row">
+                    <span class="label">With:</span>
+                    <span class="value">{{ request.spending_leave_with }}</span>
+                  </div>
+                }
                 <div class="detail-row">
                   <span class="label">Valid Until:</span>
                   <span class="value">{{ formatDate(request.end_date) }}</span>

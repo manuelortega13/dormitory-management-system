@@ -48,8 +48,10 @@ export class ParentHistoryComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     switch (status) {
-      case 'pending_admin': return 'Pending Admin';
+      case 'pending_dean':
+      case 'pending_admin': return 'Pending Home Dean';
       case 'pending_parent': return 'Pending Your Review';
+      case 'pending_vpsas': return 'Pending VPSAS';
       case 'approved': return 'Approved';
       case 'active': return 'Currently Out';
       case 'completed': return 'Completed';
@@ -62,8 +64,10 @@ export class ParentHistoryComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
+      case 'pending_dean':
       case 'pending_admin':
       case 'pending_parent':
+      case 'pending_vpsas':
         return 'status-pending';
       case 'approved':
         return 'status-approved';
