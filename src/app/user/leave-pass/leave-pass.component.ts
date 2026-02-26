@@ -37,16 +37,16 @@ export class LeavePassComponent implements OnInit {
     try {
       // Try to get the request ID from route params
       const requestId = this.route.snapshot.paramMap.get('id');
+      console.log('Loading leave pass for request ID:', requestId);
       
       if (requestId) {
-        // Load specific request (future enhancement)
-        // For now, just load the active QR
-        const data = await this.leaveRequestService.getMyQRCode();
-        if (data) {
-          this.qrCode.set(data.qr_code);
-          this.leaveRequest.set(data.leave_request);
+        // Load specific request by ID
+        const leaveRequest = await this.leaveRequestService.getById(Number(requestId));
+        if (leaveRequest && leaveRequest.qr_code) {
+          this.qrCode.set(leaveRequest.qr_code);
+          this.leaveRequest.set(leaveRequest);
         } else {
-          this.errorMessage.set('No active leave pass found');
+          this.errorMessage.set('No active leave pass found for this request');
         }
       } else {
         // Load current active QR code

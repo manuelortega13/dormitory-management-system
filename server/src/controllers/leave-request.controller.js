@@ -144,12 +144,17 @@ exports.getById = async (req, res) => {
       `SELECT lr.*, 
               u.first_name, u.last_name, u.email, u.phone as user_phone, u.parent_id,
               r.room_number,
-              admin.first_name as admin_first_name, admin.last_name as admin_last_name
+              parent.phone as parent_phone,
+              CONCAT(parent.first_name, ' ', parent.last_name) as parent_name,
+              CONCAT(dean.first_name, ' ', dean.last_name) as admin_reviewer_name,
+              CONCAT(vpsas_user.first_name, ' ', vpsas_user.last_name) as vpsas_reviewer_name
        FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
        LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
        LEFT JOIN rooms r ON ra.room_id = r.id
-       LEFT JOIN users admin ON lr.admin_reviewed_by = admin.id
+       LEFT JOIN users parent ON u.parent_id = parent.id
+       LEFT JOIN users dean ON lr.admin_reviewed_by = dean.id
+       LEFT JOIN users vpsas_user ON lr.vpsas_reviewed_by = vpsas_user.id
        WHERE lr.id = ?`,
       [id]
     );

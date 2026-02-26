@@ -58,4 +58,16 @@ export class LeaveRequestService {
       return null;
     }
   }
+
+  // Get leave request by ID
+  async getById(id: number): Promise<LeaveRequest | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: LeaveRequest }>(`${this.apiUrl}/${id}`)
+      );
+      return response.data;
+    } catch {
+      return null;
+    }
+  }
 }
