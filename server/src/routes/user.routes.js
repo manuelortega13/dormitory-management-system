@@ -28,7 +28,7 @@ router.patch('/:id/reactivate', authMiddleware, roleMiddleware('admin'), userCon
 router.get('/:id/room', authMiddleware, userController.getUserRoom);
 
 // GET /api/users/agents - Get all agents (admin only)
-router.get('/agents/list', authMiddleware, roleMiddleware('admin'), userController.getAgents);
+router.get('/agents/list', authMiddleware, roleMiddleware('admin', 'vpsas'), userController.getAgents);
 
 // POST /api/users/agents - Create agent (admin only)
 router.post('/agents', authMiddleware, roleMiddleware('admin'), userController.createAgent);
