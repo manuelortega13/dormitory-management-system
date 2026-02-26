@@ -7,7 +7,7 @@ const { authMiddleware, roleMiddleware } = require('../middleware/auth.middlewar
 router.get('/', authMiddleware, roleMiddleware('admin'), userController.getAll);
 
 // GET /api/users/residents - Get all residents
-router.get('/residents', authMiddleware, roleMiddleware('admin', 'security'), userController.getResidents);
+router.get('/residents', authMiddleware, roleMiddleware('admin', 'security_guard'), userController.getResidents);
 
 // GET /api/users/:id - Get user by ID
 router.get('/:id', authMiddleware, userController.getById);
