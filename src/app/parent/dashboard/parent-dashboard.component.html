@@ -192,14 +192,23 @@
                       class="camera-video"
                     ></video>
                     <div class="face-frame-overlay">
-                      <div class="face-frame"></div>
-                      <span class="frame-hint">Position your face within the frame</span>
+                      <div class="face-frame" [class.countdown-active]="autoCapturing()"></div>
+                      @if (autoCapturing() && countdown() > 0) {
+                        <div class="countdown-display">{{ countdown() }}</div>
+                      }
+                      <span class="frame-hint">
+                        @if (autoCapturing()) {
+                          Hold still - capturing in {{ countdown() }}...
+                        } @else {
+                          Position your face within the frame
+                        }
+                      </span>
                     </div>
                   </div>
                   <canvas #verificationCanvas style="display: none;"></canvas>
                   <div class="camera-controls">
                     <button type="button" class="btn-capture" (click)="capturePhoto()">
-                      📸 Capture
+                      📸 Capture Now
                     </button>
                     <button type="button" class="btn-cancel-camera" (click)="cancelFaceVerification()">
                       Cancel

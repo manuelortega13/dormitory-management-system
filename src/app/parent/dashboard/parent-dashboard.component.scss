@@ -632,6 +632,36 @@
   border-radius: 20px;
 }
 
+// Countdown display for auto-capture
+.countdown-display {
+  position: absolute;
+  font-size: 5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.face-frame.countdown-active {
+  border-color: #10b981;
+  box-shadow: 
+    0 0 0 2000px rgba(0, 0, 0, 0.4),
+    inset 0 0 30px rgba(16, 185, 129, 0.4),
+    0 0 30px rgba(16, 185, 129, 0.5);
+  animation: none;
+}
+
 .camera-controls {
   display: flex;
   gap: 0.75rem;

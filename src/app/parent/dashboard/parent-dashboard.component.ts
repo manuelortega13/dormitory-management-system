@@ -39,6 +39,11 @@ export class ParentDashboardComponent implements OnInit {
   verificationError = signal('');
   private mediaStream: MediaStream | null = null;
 
+  // Auto-capture state
+  autoCapturing = signal(false);
+  countdown = signal(0);
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     // Watch for new approval requests and refresh the list
     effect(() => {
@@ -162,11 +167,18 @@ export class ParentDashboardComponent implements OnInit {
       setTimeout(() => {
         if (this.videoElement?.nativeElement && this.mediaStream) {
           this.videoElement.nativeElement.srcObject = this.mediaStream;
+          // Start auto-capture countdown after video is playing
+          this.videoElement.nativeElement.onloadedmetadata = () => {
+            this.startAutoCapture();
+          };
         } else {
           // Retry with longer delay if element not ready
           setTimeout(() => {
             if (this.videoElement?.nativeElement && this.mediaStream) {
               this.videoElement.nativeElement.srcObject = this.mediaStream;
+              this.videoElement.nativeElement.onloadedmetadata = () => {
+                this.startAutoCapture();
+              };
             } else {
               this.cameraError.set('Failed to initialize camera. Please try again.');
               this.stopCamera();
@@ -181,6 +193,7 @@ export class ParentDashboardComponent implements OnInit {
   }
 
   stopCamera() {
+    this.stopAutoCapture();
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach(track => track.stop());
       this.mediaStream = null;
@@ -188,7 +201,37 @@ export class ParentDashboardComponent implements OnInit {
     this.cameraActive.set(false);
   }
 
+  startAutoCapture() {
+    // Don't start if already capturing
+    if (this.autoCapturing()) return;
+    
+    this.autoCapturing.set(true);
+    this.countdown.set(3);
+
+    this.countdownInterval = setInterval(() => {
+      const current = this.countdown();
+      if (current <= 1) {
+        this.stopAutoCapture();
+        this.capturePhoto();
+      } else {
+        this.countdown.set(current - 1);
+      }
+    }, 1000);
+  }
+
+  stopAutoCapture() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    this.autoCapturing.set(false);
+    this.countdown.set(0);
+  }
+
   capturePhoto() {
+    // Stop auto-capture if running (for manual capture)
+    this.stopAutoCapture();
+    
     if (!this.videoElement?.nativeElement || !this.canvasElement?.nativeElement) return;
 
     const video = this.videoElement.nativeElement;
