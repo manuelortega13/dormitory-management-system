@@ -588,3 +588,238 @@
     color: #dc2626;
   }
 }
+
+// Mobile Responsive Styles
+@media (max-width: 768px) {
+  .parent-registrations-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+
+    h1 {
+      font-size: 1.35rem;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+    }
+  }
+
+  .stats-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .stat-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    gap: 0.5rem;
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+    }
+  }
+
+  .filters-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .search-box {
+      min-width: 100%;
+    }
+
+    .filter-group {
+      width: 100%;
+
+      select {
+        width: 100%;
+      }
+    }
+  }
+
+  // Hide table on mobile, show cards instead
+  .table-container {
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .registrations-table {
+    display: none;
+  }
+
+  // Modal adjustments
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-container {
+    border-radius: 16px 16px 0 0;
+    max-height: 95vh;
+
+    &.detail-modal,
+    &.decline-modal {
+      max-width: 100%;
+    }
+  }
+
+  .modal-header {
+    padding: 1rem;
+
+    h2 {
+      font-size: 1.1rem;
+    }
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-footer {
+    padding: 1rem;
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .face-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .face-image,
+    .no-face {
+      max-width: 180px;
+    }
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Mobile card view for registrations
+.mobile-cards {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .registration-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1rem;
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+
+      .parent-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 1rem;
+        margin: 0;
+      }
+    }
+
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: #475569;
+
+      .card-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .row-icon {
+          width: 20px;
+          text-align: center;
+          font-size: 0.9rem;
+        }
+
+        .row-label {
+          color: #64748b;
+          min-width: 70px;
+        }
+
+        .row-value {
+          color: #1e293b;
+          flex: 1;
+          word-break: break-word;
+        }
+
+        .student-id {
+          font-family: monospace;
+          background: #f1f5f9;
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
+        }
+      }
+    }
+
+    .card-footer {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #e2e8f0;
+
+      .btn-view {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .btn-approve,
+      .btn-decline {
+        padding: 0.5rem 1rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    flex-direction: row;
+    text-align: left;
+    padding: 1rem;
+  }
+}
+

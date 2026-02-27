@@ -1,11 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-require('dotenv').config({ path: '.env.prod' });
+require('dotenv').config({ path: '.env' });
 
 const { testConnection } = require('./config/database');
 const initDatabase = require('./config/init-db');
 const { initializeSocket } = require('./services/socket.service');
+const migrate = require('./migrate');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -52,6 +53,64 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Migration endpoint (protected)
+app.post('/api/admin/run-migrations', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    await migrate();
+    res.json({ success: true, message: 'Migrations completed' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Seed endpoint (protected)
+const { pool } = require('./config/database');
+const fs = require('fs');
+const path = require('path');
+
+app.get('/api/admin/debug-users', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const [users] = await pool.query('SELECT id, email, role, student_resident_id FROM users');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/run-seed', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const seedPath = path.join(__dirname, 'config', 'seed.sql');
+    const seedSql = fs.readFileSync(seedPath, 'utf8').replace(/USE railway;/g, '');
+    
+    const statements = seedSql.split(';').filter(s => s.trim().length > 0);
+    for (const stmt of statements) {
+      try {
+        await pool.query(stmt);
+      } catch (e) {
+        // Ignore dup key errors
+        if (!e.message.includes('Duplicate')) {
+          console.warn('Seed warning:', e.message);
+        }
+      }
+    }
+    res.json({ success: true, message: 'Seed completed' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -70,6 +129,7 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   await testConnection();
   await initDatabase();
+  await migrate();
   
   server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

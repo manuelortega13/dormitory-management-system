@@ -101,5 +101,59 @@
         }
       </tbody>
     </table>
+
+    <!-- Mobile Card View -->
+    <div class="mobile-cards">
+      @for (payment of mockPayments; track payment.id) {
+        <div class="mobile-card">
+          <div class="card-header">
+            <h4 class="card-title">{{ payment.residentName }}</h4>
+            <span class="status-badge {{ getStatusClass(payment.status) }}">
+              {{ payment.status }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <span class="row-icon">🚪</span>
+              <span class="row-label">Room:</span>
+              <span class="row-value">{{ payment.roomNumber }}</span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">📋</span>
+              <span class="row-label">Type:</span>
+              <span class="row-value">{{ getTypeLabel(payment.type) }}</span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">💰</span>
+              <span class="row-label">Amount:</span>
+              <span class="row-value amount">{{ formatCurrency(payment.amount) }}</span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">📅</span>
+              <span class="row-label">Due:</span>
+              <span class="row-value">{{ formatDate(payment.dueDate) }}</span>
+            </div>
+            @if (payment.paidDate) {
+              <div class="card-row">
+                <span class="row-icon">✅</span>
+                <span class="row-label">Paid:</span>
+                <span class="row-value">{{ formatDate(payment.paidDate) }}</span>
+              </div>
+            }
+            @if (payment.paymentMethod) {
+              <div class="card-row">
+                <span class="row-icon">💳</span>
+                <span class="row-label">Method:</span>
+                <span class="row-value">{{ payment.paymentMethod }}</span>
+              </div>
+            }
+          </div>
+          <div class="card-footer">
+            <button class="btn-icon" title="View" disabled>👁️ View</button>
+            <button class="btn-icon" title="Receipt" disabled>🧾 Receipt</button>
+          </div>
+        </div>
+      }
+    </div>
   </div>
 </div>

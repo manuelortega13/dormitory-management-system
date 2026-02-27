@@ -107,5 +107,52 @@
         }
       </tbody>
     </table>
+
+    <!-- Mobile Card View -->
+    <div class="mobile-cards">
+      @for (item of mockItems; track item.id) {
+        <div class="mobile-card">
+          <div class="card-header">
+            <h4 class="card-title">{{ getCategoryIcon(item.category) }} {{ item.name }}</h4>
+            <span class="status-badge {{ getConditionClass(item.condition) }}">
+              {{ item.condition }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <span class="row-icon">📁</span>
+              <span class="row-label">Category:</span>
+              <span class="row-value category">{{ item.category }}</span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">📦</span>
+              <span class="row-label">Quantity:</span>
+              <span class="row-value">
+                <span class="quantity {{ getStockClass(item) }}">{{ item.quantity }}</span>
+              </span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">⚠️</span>
+              <span class="row-label">Min Stock:</span>
+              <span class="row-value">{{ item.minStock }}</span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">📍</span>
+              <span class="row-label">Location:</span>
+              <span class="row-value">{{ item.location }}</span>
+            </div>
+            <div class="card-row">
+              <span class="row-icon">📅</span>
+              <span class="row-label">Updated:</span>
+              <span class="row-value">{{ formatDate(item.lastUpdated) }}</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn-icon" title="Edit" disabled>✏️ Edit</button>
+            <button class="btn-icon" title="Update Stock" disabled>📊 Stock</button>
+          </div>
+        </div>
+      }
+    </div>
   </div>
 </div>

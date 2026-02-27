@@ -261,21 +261,24 @@ const arg = process.argv[3];
 // Export for programmatic use
 module.exports = migrate;
 
-switch (command) {
-  case 'status':
-    status();
-    break;
-  case 'reset':
-    reset();
-    break;
-  case 'rerun':
-    if (!arg) {
-      console.error('\n❌ Usage: node migrate.js rerun <migration_name>');
-      console.log('   Example: node migrate.js rerun 003_rename_dean_to_home_dean.sql\n');
-      process.exit(1);
-    }
-    rerun(arg);
-    break;
-  default:
-    migrate();
+// Only run CLI commands when executed directly (not when required as module)
+if (require.main === module) {
+  switch (command) {
+    case 'status':
+      status();
+      break;
+    case 'reset':
+      reset();
+      break;
+    case 'rerun':
+      if (!arg) {
+        console.error('\n❌ Usage: node migrate.js rerun <migration_name>');
+        console.log('   Example: node migrate.js rerun 003_rename_dean_to_home_dean.sql\n');
+        process.exit(1);
+      }
+      rerun(arg);
+      break;
+    default:
+      migrate();
+  }
 }

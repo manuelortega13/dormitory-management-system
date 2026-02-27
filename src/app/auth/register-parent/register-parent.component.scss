@@ -398,23 +398,78 @@
   }
 }
 
+// Fullscreen camera overlay
+.camera-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-error-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  background: rgba(220, 38, 38, 0.95);
+  color: white;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  max-width: 90%;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 .camera-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
   background: #000;
+  width: 100%;
+  height: 100%;
 }
 
 .video-container {
   position: relative;
   width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .camera-video {
   width: 100%;
-  max-height: 300px;
+  height: 100%;
   object-fit: cover;
   display: block;
+  transform: scaleX(-1); // Mirror effect
 }
 
 .face-frame-overlay {
@@ -439,13 +494,13 @@
 }
 
 .face-frame {
-  width: 180px;
-  height: 220px;
-  border: 3px solid rgba(255, 255, 255, 0.8);
+  width: 250px;
+  height: 320px;
+  border: 4px solid rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   box-shadow: 
-    0 0 0 2000px rgba(0, 0, 0, 0.4),
-    inset 0 0 20px rgba(67, 97, 238, 0.3);
+    0 0 0 2000px rgba(0, 0, 0, 0.5),
+    inset 0 0 30px rgba(67, 97, 238, 0.3);
   animation: pulse-frame 2s ease-in-out infinite;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
@@ -472,12 +527,12 @@
 
 .frame-hint {
   position: absolute;
-  bottom: 15px;
+  bottom: 100px;
   color: white;
-  font-size: 0.8rem;
+  font-size: 1rem;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  background: rgba(0, 0, 0, 0.5);
-  padding: 0.35rem 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.5rem 1rem;
   border-radius: 20px;
   transition: background 0.3s, color 0.3s;
 
@@ -524,10 +579,14 @@
 .camera-controls {
   display: flex;
   gap: 1rem;
-  padding: 1rem;
-  background: #1a1a2e;
+  padding: 1.5rem;
+  background: rgba(26, 26, 46, 0.95);
   width: 100%;
   justify-content: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .btn-capture {
@@ -661,4 +720,64 @@
   .register-form {
     padding: 1.25rem;
   }
+
+  // Camera fullscreen mobile adjustments
+  .camera-fullscreen-overlay {
+    .camera-error-overlay {
+      top: 10px;
+      font-size: 0.85rem;
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  .face-frame {
+    width: 200px;
+    height: 260px;
+    border-width: 3px;
+  }
+
+  .countdown-display {
+    font-size: 3rem;
+  }
+
+  .frame-hint {
+    bottom: 80px;
+    font-size: 0.875rem;
+    padding: 0.4rem 0.875rem;
+  }
+
+  .camera-controls {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .btn-capture,
+  .btn-cancel-camera {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.9rem;
+  }
 }
+
+@media (max-width: 380px) {
+  .face-frame {
+    width: 160px;
+    height: 210px;
+  }
+
+  .frame-hint {
+    bottom: 75px;
+    font-size: 0.8rem;
+  }
+
+  .camera-controls {
+    flex-direction: column;
+    align-items: stretch;
+
+    .btn-capture,
+    .btn-cancel-camera {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+

@@ -160,47 +160,54 @@
           }
 
           @if (cameraActive()) {
-            <!-- Camera active: Show video feed -->
-            <div class="camera-preview">
-              <div class="video-container">
-                <video 
-                  #videoElement 
-                  autoplay 
-                  playsinline
-                  class="camera-video"
-                ></video>
-                <div class="face-frame-overlay" [class.face-detected]="faceDetected()">
-                  <div class="face-frame"></div>
-                  @if (autoCapturing() && countdown() > 0) {
-                    <div class="countdown-display">{{ countdown() }}</div>
-                  }
-                  @if (!faceDetected()) {
-                    <span class="frame-hint">Position your face within the frame</span>
-                  } @else if (!autoCapturing()) {
-                    <span class="frame-hint detecting">Detecting face...</span>
-                  } @else {
-                    <span class="frame-hint ready">Hold steady - capturing in {{ countdown() }}...</span>
-                  }
+            <!-- Camera active: Show video feed in fullscreen -->
+            <div class="camera-fullscreen-overlay">
+              @if (cameraError()) {
+                <div class="camera-error-overlay">
+                  <span>⚠️</span> {{ cameraError() }}
                 </div>
-              </div>
-              <canvas #canvasElement style="display: none;"></canvas>
-              <div class="camera-controls">
-                @if (isValidatingFace()) {
-                  <button type="button" class="btn-capture" disabled>
-                    <span class="spinner-small"></span> Validating...
+              }
+              <div class="camera-preview">
+                <div class="video-container">
+                  <video 
+                    #videoElement 
+                    autoplay 
+                    playsinline
+                    class="camera-video"
+                  ></video>
+                  <div class="face-frame-overlay" [class.face-detected]="faceDetected()">
+                    <div class="face-frame"></div>
+                    @if (autoCapturing() && countdown() > 0) {
+                      <div class="countdown-display">{{ countdown() }}</div>
+                    }
+                    @if (!faceDetected()) {
+                      <span class="frame-hint">Position your face within the frame</span>
+                    } @else if (!autoCapturing()) {
+                      <span class="frame-hint detecting">Detecting face...</span>
+                    } @else {
+                      <span class="frame-hint ready">Hold steady - capturing in {{ countdown() }}...</span>
+                    }
+                  </div>
+                </div>
+                <canvas #canvasElement style="display: none;"></canvas>
+                <div class="camera-controls">
+                  @if (isValidatingFace()) {
+                    <button type="button" class="btn-capture" disabled>
+                      <span class="spinner-small"></span> Validating...
+                    </button>
+                  } @else if (autoCapturing()) {
+                    <button type="button" class="btn-capture capturing" disabled>
+                      <span class="spinner-small"></span> Auto-capturing...
+                    </button>
+                  } @else {
+                    <button type="button" class="btn-capture" (click)="capturePhoto()">
+                      <span>📸</span> Capture Manually
+                    </button>
+                  }
+                  <button type="button" class="btn-cancel-camera" (click)="stopCamera()" [disabled]="isValidatingFace()">
+                    Cancel
                   </button>
-                } @else if (autoCapturing()) {
-                  <button type="button" class="btn-capture capturing" disabled>
-                    <span class="spinner-small"></span> Auto-capturing...
-                  </button>
-                } @else {
-                  <button type="button" class="btn-capture" (click)="capturePhoto()">
-                    <span>📸</span> Capture Manually
-                  </button>
-                }
-                <button type="button" class="btn-cancel-camera" (click)="stopCamera()" [disabled]="isValidatingFace()">
-                  Cancel
-                </button>
+                </div>
               </div>
             </div>
           }

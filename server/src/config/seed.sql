@@ -86,7 +86,7 @@ VALUES (
 -- Default female resident user (linked to parent)
 -- Username: resident_f
 -- Password: pass123
-INSERT INTO users (email, password, first_name, last_name, role, status, parent_id, gender, address, course, year_level)
+INSERT INTO users (email, password, first_name, last_name, role, status, parent_id, gender, address, course, year_level, student_resident_id)
 VALUES (
     'resident_f',
     '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
@@ -98,13 +98,14 @@ VALUES (
     'female',
     '123 Main Street, City',
     'BS Computer Science',
-    2
+    2,
+    'PAC-000001'
 ) ON DUPLICATE KEY UPDATE id=id;
 
 -- Default male resident user (linked to parent)
 -- Username: resident_m
 -- Password: pass123
-INSERT INTO users (email, password, first_name, last_name, role, status, parent_id, gender, address, course, year_level)
+INSERT INTO users (email, password, first_name, last_name, role, status, parent_id, gender, address, course, year_level, student_resident_id)
 VALUES (
     'resident_m',
     '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
@@ -116,7 +117,8 @@ VALUES (
     'male',
     '456 Oak Avenue, City',
     'BS Information Technology',
-    3
+    3,
+    'PAC-000002'
 ) ON DUPLICATE KEY UPDATE id=id;
 
 -- 6 Sample rooms

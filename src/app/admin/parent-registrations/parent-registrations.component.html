@@ -132,6 +132,59 @@
           }
         </tbody>
       </table>
+
+      <!-- Mobile Card View -->
+      <div class="mobile-cards">
+        @for (reg of filteredRegistrations(); track reg.id) {
+          <div class="registration-card">
+            <div class="card-header">
+              <h4 class="parent-name">{{ reg.first_name }} {{ reg.last_name }}</h4>
+              <span class="status-badge {{ getStatusClass(reg.registration_status) }}">
+                {{ reg.registration_status }}
+              </span>
+            </div>
+            <div class="card-body">
+              <div class="card-row">
+                <span class="row-icon">📧</span>
+                <span class="row-value">{{ reg.email }}</span>
+              </div>
+              <div class="card-row">
+                <span class="row-icon">📱</span>
+                <span class="row-value">{{ reg.phone }}</span>
+              </div>
+              <div class="card-row">
+                <span class="row-icon">👨‍🎓</span>
+                <span class="row-label">Student:</span>
+                <span class="row-value">
+                  @if (reg.student_first_name) {
+                    {{ reg.student_first_name }} {{ reg.student_last_name }}
+                  } @else {
+                    <span class="no-data">Not found</span>
+                  }
+                </span>
+              </div>
+              <div class="card-row">
+                <span class="row-icon">🆔</span>
+                <span class="row-label">ID:</span>
+                <span class="student-id">{{ reg.student_resident_id || '-' }}</span>
+              </div>
+              <div class="card-row">
+                <span class="row-icon">📅</span>
+                <span class="row-value">{{ formatDate(reg.created_at) }}</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <button class="btn-view" (click)="openDetailModal(reg)">
+                👁️ View Details
+              </button>
+              @if (reg.registration_status === 'pending') {
+                <button class="btn-approve" (click)="openDetailModal(reg)">✓</button>
+                <button class="btn-decline" (click)="openDeclineModal(reg)">✗</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
     </div>
   }
 </div>
