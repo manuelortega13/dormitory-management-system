@@ -256,6 +256,9 @@ async function rerun(migrationName) {
 const command = process.argv[2];
 const arg = process.argv[3];
 
+// Export for programmatic use
+module.exports = migrate;
+
 switch (command) {
   case 'status':
     status();
