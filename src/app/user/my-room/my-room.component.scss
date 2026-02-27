@@ -1,0 +1,185 @@
+@use '../shared/user-placeholder.scss' as *;
+
+.my-room-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.room-details {
+  .room-number-display {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .room-badge {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, #4361ee, #7c3aed);
+      color: white;
+      font-size: 2rem;
+      font-weight: 700;
+      border-radius: 12px;
+    }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem;
+      background: #f8fafc;
+      border-radius: 8px;
+
+      .label {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 0.25rem;
+      }
+
+      .value {
+        font-weight: 600;
+        color: #1e293b;
+      }
+    }
+  }
+}
+
+.roommates {
+  .roommate-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .roommate-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4361ee, #7c3aed);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .roommate-info {
+      display: flex;
+      flex-direction: column;
+
+      .roommate-name {
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .roommate-course {
+        font-size: 0.875rem;
+        color: #64748b;
+      }
+
+      .roommate-date {
+        font-size: 0.8rem;
+        color: #94a3b8;
+      }
+    }
+  }
+
+  .no-roommates {
+    color: #94a3b8;
+    text-align: center;
+    padding: 2rem;
+  }
+}
+
+.amenities {
+  .amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .amenity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #d1fae5;
+    border-radius: 8px;
+
+    &.needs-repair {
+      background: #fef3c7;
+    }
+
+    .amenity-icon {
+      font-size: 1.25rem;
+    }
+
+    .amenity-name {
+      flex: 1;
+      font-size: 0.9rem;
+      color: #1e293b;
+    }
+
+    .repair-badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      background: #f59e0b;
+      color: white;
+      border-radius: 4px;
+    }
+  }
+}
+
+.rules {
+  .rules-list {
+    margin: 0;
+    padding-left: 1.25rem;
+
+    li {
+      padding: 0.5rem 0;
+      color: #475569;
+      border-bottom: 1px solid #f0f0f0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
+}

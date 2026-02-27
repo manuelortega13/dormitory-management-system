@@ -1,0 +1,111 @@
+<div class="page-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>📦 Inventory Management</h1>
+      <p class="subtitle">Track dormitory supplies and equipment</p>
+    </div>
+    <button class="btn-primary" disabled>
+      <span>➕</span> Add Item
+    </button>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-icon total">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.totalItems }}</span>
+        <span class="stat-label">Total Items</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">⚠️</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.lowStock }}</span>
+        <span class="stat-label">Low Stock</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon overdue">🔧</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.needsReplacement }}</span>
+        <span class="stat-label">Needs Attention</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">📁</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.categories }}</span>
+        <span class="stat-label">Categories</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search inventory..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+    <div class="filter-group">
+      <select disabled>
+        <option>All Categories</option>
+      </select>
+      <select disabled>
+        <option>All Conditions</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>Quantity</th>
+          <th>Min Stock</th>
+          <th>Location</th>
+          <th>Condition</th>
+          <th>Last Updated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of mockItems; track item.id) {
+          <tr>
+            <td>
+              <span class="item-name">
+                {{ getCategoryIcon(item.category) }} {{ item.name }}
+              </span>
+            </td>
+            <td class="category">{{ item.category }}</td>
+            <td>
+              <span class="quantity {{ getStockClass(item) }}">
+                {{ item.quantity }}
+              </span>
+            </td>
+            <td>{{ item.minStock }}</td>
+            <td>{{ item.location }}</td>
+            <td>
+              <span class="status-badge {{ getConditionClass(item.condition) }}">
+                {{ item.condition }}
+              </span>
+            </td>
+            <td>{{ formatDate(item.lastUpdated) }}</td>
+            <td class="actions">
+              <button class="btn-icon" title="Edit" disabled>✏️</button>
+              <button class="btn-icon" title="Update Stock" disabled>📊</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,103 @@
+<div class="my-payments-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <h1>💰 My Payments</h1>
+    <p class="subtitle">View your payment history and upcoming dues</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card paid">
+      <div class="stat-icon">✓</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats.totalPaid) }}</span>
+        <span class="stat-label">Total Paid</span>
+      </div>
+    </div>
+    <div class="stat-card pending">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats.pendingAmount) }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-card overdue">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats.overdueAmount) }}</span>
+        <span class="stat-label">Overdue</span>
+      </div>
+    </div>
+    <div class="stat-card next-due">
+      <div class="stat-icon">📅</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatDate(stats.nextDueDate) }}</span>
+        <span class="stat-label">Next Due Date</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="payments-section">
+    <div class="section-header">
+      <h2>Payment History</h2>
+      <button class="btn-primary" disabled>
+        💳 Make Payment
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Due Date</th>
+            <th>Paid Date</th>
+            <th>Method</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (payment of mockPayments; track payment.id) {
+            <tr>
+              <td>{{ payment.description }}</td>
+              <td class="amount">{{ formatCurrency(payment.amount) }}</td>
+              <td>{{ formatDate(payment.dueDate) }}</td>
+              <td>{{ formatDate(payment.paidDate) }}</td>
+              <td>{{ payment.method || '-' }}</td>
+              <td>
+                <span class="status-badge {{ getStatusClass(payment.status) }}">
+                  {{ payment.status }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="payment-methods">
+    <h3>Available Payment Methods</h3>
+    <div class="methods-grid">
+      <div class="method-card">
+        <span class="method-icon">📱</span>
+        <span class="method-name">GCash</span>
+      </div>
+      <div class="method-card">
+        <span class="method-icon">🏦</span>
+        <span class="method-name">Bank Transfer</span>
+      </div>
+      <div class="method-card">
+        <span class="method-icon">💵</span>
+        <span class="method-name">Cash (Admin Office)</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,35 @@
+<div class="announcements-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <h1>📢 Announcements</h1>
+    <p class="subtitle">Stay updated with dormitory news and notices</p>
+  </div>
+
+  <div class="announcements-list">
+    @for (announcement of mockAnnouncements; track announcement.id) {
+      <div class="announcement-card {{ getPriorityClass(announcement.priority) }}">
+        <div class="announcement-header">
+          <div class="priority-badge {{ announcement.priority }}">
+            {{ getPriorityIcon(announcement.priority) }} {{ announcement.priority }}
+          </div>
+          <span class="category">{{ announcement.category }}</span>
+        </div>
+        <div class="announcement-body">
+          <h3>{{ announcement.title }}</h3>
+          <p>{{ announcement.content }}</p>
+        </div>
+        <div class="announcement-footer">
+          <span class="author">By: {{ announcement.author }}</span>
+          <span class="date">{{ getTimeAgo(announcement.createdAt) }}</span>
+        </div>
+      </div>
+    }
+  </div>
+</div>

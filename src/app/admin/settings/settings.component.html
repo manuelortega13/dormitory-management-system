@@ -1,0 +1,76 @@
+<div class="page-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All settings shown below are static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>⚙️ System Settings</h1>
+      <p class="subtitle">Configure system preferences and policies</p>
+    </div>
+    <button class="btn-primary" disabled>
+      <span>💾</span> Save Changes
+    </button>
+  </div>
+
+  <div class="settings-layout">
+    <div class="settings-nav">
+      @for (section of mockSettings; track section.id) {
+        <button 
+          class="nav-item" 
+          [class.active]="activeSection() === section.id"
+          (click)="setActiveSection(section.id)">
+          <span class="nav-icon">{{ section.icon }}</span>
+          <span class="nav-label">{{ section.title }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="settings-content">
+      @if (getActiveSettings(); as section) {
+        <div class="section-header">
+          <h2>{{ section.icon }} {{ section.title }}</h2>
+          <p>{{ section.description }}</p>
+        </div>
+
+        <div class="settings-list">
+          @for (setting of section.settings; track setting.id) {
+            <div class="setting-item">
+              <div class="setting-info">
+                <label>{{ setting.label }}</label>
+                <p>{{ setting.description }}</p>
+              </div>
+              <div class="setting-control">
+                @switch (setting.type) {
+                  @case ('toggle') {
+                    <label class="toggle-switch">
+                      <input type="checkbox" [checked]="setting.value" disabled />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  }
+                  @case ('text') {
+                    <input type="text" [value]="setting.value" disabled />
+                  }
+                  @case ('number') {
+                    <input type="number" [value]="setting.value" disabled />
+                  }
+                  @case ('select') {
+                    <select [value]="setting.value" disabled>
+                      @for (option of setting.options; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

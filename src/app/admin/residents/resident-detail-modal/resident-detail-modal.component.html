@@ -11,7 +11,7 @@
       </div>
       <div class="resident-title">
         <h2>{{ getFullName() }}</h2>
-        <p class="resident-id">ID: {{ resident.id }}</p>
+        <p class="resident-id">{{ resident.student_resident_id || 'No Student ID' }}</p>
         <span class="status-badge" [class]="resident.status">
           {{ resident.status | titlecase }}
         </span>

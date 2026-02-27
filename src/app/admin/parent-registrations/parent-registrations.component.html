@@ -1,0 +1,310 @@
+<div class="parent-registrations-page">
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Parent Registration Approvals</h1>
+      <p class="subtitle">Review and approve parent/guardian registration requests</p>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-container">
+    <div class="stat-card pending" (click)="selectedStatus.set('pending'); onStatusChange()">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-card approved" (click)="selectedStatus.set('approved'); onStatusChange()">
+      <div class="stat-icon">✓</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().approved }}</span>
+        <span class="stat-label">Approved</span>
+      </div>
+    </div>
+    <div class="stat-card declined" (click)="selectedStatus.set('declined'); onStatusChange()">
+      <div class="stat-icon">✗</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().declined }}</span>
+        <span class="stat-label">Declined</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by name, email, or student ID..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+    <div class="filter-group">
+      <select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event); onStatusChange()">
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="declined">Declined</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading registrations...</p>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!isLoading() && filteredRegistrations().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3>No registrations found</h3>
+      <p>
+        @if (selectedStatus() === 'pending') {
+          There are no pending parent registration requests at this time.
+        } @else {
+          No registrations match your current filters.
+        }
+      </p>
+    </div>
+  }
+
+  <!-- Registrations Table -->
+  @if (!isLoading() && filteredRegistrations().length > 0) {
+    <div class="table-container">
+      <table class="registrations-table">
+        <thead>
+          <tr>
+            <th>Parent Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Student</th>
+            <th>Student ID</th>
+            <th>Status</th>
+            <th>Registered</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (reg of filteredRegistrations(); track reg.id) {
+            <tr>
+              <td class="name-cell">
+                <span class="name">{{ reg.first_name }} {{ reg.last_name }}</span>
+              </td>
+              <td>{{ reg.email }}</td>
+              <td>{{ reg.phone }}</td>
+              <td>
+                @if (reg.student_first_name) {
+                  {{ reg.student_first_name }} {{ reg.student_last_name }}
+                } @else {
+                  <span class="no-data">-</span>
+                }
+              </td>
+              <td>
+                <span class="student-id">{{ reg.student_resident_id || '-' }}</span>
+              </td>
+              <td>
+                <span class="status-badge {{ getStatusClass(reg.registration_status) }}">
+                  {{ reg.registration_status }}
+                </span>
+              </td>
+              <td>{{ formatDate(reg.created_at) }}</td>
+              <td class="actions-cell">
+                <button class="btn-view" (click)="openDetailModal(reg)" title="View Details">
+                  👁️ View
+                </button>
+                @if (reg.registration_status === 'pending') {
+                  <button class="btn-approve" (click)="openDetailModal(reg)" title="Review & Approve">
+                    ✓
+                  </button>
+                  <button class="btn-decline" (click)="openDeclineModal(reg)" title="Decline">
+                    ✗
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Detail Modal -->
+@if (showDetailModal()) {
+  <div class="modal-overlay" (click)="closeDetailModal()">
+    <div class="modal-container detail-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Parent Registration Details</h2>
+        <button class="btn-close" (click)="closeDetailModal()">×</button>
+      </div>
+
+      @if (modalLoading()) {
+        <div class="modal-loading">
+          <div class="spinner"></div>
+          <p>Loading details...</p>
+        </div>
+      } @else if (selectedRegistration()) {
+        <div class="modal-body">
+          @if (actionError()) {
+            <div class="alert alert-error">{{ actionError() }}</div>
+          }
+
+          <div class="detail-grid">
+            <!-- Face Image -->
+            <div class="face-section">
+              <h3>Face Capture</h3>
+              @if (selectedRegistration()?.face_image) {
+                <img 
+                  [src]="selectedRegistration()?.face_image" 
+                  alt="Face capture" 
+                  class="face-image"
+                />
+              } @else {
+                <div class="no-face">
+                  <span>📷</span>
+                  <p>No face image captured</p>
+                </div>
+              }
+            </div>
+
+            <!-- Parent Info -->
+            <div class="info-section">
+              <h3>Parent Information</h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Full Name</label>
+                  <span>{{ selectedRegistration()?.first_name }} {{ selectedRegistration()?.last_name }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Email</label>
+                  <span>{{ selectedRegistration()?.email }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Phone</label>
+                  <span>{{ selectedRegistration()?.phone }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Registration Date</label>
+                  <span>{{ formatDate(selectedRegistration()?.created_at || '') }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Status</label>
+                  <span class="status-badge {{ getStatusClass(selectedRegistration()?.registration_status || '') }}">
+                    {{ selectedRegistration()?.registration_status }}
+                  </span>
+                </div>
+              </div>
+
+              <h3>Linked Student</h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Student Resident ID</label>
+                  <span class="student-id">{{ selectedRegistration()?.student_resident_id || '-' }}</span>
+                </div>
+                @if (selectedRegistration()?.student_first_name) {
+                  <div class="info-item">
+                    <label>Student Name</label>
+                    <span>{{ selectedRegistration()?.student_first_name }} {{ selectedRegistration()?.student_last_name }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>Student Email</label>
+                    <span>{{ selectedRegistration()?.student_email }}</span>
+                  </div>
+                } @else {
+                  <div class="info-item warning">
+                    <span class="warning-icon">⚠️</span>
+                    <span>No student found with this ID</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          @if (selectedRegistration()?.registration_status === 'pending') {
+            <button 
+              class="btn btn-danger" 
+              (click)="openDeclineModal(selectedRegistration()!)"
+              [disabled]="actionLoading()"
+            >
+              ✗ Decline
+            </button>
+            <button 
+              class="btn btn-success" 
+              (click)="approveRegistration()"
+              [disabled]="actionLoading()"
+            >
+              @if (actionLoading()) {
+                <span class="spinner-small"></span> Processing...
+              } @else {
+                ✓ Approve Registration
+              }
+            </button>
+          } @else {
+            <button class="btn btn-secondary" (click)="closeDetailModal()">Close</button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Decline Modal -->
+@if (showDeclineModal()) {
+  <div class="modal-overlay" (click)="closeDeclineModal()">
+    <div class="modal-container decline-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Decline Registration</h2>
+        <button class="btn-close" (click)="closeDeclineModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        @if (actionError()) {
+          <div class="alert alert-error">{{ actionError() }}</div>
+        }
+
+        <p class="decline-warning">
+          You are about to decline the registration for 
+          <strong>{{ decliningRegistration()?.first_name }} {{ decliningRegistration()?.last_name }}</strong>.
+          This action cannot be undone.
+        </p>
+
+        <div class="form-group">
+          <label for="declineReason">Reason for Declining *</label>
+          <textarea
+            id="declineReason"
+            [ngModel]="declineReason()"
+            (ngModelChange)="declineReason.set($event)"
+            placeholder="Please provide a reason for declining this registration..."
+            rows="4"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDeclineModal()" [disabled]="actionLoading()">
+          Cancel
+        </button>
+        <button 
+          class="btn btn-danger" 
+          (click)="confirmDecline()"
+          [disabled]="actionLoading() || !declineReason().trim()"
+        >
+          @if (actionLoading()) {
+            <span class="spinner-small"></span> Declining...
+          } @else {
+            Confirm Decline
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

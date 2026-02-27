@@ -4,18 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../auth.service';
 
-type AccountType = 'resident' | 'parent';
 type Gender = 'male' | 'female' | '';
 
 interface RegisterForm {
-  accountType: AccountType;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   password: string;
   confirmPassword: string;
-  // Resident-only fields
   gender: Gender;
   address: string;
   course: string;
@@ -23,7 +20,6 @@ interface RegisterForm {
 }
 
 interface FieldErrors {
-  accountType: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -37,18 +33,17 @@ interface FieldErrors {
 }
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-register-resident',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
-  templateUrl: './register.component.html',
-  styleUrl: './register.component.scss'
+  templateUrl: './register-resident.component.html',
+  styleUrl: './register-resident.component.scss'
 })
-export class RegisterComponent {
+export class RegisterResidentComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
 
   form: RegisterForm = {
-    accountType: 'resident',
     firstName: '',
     lastName: '',
     email: '',
@@ -68,7 +63,6 @@ export class RegisterComponent {
   showConfirmPassword = signal(false);
   
   fieldErrors = signal<FieldErrors>({
-    accountType: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -82,7 +76,6 @@ export class RegisterComponent {
   });
 
   constructor() {
-    // If already logged in, redirect
     if (this.authService.isLoggedIn()) {
       this.authService.redirectBasedOnRole();
     }
@@ -90,7 +83,6 @@ export class RegisterComponent {
 
   validateForm(): boolean {
     const errors: FieldErrors = {
-      accountType: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -104,11 +96,6 @@ export class RegisterComponent {
     };
 
     let isValid = true;
-
-    if (!this.form.accountType) {
-      errors.accountType = 'Please select an account type';
-      isValid = false;
-    }
 
     if (!this.form.firstName.trim()) {
       errors.firstName = 'First name is required';
@@ -152,22 +139,19 @@ export class RegisterComponent {
       isValid = false;
     }
 
-    // Validate resident-only fields
-    if (this.form.accountType === 'resident') {
-      if (!this.form.gender) {
-        errors.gender = 'Please select your gender';
-        isValid = false;
-      }
+    if (!this.form.gender) {
+      errors.gender = 'Please select your gender';
+      isValid = false;
+    }
 
-      if (!this.form.course.trim()) {
-        errors.course = 'Course/Program is required';
-        isValid = false;
-      }
+    if (!this.form.course.trim()) {
+      errors.course = 'Course/Program is required';
+      isValid = false;
+    }
 
-      if (!this.form.yearLevel) {
-        errors.yearLevel = 'Please select your year level';
-        isValid = false;
-      }
+    if (!this.form.yearLevel) {
+      errors.yearLevel = 'Please select your year level';
+      isValid = false;
     }
 
     this.fieldErrors.set(errors);
@@ -191,22 +175,18 @@ export class RegisterComponent {
     this.isLoading.set(true);
 
     try {
-      const registerData: any = {
+      const registerData = {
         firstName: this.form.firstName.trim(),
         lastName: this.form.lastName.trim(),
         email: this.form.email.trim(),
         phone: this.form.phone.trim(),
         password: this.form.password,
-        role: this.form.accountType
+        role: 'resident' as const,
+        gender: this.form.gender || null,
+        address: this.form.address.trim() || null,
+        course: this.form.course.trim() || null,
+        yearLevel: this.form.yearLevel
       };
-
-      // Add resident-only fields
-      if (this.form.accountType === 'resident') {
-        registerData.gender = this.form.gender || null;
-        registerData.address = this.form.address.trim() || null;
-        registerData.course = this.form.course.trim() || null;
-        registerData.yearLevel = this.form.yearLevel;
-      }
 
       await this.authService.register(registerData);
 

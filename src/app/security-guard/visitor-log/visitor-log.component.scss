@@ -1,0 +1,11 @@
+@use '../shared/guard-placeholder.scss' as *;
+
+.visitor-log-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.visitor-name {
+  font-weight: 600;
+}

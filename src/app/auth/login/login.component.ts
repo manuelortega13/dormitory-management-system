@@ -54,6 +54,9 @@ export class LoginComponent {
     } catch (error: any) {
       if (error.status === 401) {
         this.errorMessage.set('Invalid email or password');
+      } else if (error.status === 403) {
+        // Parent registration pending or declined
+        this.errorMessage.set(error.error?.error || 'Account access restricted. Please contact support.');
       } else {
         this.errorMessage.set(error.error?.error || 'Login failed. Please try again.');
       }

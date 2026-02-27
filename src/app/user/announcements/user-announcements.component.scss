@@ -1,0 +1,115 @@
+@use '../shared/user-placeholder.scss' as *;
+
+.announcements-container {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.announcement-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border-left: 4px solid #cbd5e1;
+
+  &.urgent {
+    border-left-color: #dc2626;
+    background: linear-gradient(to right, #fef2f2, white);
+  }
+
+  &.high {
+    border-left-color: #f59e0b;
+    background: linear-gradient(to right, #fffbeb, white);
+  }
+
+  &.normal {
+    border-left-color: #4361ee;
+  }
+
+  &.low {
+    border-left-color: #94a3b8;
+  }
+
+  .announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+
+      &.urgent {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+
+      &.high {
+        background: #fef3c7;
+        color: #d97706;
+      }
+
+      &.normal {
+        background: #e0e7ff;
+        color: #4361ee;
+      }
+
+      &.low {
+        background: #f1f5f9;
+        color: #64748b;
+      }
+    }
+
+    .category {
+      font-size: 0.8rem;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+    }
+  }
+
+  .announcement-body {
+    padding: 1.25rem;
+
+    h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.1rem;
+      color: #1e293b;
+    }
+
+    p {
+      margin: 0;
+      color: #475569;
+      line-height: 1.6;
+    }
+  }
+
+  .announcement-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    font-size: 0.85rem;
+    color: #64748b;
+
+    .author {
+      font-weight: 500;
+    }
+  }
+}

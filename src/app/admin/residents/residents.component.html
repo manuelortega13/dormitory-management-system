@@ -103,7 +103,7 @@
             </div>
             <div class="resident-info">
               <span class="name">{{ getFullName(resident) }}</span>
-              <span class="student-id">ID: {{ resident.id }}</span>
+              <span class="student-id">{{ resident.student_resident_id || 'No ID' }}</span>
             </div>
           </div>
           <div class="col-contact">
@@ -182,7 +182,7 @@
 
           <div class="card-body">
             <h3 class="resident-name">{{ getFullName(resident) }}</h3>
-            <p class="resident-id">ID: {{ resident.id }}</p>
+            <p class="resident-id">{{ resident.student_resident_id || 'No Student ID' }}</p>
             
             <div class="info-grid">
               <div class="info-item">

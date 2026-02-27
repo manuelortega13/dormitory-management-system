@@ -1,0 +1,97 @@
+<div class="emergency-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>🚨 Emergency Response</h1>
+      <p class="subtitle">Emergency contacts and protocols</p>
+    </div>
+  </div>
+
+  <div class="alert-buttons">
+    <button class="btn-danger large" disabled>
+      🔥 Fire Alert
+    </button>
+    <button class="btn-danger large" disabled>
+      🏥 Medical Emergency
+    </button>
+    <button class="btn-danger large" disabled>
+      🚨 Security Alert
+    </button>
+    <button class="btn-danger large" disabled>
+      📢 General Evacuation
+    </button>
+  </div>
+
+  <div class="emergency-grid">
+    <div class="contacts-section">
+      <h2>📞 Emergency Contacts</h2>
+      <div class="contacts-list">
+        @for (contact of emergencyContacts; track contact.id) {
+          <div class="contact-card" [class.unavailable]="!contact.available">
+            <div class="contact-info">
+              <span class="contact-name">{{ contact.name }}</span>
+              <span class="contact-role">{{ contact.role }}</span>
+            </div>
+            <div class="contact-phone">
+              <a href="tel:{{ contact.phone }}" class="phone-link">
+                📞 {{ contact.phone }}
+              </a>
+              @if (!contact.available) {
+                <span class="unavailable-badge">Offline</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="protocols-section">
+      <h2>📋 Emergency Protocols</h2>
+      <div class="protocols-grid">
+        @for (protocol of emergencyProtocols; track protocol.id) {
+          <div class="protocol-card">
+            <div class="protocol-header">
+              <span class="protocol-icon">{{ protocol.icon }}</span>
+              <h3>{{ protocol.title }}</h3>
+            </div>
+            <p class="protocol-description">{{ protocol.description }}</p>
+            <ol class="protocol-steps">
+              @for (step of protocol.steps; track step) {
+                <li>{{ step }}</li>
+              }
+            </ol>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-reference">
+    <h2>⚡ Quick Reference</h2>
+    <div class="reference-grid">
+      <div class="reference-item">
+        <span class="label">Fire Assembly Point</span>
+        <span class="value">Main Parking Area (Front Gate)</span>
+      </div>
+      <div class="reference-item">
+        <span class="label">First Aid Kit Location</span>
+        <span class="value">Security Office, Each Floor Landing</span>
+      </div>
+      <div class="reference-item">
+        <span class="label">Fire Extinguisher Locations</span>
+        <span class="value">Each Floor Corridor, Kitchen Areas</span>
+      </div>
+      <div class="reference-item">
+        <span class="label">Emergency Exit Routes</span>
+        <span class="value">Main Stairs, Fire Exit (Back)</span>
+      </div>
+    </div>
+  </div>
+</div>

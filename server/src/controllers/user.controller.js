@@ -160,7 +160,7 @@ exports.getResidents = async (req, res) => {
     let query = `
       SELECT 
         u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url, u.status, u.created_at,
-        u.gender, u.address, u.course, u.year_level,
+        u.gender, u.address, u.course, u.year_level, u.student_resident_id,
         r.room_number, r.floor, r.room_type,
         ra.start_date, ra.end_date,
         p.id as parent_id, p.first_name as parent_first_name, p.last_name as parent_last_name, p.email as parent_email, p.phone as parent_phone
@@ -184,9 +184,9 @@ exports.getResidents = async (req, res) => {
     }
 
     if (search) {
-      query += ' AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)';
+      query += ' AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR u.student_resident_id LIKE ?)';
       const searchPattern = `%${search}%`;
-      params.push(searchPattern, searchPattern, searchPattern);
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     if (floor) {

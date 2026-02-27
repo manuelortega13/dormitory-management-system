@@ -235,10 +235,16 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
+  text-decoration: none;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #e9ecef;
     transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   &.alert {

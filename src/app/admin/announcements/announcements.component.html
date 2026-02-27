@@ -1,0 +1,102 @@
+<div class="page-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>📢 Announcements</h1>
+      <p class="subtitle">Manage and publish announcements for residents and staff</p>
+    </div>
+    <button class="btn-primary" disabled>
+      <span>➕</span> New Announcement
+    </button>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-icon total">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon completed">✓</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.published }}</span>
+        <span class="stat-label">Published</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">📝</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.drafts }}</span>
+        <span class="stat-label">Drafts</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon urgent">🚨</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.urgent }}</span>
+        <span class="stat-label">Urgent</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search announcements..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+    <div class="filter-group">
+      <select disabled>
+        <option>All Status</option>
+      </select>
+      <select disabled>
+        <option>All Priority</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="announcements-list">
+    @for (announcement of mockAnnouncements; track announcement.id) {
+      <div class="announcement-card {{ getPriorityClass(announcement.priority) }}">
+        <div class="announcement-header">
+          <div class="header-left">
+            <span class="priority-indicator"></span>
+            <h3>{{ announcement.title }}</h3>
+          </div>
+          <div class="header-right">
+            <span class="audience-badge">
+              {{ getAudienceIcon(announcement.audience) }} {{ announcement.audience }}
+            </span>
+            <span class="status-badge {{ getStatusClass(announcement.status) }}">
+              {{ announcement.status }}
+            </span>
+          </div>
+        </div>
+        <div class="announcement-body">
+          <p>{{ announcement.content }}</p>
+        </div>
+        <div class="announcement-footer">
+          <div class="meta-info">
+            <span>By: {{ announcement.author }}</span>
+            <span>Posted: {{ formatDate(announcement.createdAt) }}</span>
+            @if (announcement.expiresAt) {
+              <span>Expires: {{ formatDate(announcement.expiresAt) }}</span>
+            }
+          </div>
+          <div class="actions">
+            <button class="btn-icon" title="Edit" disabled>✏️</button>
+            <button class="btn-icon" title="Delete" disabled>🗑️</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

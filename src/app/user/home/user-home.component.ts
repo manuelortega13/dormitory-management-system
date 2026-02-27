@@ -35,7 +35,6 @@ interface RoomInfo {
         <section class="info-card room-card">
           <div class="card-header">
             <h2>🛏️ My Room</h2>
-            <a routerLink="/my-room" class="view-link">View Details →</a>
           </div>
           <div class="card-body">
             <div class="room-number">Room {{ roomInfo().roomNumber }}</div>
@@ -57,48 +56,30 @@ interface RoomInfo {
           </div>
         </section>
 
-        <!-- Payment Status Card -->
+        <!-- My Requests Card -->
         <section class="info-card payment-card">
           <div class="card-header">
-            <h2>💰 Payment Status</h2>
-            <a routerLink="/my-payments" class="view-link">View All →</a>
+            <h2>📋 My Requests</h2>
+            <a routerLink="/my-requests" class="view-link">View All →</a>
           </div>
           <div class="card-body">
-            <div class="payment-status" [class]="paymentInfo().status">
-              @if (paymentInfo().status === 'paid') {
-                ✅ All Paid
-              } @else {
-                ⚠️ Payment Due
-              }
+            <div class="payment-status">
+              📝 Track your leave requests
             </div>
             <div class="payment-details">
-              <div class="detail-row">
-                <span>Monthly Rent:</span>
-                <span class="amount">\${{ paymentInfo().monthlyRent }}</span>
-              </div>
-              <div class="detail-row">
-                <span>Next Due:</span>
-                <span>{{ paymentInfo().nextDue | date:'mediumDate' }}</span>
-              </div>
+              <a routerLink="/my-requests" class="view-requests-link">Go to My Requests</a>
             </div>
           </div>
         </section>
 
-        <!-- Announcements Card -->
+        <!-- Leave Pass Card -->
         <section class="info-card announcements-card">
           <div class="card-header">
-            <h2>📢 Announcements</h2>
-            <a routerLink="/announcements" class="view-link">View All →</a>
+            <h2>🎫 Leave Pass</h2>
+            <a routerLink="/leave-pass" class="view-link">View Pass →</a>
           </div>
           <div class="card-body">
-            <ul class="announcement-list">
-              @for (announcement of announcements(); track announcement.id) {
-                <li class="announcement-item">
-                  <span class="announcement-date">{{ announcement.date | date:'shortDate' }}</span>
-                  <span class="announcement-title">{{ announcement.title }}</span>
-                </li>
-              }
-            </ul>
+            <p class="pass-description">View your approved leave pass with QR code for security check.</p>
           </div>
         </section>
 
@@ -113,17 +94,17 @@ interface RoomInfo {
                 <span class="link-icon">📤</span>
                 <span>Request Leave</span>
               </a>
-              <a routerLink="/maintenance-request" class="quick-link">
-                <span class="link-icon">🔧</span>
-                <span>Maintenance</span>
+              <a routerLink="/my-requests" class="quick-link">
+                <span class="link-icon">📋</span>
+                <span>My Requests</span>
               </a>
-              <a routerLink="/my-payments" class="quick-link">
-                <span class="link-icon">💳</span>
-                <span>Pay Dues</span>
+              <a routerLink="/leave-pass" class="quick-link">
+                <span class="link-icon">🎫</span>
+                <span>Leave Pass</span>
               </a>
-              <a routerLink="/contact" class="quick-link">
-                <span class="link-icon">📞</span>
-                <span>Contact Admin</span>
+              <a routerLink="/" class="quick-link">
+                <span class="link-icon">🏠</span>
+                <span>Home</span>
               </a>
             </div>
           </div>
@@ -299,6 +280,27 @@ interface RoomInfo {
           color: #1a1a2e;
         }
       }
+
+      .view-requests-link {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: #667eea;
+        color: #fff;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #5a6fd6;
+        }
+      }
+    }
+
+    .pass-description {
+      font-size: 0.9rem;
+      color: #6c757d;
+      margin: 0;
     }
 
     // Announcements Card
@@ -467,18 +469,6 @@ export class UserHomeComponent implements OnInit {
     type: '-',
     roommates: []
   });
-
-  protected readonly paymentInfo = signal({
-    status: 'paid' as 'paid' | 'due',
-    monthlyRent: 850,
-    nextDue: new Date('2026-03-01')
-  });
-
-  protected readonly announcements = signal([
-    { id: 1, date: new Date('2026-02-18'), title: 'Campus-wide fire drill scheduled for Feb 25th' },
-    { id: 2, date: new Date('2026-02-15'), title: 'Spring semester payment deadline reminder' },
-    { id: 3, date: new Date('2026-02-10'), title: 'New laundry room hours posted' }
-  ]);
 
   ngOnInit() {
     const user = this.authService.getCurrentUser();

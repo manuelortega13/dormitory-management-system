@@ -1,0 +1,119 @@
+@use '../shared/placeholder-pages.scss' as *;
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1a1a2e;
+      }
+    }
+
+    .card-body {
+      padding: 1rem 1.25rem;
+
+      p {
+        margin: 0.5rem 0;
+        font-size: 0.875rem;
+        color: #666;
+
+        strong {
+          color: #333;
+        }
+      }
+    }
+
+    .card-footer {
+      padding: 0.75rem 1.25rem;
+      background: #fafafa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.25rem;
+        padding: 0.25rem;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.3;
+        }
+      }
+    }
+  }
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &.pending {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+
+  &.in-progress {
+    background-color: #cce5ff;
+    color: #004085;
+  }
+
+  &.completed {
+    background-color: #d4edda;
+    color: #155724;
+  }
+
+  &.low {
+    background-color: #e2e3e5;
+    color: #383d41;
+  }
+
+  &.medium {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+
+  &.high {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+
+  &.critical {
+    background-color: #dc3545;
+    color: white;
+  }
+}

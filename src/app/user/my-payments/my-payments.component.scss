@@ -1,0 +1,114 @@
+@use '../shared/user-placeholder.scss' as *;
+
+.my-payments-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+  }
+
+  &.paid .stat-icon { background: #d1fae5; }
+  &.pending .stat-icon { background: #fef3c7; }
+  &.overdue .stat-icon { background: #fee2e2; }
+  &.next-due .stat-icon { background: #e0e7ff; }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+  }
+}
+
+.payments-section {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #1e293b;
+    }
+  }
+}
+
+.amount {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.payment-methods {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    color: #1e293b;
+  }
+
+  .methods-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .method-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+
+    .method-icon {
+      font-size: 1.25rem;
+    }
+
+    .method-name {
+      font-size: 0.9rem;
+      color: #475569;
+    }
+  }
+}

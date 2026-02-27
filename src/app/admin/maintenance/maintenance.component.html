@@ -1,0 +1,93 @@
+<div class="page-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>🔧 Maintenance Requests</h1>
+      <p class="subtitle">Track and manage maintenance requests from residents</p>
+    </div>
+    <button class="btn-primary" disabled>
+      <span>➕</span> New Request
+    </button>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-icon total">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total Requests</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.pending }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">🔄</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.inProgress }}</span>
+        <span class="stat-label">In Progress</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon completed">✓</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.completed }}</span>
+        <span class="stat-label">Completed</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search requests..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+    <div class="filter-group">
+      <select disabled>
+        <option>All Status</option>
+      </select>
+      <select disabled>
+        <option>All Priority</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    @for (request of mockRequests; track request.id) {
+      <div class="card">
+        <div class="card-header">
+          <h3>{{ request.title }}</h3>
+          <span class="status-badge {{ getPriorityClass(request.priority) }}">
+            {{ request.priority }}
+          </span>
+        </div>
+        <div class="card-body">
+          <p>{{ request.description }}</p>
+          <p><strong>Room:</strong> {{ request.roomNumber }}</p>
+          <p><strong>Reported by:</strong> {{ request.reportedBy }}</p>
+          <p><strong>Date:</strong> {{ formatDate(request.reportedDate) }}</p>
+          @if (request.assignedTo) {
+            <p><strong>Assigned to:</strong> {{ request.assignedTo }}</p>
+          }
+        </div>
+        <div class="card-footer">
+          <span class="status-badge {{ getStatusClass(request.status) }}">
+            {{ request.status }}
+          </span>
+          <button class="btn-icon" title="View Details" disabled>👁️</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

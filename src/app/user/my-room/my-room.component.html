@@ -1,0 +1,112 @@
+<div class="my-room-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <h1>🛏️ My Room</h1>
+    <p class="subtitle">View your room details and information</p>
+  </div>
+
+  <div class="room-grid">
+    <!-- Room Details Card -->
+    <div class="card room-details">
+      <div class="card-header">
+        <h2>Room Information</h2>
+      </div>
+      <div class="card-body">
+        <div class="room-number-display">
+          <span class="room-badge">{{ mockRoom.roomNumber }}</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Building</span>
+            <span class="value">{{ mockRoom.building }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Floor</span>
+            <span class="value">{{ mockRoom.floor }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Room Type</span>
+            <span class="value">{{ getRoomTypeLabel(mockRoom.type) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Occupancy</span>
+            <span class="value">{{ mockRoom.currentOccupants }} / {{ mockRoom.capacity }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roommates Card -->
+    <div class="card roommates">
+      <div class="card-header">
+        <h2>👥 Roommates</h2>
+      </div>
+      <div class="card-body">
+        @if (mockRoommates.length > 0) {
+          @for (roommate of mockRoommates; track roommate.id) {
+            <div class="roommate-item">
+              <div class="roommate-avatar">{{ roommate.name.charAt(0) }}</div>
+              <div class="roommate-info">
+                <span class="roommate-name">{{ roommate.name }}</span>
+                <span class="roommate-course">{{ roommate.course }} - {{ roommate.year }}</span>
+                <span class="roommate-date">Since {{ formatDate(roommate.moveInDate) }}</span>
+              </div>
+            </div>
+          }
+        } @else {
+          <p class="no-roommates">No roommates assigned</p>
+        }
+      </div>
+    </div>
+
+    <!-- Amenities Card -->
+    <div class="card amenities">
+      <div class="card-header">
+        <h2>🏠 Room Amenities</h2>
+      </div>
+      <div class="card-body">
+        <div class="amenities-grid">
+          @for (amenity of mockAmenities; track amenity.name) {
+            <div class="amenity-item" [class.needs-repair]="amenity.status === 'needs-repair'">
+              <span class="amenity-icon">{{ amenity.icon }}</span>
+              <span class="amenity-name">{{ amenity.name }}</span>
+              @if (amenity.status === 'needs-repair') {
+                <span class="repair-badge">Needs Repair</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Room Rules Card -->
+    <div class="card rules">
+      <div class="card-header">
+        <h2>📋 Room Rules</h2>
+      </div>
+      <div class="card-body">
+        <ul class="rules-list">
+          @for (rule of mockRules; track rule) {
+            <li>{{ rule }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn-secondary" disabled>
+      🔧 Request Maintenance
+    </button>
+    <button class="btn-secondary" disabled>
+      🔄 Request Room Change
+    </button>
+  </div>
+</div>

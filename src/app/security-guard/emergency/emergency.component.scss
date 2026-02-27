@@ -1,0 +1,188 @@
+@use '../shared/guard-placeholder.scss' as *;
+
+.emergency-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.alert-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  .btn-danger.large {
+    padding: 1.5rem;
+    font-size: 1rem;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+.emergency-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contacts-section, .protocols-section {
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+    color: #1e293b;
+  }
+}
+
+.contacts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.contact-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 3px solid #059669;
+
+  &.unavailable {
+    border-left-color: #94a3b8;
+    opacity: 0.7;
+  }
+
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+
+    .contact-name {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .contact-role {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  }
+
+  .contact-phone {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+
+    .phone-link {
+      color: #059669;
+      text-decoration: none;
+      font-weight: 600;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .unavailable-badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      background: #fee2e2;
+      color: #dc2626;
+      border-radius: 4px;
+    }
+  }
+}
+
+.protocols-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.protocol-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+
+  .protocol-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+
+    .protocol-icon {
+      font-size: 1.5rem;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #1e293b;
+    }
+  }
+
+  .protocol-description {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+
+  .protocol-steps {
+    margin: 0;
+    padding-left: 1.25rem;
+
+    li {
+      padding: 0.35rem 0;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+  }
+}
+
+.quick-reference {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+    color: #1e293b;
+  }
+
+  .reference-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  .reference-item {
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 3px solid #4361ee;
+
+    .label {
+      display: block;
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+    }
+
+    .value {
+      display: block;
+      font-weight: 600;
+      color: #1e293b;
+    }
+  }
+}

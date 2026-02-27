@@ -16,6 +16,7 @@ export interface Resident {
   photo_url: string | null;
   status: ResidentStatus;
   created_at: string;
+  student_resident_id: string | null;
   gender: Gender | null;
   address: string | null;
   course: string | null;

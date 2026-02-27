@@ -80,19 +80,19 @@
       </div>
       <div class="panel-body">
         <div class="actions-grid">
-          <button class="action-btn">
+          <a routerLink="/security-guard/check-in-out" class="action-btn">
+            <span class="action-icon">🚪</span>
+            <span>Check In/Out</span>
+          </a>
+          <button class="action-btn" disabled>
             <span class="action-icon">📝</span>
             <span>Log Visitor</span>
           </button>
-          <button class="action-btn">
-            <span class="action-icon">🚪</span>
-            <span>Check In/Out</span>
-          </button>
-          <button class="action-btn alert">
+          <button class="action-btn alert" disabled>
             <span class="action-icon">⚠️</span>
             <span>Report Incident</span>
           </button>
-          <button class="action-btn emergency">
+          <button class="action-btn emergency" disabled>
             <span class="action-icon">🚨</span>
             <span>Emergency</span>
           </button>

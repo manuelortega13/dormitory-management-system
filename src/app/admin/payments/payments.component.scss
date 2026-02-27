@@ -1,0 +1,15 @@
+@use '../shared/placeholder-pages.scss' as *;
+
+.amount {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.stat-card .stat-icon.overdue {
+  background-color: #dc3545;
+}
+
+.status-badge.overdue {
+  background-color: #f8d7da;
+  color: #721c24;
+}

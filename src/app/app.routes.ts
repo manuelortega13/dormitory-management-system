@@ -7,10 +7,20 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent)
   },
-  // Register route (residents only)
+  // Register selection route
   {
     path: 'register',
-    loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent)
+    loadComponent: () => import('./auth/register/register-selection.component').then(m => m.RegisterSelectionComponent)
+  },
+  // Student resident registration
+  {
+    path: 'register/resident',
+    loadComponent: () => import('./auth/register-resident/register-resident.component').then(m => m.RegisterResidentComponent)
+  },
+  // Parent/Guardian registration
+  {
+    path: 'register/parent',
+    loadComponent: () => import('./auth/register-parent/register-parent.component').then(m => m.RegisterParentComponent)
   },
   // User/Resident routes (no prefix)
   {
@@ -37,6 +47,18 @@ export const routes: Routes = [
       {
         path: 'leave-pass/:id',
         loadComponent: () => import('./user/leave-pass/leave-pass.component').then(m => m.LeavePassComponent)
+      },
+      {
+        path: 'my-room',
+        loadComponent: () => import('./user/my-room/my-room.component').then(m => m.MyRoomComponent)
+      },
+      {
+        path: 'my-payments',
+        loadComponent: () => import('./user/my-payments/my-payments.component').then(m => m.MyPaymentsComponent)
+      },
+      {
+        path: 'announcements',
+        loadComponent: () => import('./user/announcements/user-announcements.component').then(m => m.UserAnnouncementsComponent)
       }
     ]
   },
@@ -68,8 +90,36 @@ export const routes: Routes = [
         loadComponent: () => import('./admin/leave-requests/leave-requests.component').then(m => m.LeaveRequestsComponent)
       },
       {
+        path: 'parent-registrations',
+        loadComponent: () => import('./admin/parent-registrations/parent-registrations.component').then(m => m.ParentRegistrationsComponent)
+      },
+      {
         path: 'agents',
         loadComponent: () => import('./admin/agents/agents.component').then(m => m.AgentsComponent)
+      },
+      {
+        path: 'maintenance',
+        loadComponent: () => import('./admin/maintenance/maintenance.component').then(m => m.MaintenanceComponent)
+      },
+      {
+        path: 'payments',
+        loadComponent: () => import('./admin/payments/payments.component').then(m => m.PaymentsComponent)
+      },
+      {
+        path: 'inventory',
+        loadComponent: () => import('./admin/inventory/inventory.component').then(m => m.InventoryComponent)
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('./admin/reports/reports.component').then(m => m.ReportsComponent)
+      },
+      {
+        path: 'announcements',
+        loadComponent: () => import('./admin/announcements/announcements.component').then(m => m.AnnouncementsComponent)
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./admin/settings/settings.component').then(m => m.SettingsComponent)
       }
     ]
   },
@@ -91,6 +141,18 @@ export const routes: Routes = [
       {
         path: 'check-in-out',
         loadComponent: () => import('./security-guard/check-in-out/check-in-out.component').then(m => m.CheckInOutComponent)
+      },
+      {
+        path: 'visitor-log',
+        loadComponent: () => import('./security-guard/visitor-log/visitor-log.component').then(m => m.VisitorLogComponent)
+      },
+      {
+        path: 'incidents',
+        loadComponent: () => import('./security-guard/incidents/incidents.component').then(m => m.IncidentsComponent)
+      },
+      {
+        path: 'emergency',
+        loadComponent: () => import('./security-guard/emergency/emergency.component').then(m => m.EmergencyComponent)
       }
     ]
   },

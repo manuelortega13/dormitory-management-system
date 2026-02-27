@@ -1,0 +1,40 @@
+@use '../shared/placeholder-pages.scss' as *;
+
+.item-name {
+  font-weight: 500;
+}
+
+.category {
+  text-transform: capitalize;
+}
+
+.quantity {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+
+  &.good-stock {
+    background-color: #d4edda;
+    color: #155724;
+  }
+
+  &.warning-stock {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+
+  &.low-stock {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+}
+
+.stat-card .stat-icon.overdue {
+  background-color: #dc3545;
+}
+
+.status-badge.overdue {
+  background-color: #f8d7da;
+  color: #721c24;
+}

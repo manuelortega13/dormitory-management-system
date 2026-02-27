@@ -16,6 +16,7 @@ const checkLogRoutes = require('./routes/check-log.routes');
 const visitorRoutes = require('./routes/visitor.routes');
 const incidentRoutes = require('./routes/incident.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const parentRegistrationRoutes = require('./routes/parent-registration.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -44,6 +45,7 @@ app.use('/api/check-logs', checkLogRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/parent-registrations', parentRegistrationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

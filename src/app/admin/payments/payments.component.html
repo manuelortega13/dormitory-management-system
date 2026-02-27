@@ -1,0 +1,105 @@
+<div class="page-container">
+  <div class="coming-soon-banner">
+    <span class="banner-icon">🚧</span>
+    <div class="banner-content">
+      <strong>Feature Coming Soon</strong>
+      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>💳 Payment Management</h1>
+      <p class="subtitle">Track resident payments and billing</p>
+    </div>
+    <button class="btn-primary" disabled>
+      <span>➕</span> Record Payment
+    </button>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-icon total">💰</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatCurrency(stats.totalCollected) }}</span>
+        <span class="stat-label">Total Collected</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.pending }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon overdue">⚠️</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.overdue }}</span>
+        <span class="stat-label">Overdue</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon completed">✓</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.thisMonth }}</span>
+        <span class="stat-label">Paid This Month</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search payments..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+    <div class="filter-group">
+      <select disabled>
+        <option>All Status</option>
+      </select>
+      <select disabled>
+        <option>All Types</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Resident</th>
+          <th>Room</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Due Date</th>
+          <th>Paid Date</th>
+          <th>Method</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (payment of mockPayments; track payment.id) {
+          <tr>
+            <td>{{ payment.residentName }}</td>
+            <td>{{ payment.roomNumber }}</td>
+            <td>{{ getTypeLabel(payment.type) }}</td>
+            <td class="amount">{{ formatCurrency(payment.amount) }}</td>
+            <td>{{ formatDate(payment.dueDate) }}</td>
+            <td>{{ formatDate(payment.paidDate) }}</td>
+            <td>{{ payment.paymentMethod || '-' }}</td>
+            <td>
+              <span class="status-badge {{ getStatusClass(payment.status) }}">
+                {{ payment.status }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn-icon" title="View" disabled>👁️</button>
+              <button class="btn-icon" title="Receipt" disabled>🧾</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,140 @@
+@use '../shared/guard-placeholder.scss' as *;
+
+.incidents-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.incidents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.incident-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border-left: 4px solid #cbd5e1;
+
+  &.low {
+    border-left-color: #94a3b8;
+  }
+
+  &.medium {
+    border-left-color: #f59e0b;
+  }
+
+  &.high {
+    border-left-color: #f97316;
+  }
+
+  &.critical {
+    border-left-color: #dc2626;
+    background: linear-gradient(to right, #fef2f2, white);
+  }
+
+  .incident-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+
+    .severity-indicator {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .incident-title {
+      flex: 1;
+
+      h3 {
+        margin: 0 0 0.25rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .location {
+        font-size: 0.85rem;
+        color: #64748b;
+      }
+    }
+  }
+
+  .incident-body {
+    padding: 1rem 1.25rem;
+
+    p {
+      margin: 0;
+      color: #475569;
+      line-height: 1.5;
+    }
+  }
+
+  .incident-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    font-size: 0.85rem;
+
+    .meta {
+      display: flex;
+      gap: 1rem;
+      color: #64748b;
+    }
+
+    .assignment {
+      .assigned {
+        color: #059669;
+        font-weight: 500;
+      }
+
+      .unassigned {
+        color: #dc2626;
+        font-style: italic;
+      }
+    }
+  }
+
+  .incident-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+  }
+}
+
+.severity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+
+  &.low {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+
+  &.medium {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  &.high {
+    background: #ffedd5;
+    color: #ea580c;
+  }
+
+  &.critical {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+}

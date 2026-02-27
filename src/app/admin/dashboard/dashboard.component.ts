@@ -1,11 +1,12 @@
 import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { DashboardService, DashboardSummary, RecentActivity } from './data';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -36,7 +37,7 @@ export class DashboardComponent implements OnInit {
     { label: 'Add Resident', icon: '👤', route: '/manage/residents' },
     { label: 'Room Assignment', icon: '🛏️', route: '/manage/rooms' },
     { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
-    { label: 'View Reports', icon: '📊', route: '/manage/reports' }
+    { label: 'Manage Agents', icon: '👷', route: '/manage/agents' }
   ];
 
   ngOnInit(): void {

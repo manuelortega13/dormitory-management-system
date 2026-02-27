@@ -75,77 +75,6 @@
   gap: 1rem;
 }
 
-.account-type-group {
-  margin-bottom: 1.5rem;
-  
-  > label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 0.75rem;
-  }
-}
-
-.account-type-options {
-  display: flex;
-  gap: 1rem;
-  
-  @media (max-width: 480px) {
-    flex-direction: column;
-  }
-}
-
-.account-type-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.25rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: white;
-  text-align: center;
-  
-  input[type="radio"] {
-    display: none;
-  }
-  
-  .card-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .card-title {
-    font-weight: 600;
-    color: #333;
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .card-desc {
-    font-size: 0.75rem;
-    color: #6b7280;
-  }
-  
-  &:hover {
-    border-color: #4361ee;
-    background: #f8faff;
-  }
-  
-  &.selected {
-    border-color: #4361ee;
-    background: linear-gradient(135deg, #f0f4ff, #ebe8ff);
-    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
-    
-    .card-title {
-      color: #4361ee;
-    }
-  }
-}
-
 .form-group {
   margin-bottom: 1rem;
 
@@ -335,6 +264,10 @@
     margin: 0;
     color: #6b7280;
     font-size: 0.9rem;
+
+    + p {
+      margin-top: 0.5rem;
+    }
 
     a {
       color: #4361ee;

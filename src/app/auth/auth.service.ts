@@ -18,6 +18,7 @@ export interface LoginResponse {
   message: string;
   token: string;
   user: User;
+  requiresApproval?: boolean;
 }
 
 export interface RegisterData {
@@ -27,6 +28,8 @@ export interface RegisterData {
   phone: string;
   password: string;
   role: 'resident' | 'parent';
+  faceImage?: string;
+  studentResidentId?: string;
 }
 
 @Injectable({
@@ -61,8 +64,8 @@ export class AuthService {
       this.http.post<LoginResponse>(`${this.apiUrl}/register`, data)
     );
     
-    // Store token and user info (auto-login after registration)
-    if (this.isBrowser) {
+    // Store token and user info (only if token provided - parents pending approval won't have one)
+    if (this.isBrowser && response.token && response.user) {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
     }

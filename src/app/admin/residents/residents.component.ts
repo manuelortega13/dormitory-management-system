@@ -92,7 +92,8 @@ export class ResidentsComponent implements OnInit {
         r.first_name.toLowerCase().includes(query) ||
         r.last_name.toLowerCase().includes(query) ||
         r.email.toLowerCase().includes(query) ||
-        r.room_number?.toLowerCase().includes(query)
+        r.room_number?.toLowerCase().includes(query) ||
+        r.student_resident_id?.toLowerCase().includes(query)
       );
     }
 
