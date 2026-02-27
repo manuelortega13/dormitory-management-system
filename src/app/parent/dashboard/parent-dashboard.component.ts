@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ParentService } from '../data/parent.service';
@@ -16,6 +16,9 @@ export class ParentDashboardComponent implements OnInit {
   private parentService = inject(ParentService);
   private notificationService = inject(NotificationService);
 
+  @ViewChild('verificationVideo') videoElement!: ElementRef<HTMLVideoElement>;
+  @ViewChild('verificationCanvas') canvasElement!: ElementRef<HTMLCanvasElement>;
+
   requests = signal<LeaveRequest[]>([]);
   isLoading = signal(true);
   errorMessage = signal('');
@@ -26,6 +29,15 @@ export class ParentDashboardComponent implements OnInit {
   actionType = signal<'approve' | 'decline'>('approve');
   parentNotes = signal('');
   isProcessing = signal(false);
+
+  // Face verification state
+  showFaceVerification = signal(false);
+  cameraActive = signal(false);
+  cameraError = signal('');
+  capturedFaceImage = signal<string | null>(null);
+  isVerifying = signal(false);
+  verificationError = signal('');
+  private mediaStream: MediaStream | null = null;
 
   constructor() {
     // Watch for new approval requests and refresh the list
@@ -106,6 +118,10 @@ export class ParentDashboardComponent implements OnInit {
     this.actionType.set('approve');
     this.parentNotes.set('');
     this.showActionModal.set(true);
+    // Reset face verification state
+    this.showFaceVerification.set(false);
+    this.capturedFaceImage.set(null);
+    this.verificationError.set('');
   }
 
   openDeclineModal(request: LeaveRequest) {
@@ -116,30 +132,135 @@ export class ParentDashboardComponent implements OnInit {
   }
 
   closeModal() {
+    this.stopCamera();
     this.showActionModal.set(false);
+    this.showFaceVerification.set(false);
     this.selectedRequest.set(null);
     this.parentNotes.set('');
+    this.capturedFaceImage.set(null);
+    this.verificationError.set('');
+  }
+
+  // Start face verification process for approval
+  startFaceVerification() {
+    this.showFaceVerification.set(true);
+    this.verificationError.set('');
+    this.startCamera();
+  }
+
+  async startCamera() {
+    this.cameraError.set('');
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+      });
+      
+      // Wait for view to update
+      setTimeout(() => {
+        if (this.videoElement?.nativeElement) {
+          this.videoElement.nativeElement.srcObject = this.mediaStream;
+          this.cameraActive.set(true);
+        }
+      }, 100);
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      this.cameraError.set('Unable to access camera. Please ensure camera permissions are granted.');
+    }
+  }
+
+  stopCamera() {
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+    this.cameraActive.set(false);
+  }
+
+  capturePhoto() {
+    if (!this.videoElement?.nativeElement || !this.canvasElement?.nativeElement) return;
+
+    const video = this.videoElement.nativeElement;
+    const canvas = this.canvasElement.nativeElement;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    // Resize to max 640px width to reduce file size
+    const maxWidth = 640;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = video.videoWidth * scale;
+    canvas.height = video.videoHeight * scale;
+
+    // Draw the current video frame (scaled down)
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Get the image as base64 with reduced quality
+    const imageData = canvas.toDataURL('image/jpeg', 0.7);
+    this.capturedFaceImage.set(imageData);
+    this.stopCamera();
+  }
+
+  retakePhoto() {
+    this.capturedFaceImage.set(null);
+    this.verificationError.set('');
+    this.startCamera();
+  }
+
+  cancelFaceVerification() {
+    this.stopCamera();
+    this.showFaceVerification.set(false);
+    this.capturedFaceImage.set(null);
+    this.verificationError.set('');
   }
 
   async confirmAction() {
     const request = this.selectedRequest();
     if (!request) return;
 
-    this.isProcessing.set(true);
-
-    try {
-      if (this.actionType() === 'approve') {
-        await this.parentService.approveRequest(request.id, this.parentNotes());
-      } else {
-        await this.parentService.declineRequest(request.id, this.parentNotes());
+    // For approval, require face verification
+    if (this.actionType() === 'approve') {
+      if (!this.capturedFaceImage()) {
+        // Show face verification step first
+        this.startFaceVerification();
+        return;
       }
 
-      this.closeModal();
-      await this.loadRequests();
-    } catch (error: any) {
-      alert(error.message || 'Failed to process request');
-    } finally {
-      this.isProcessing.set(false);
+      // Submit with face verification
+      this.isVerifying.set(true);
+      this.verificationError.set('');
+
+      try {
+        await this.parentService.approveRequest(request.id, this.parentNotes(), this.capturedFaceImage()!);
+        this.closeModal();
+        await this.loadRequests();
+      } catch (error: any) {
+        // Handle HTTP error response
+        const errorMessage = error?.error?.error || error?.message || 'Face verification failed. Please try again.';
+        
+        if (errorMessage.toLowerCase().includes('face') || 
+            errorMessage.toLowerCase().includes('verification') ||
+            errorMessage.toLowerCase().includes('match')) {
+          this.verificationError.set(errorMessage);
+        } else {
+          alert(errorMessage);
+        }
+      } finally {
+        this.isVerifying.set(false);
+      }
+    } else {
+      // For decline, no face verification needed
+      this.isProcessing.set(true);
+
+      try {
+        await this.parentService.declineRequest(request.id, this.parentNotes());
+        this.closeModal();
+        await this.loadRequests();
+      } catch (error: any) {
+        const errorMessage = error?.error?.error || error?.message || 'Failed to process request';
+        alert(errorMessage);
+      } finally {
+        this.isProcessing.set(false);
+      }
     }
   }
 }

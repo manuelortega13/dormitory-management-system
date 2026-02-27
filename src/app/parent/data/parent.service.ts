@@ -44,10 +44,10 @@ export class ParentService {
     return response.data;
   }
 
-  // Approve a child's leave request
-  async approveRequest(id: number, notes?: string): Promise<void> {
+  // Approve a child's leave request with face verification
+  async approveRequest(id: number, notes?: string, faceImage?: string): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${this.apiUrl}/${id}/parent-approve`, { notes })
+      this.http.post(`${this.apiUrl}/${id}/parent-approve`, { notes, faceImage })
     );
   }
 

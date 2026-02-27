@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { pool } = require('../config/database');
 const notificationController = require('./notification.controller');
+const { verifyFaces } = require('../services/face-verification.service');
 
 // Generate unique QR code
 const generateQRCode = () => {
@@ -402,8 +403,25 @@ exports.adminDecline = async (req, res) => {
 exports.parentApprove = async (req, res) => {
   try {
     const { id } = req.params;
-    const { notes } = req.body;
+    const { notes, faceImage } = req.body;
     const parentId = req.user.id;
+
+    // Face image is required for approval
+    if (!faceImage) {
+      return res.status(400).json({ error: 'Face verification is required for approval' });
+    }
+
+    // Get parent's stored face image
+    const [parents] = await pool.execute(
+      `SELECT face_image FROM users WHERE id = ? AND role = 'parent'`,
+      [parentId]
+    );
+
+    if (parents.length === 0 || !parents[0].face_image) {
+      return res.status(400).json({ 
+        error: 'No registered face found. Please complete face registration first.' 
+      });
+    }
 
     // Verify this parent owns this request's resident
     const [requests] = await pool.execute(
@@ -427,6 +445,30 @@ exports.parentApprove = async (req, res) => {
       return res.status(400).json({ error: 'Request is not pending parent approval' });
     }
 
+    // Perform face verification using face-api.js
+    const storedFace = parents[0].face_image;
+    const providedFace = faceImage;
+    
+    // Validate image format
+    if (!storedFace.startsWith('data:image/') || !providedFace.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Invalid face image format' });
+    }
+
+    // Compare faces using neural network
+    console.log(`Starting face verification for parent ${parentId} on request ${id}`);
+    const verificationResult = await verifyFaces(storedFace, providedFace, 0.6);
+    
+    if (!verificationResult.match) {
+      console.log(`Face verification FAILED for parent ${parentId}: ${verificationResult.error || 'Faces do not match'}`);
+      return res.status(403).json({ 
+        error: verificationResult.error || 'Face verification failed. The captured face does not match your registered face.',
+        distance: verificationResult.distance
+      });
+    }
+    
+    console.log(`Face verification PASSED for parent ${parentId}, distance: ${verificationResult.distance.toFixed(4)}`);
+
+
     // After parent approval, move to VPSAS approval
     const childName = `${request.first_name} ${request.last_name}`;
 
@@ -447,7 +489,7 @@ exports.parentApprove = async (req, res) => {
     await notificationController.notifyResidentParentApproved(request.user_id, id);
 
     res.json({ 
-      message: 'Parent approved. Awaiting VPSAS approval.'
+      message: 'Face verified. Parent approved. Awaiting VPSAS approval.'
     });
   } catch (error) {
     console.error('Parent approve request error:', error);

@@ -527,3 +527,240 @@
     }
   }
 }
+
+// Face verification styles
+.face-verification-section {
+  .verification-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .verification-icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    h3 {
+      margin: 0 0 0.25rem;
+      font-size: 1.25rem;
+      color: #1a1a2e;
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.camera-error,
+.verification-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.camera-container {
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 1rem;
+}
+
+.camera-preview {
+  position: relative;
+}
+
+.camera-video {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+  transform: scaleX(-1); // Mirror effect
+}
+
+.face-frame-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.face-frame {
+  width: 160px;
+  height: 200px;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 0 2000px rgba(0, 0, 0, 0.4),
+    inset 0 0 20px rgba(124, 58, 237, 0.3);
+  animation: pulse-frame 2s ease-in-out infinite;
+}
+
+@keyframes pulse-frame {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    border-color: rgba(124, 58, 237, 0.9);
+  }
+}
+
+.frame-hint {
+  position: absolute;
+  bottom: 15px;
+  color: white;
+  font-size: 0.8rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+}
+
+.camera-controls {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #1a1a2e;
+  justify-content: center;
+}
+
+.btn-capture {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #059669;
+  }
+}
+
+.btn-cancel-camera {
+  padding: 0.75rem 1.5rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #4b5563;
+  }
+}
+
+.captured-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.captured-image {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+}
+
+.captured-controls {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: #f0f9f4;
+  width: 100%;
+}
+
+.btn-retake {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+.camera-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #666;
+  
+  .placeholder-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.verification-info {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  
+  .info-icon {
+    font-size: 1rem;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #1e40af;
+    line-height: 1.4;
+  }
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.35rem;
+}

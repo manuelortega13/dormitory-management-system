@@ -12,6 +12,9 @@ node_modules
 npm-debug.log
 yarn-error.log
 
+# Face recognition models (copied from node_modules during postinstall)
+/server/models
+
 # IDEs and editors
 .idea/
 .project

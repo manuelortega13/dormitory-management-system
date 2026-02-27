@@ -6,6 +6,7 @@ require('dotenv').config({ path: '.env' });
 const { testConnection } = require('./config/database');
 const initDatabase = require('./config/init-db');
 const { initializeSocket } = require('./services/socket.service');
+const { initializeFaceVerification } = require('./services/face-verification.service');
 const migrate = require('./migrate');
 
 // Import routes
@@ -130,6 +131,15 @@ const startServer = async () => {
   await testConnection();
   await initDatabase();
   await migrate();
+  
+  // Pre-load face recognition models (optional but improves first verification speed)
+  initializeFaceVerification().then(success => {
+    if (success) {
+      console.log('✅ Face recognition models loaded');
+    } else {
+      console.warn('⚠️ Face recognition models failed to load - verification may fail');
+    }
+  });
   
   server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

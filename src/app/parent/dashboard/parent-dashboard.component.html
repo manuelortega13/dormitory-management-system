@@ -127,57 +127,145 @@
         </div>
 
         <div class="modal-body">
-          <div class="request-summary">
-            <p><strong>Child:</strong> {{ selectedRequest()!.user_name }}</p>
-            <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
-            <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
-            @if (selectedRequest()!.spending_leave_with) {
-              <p><strong>Spending Leave With:</strong> {{ selectedRequest()!.spending_leave_with }}</p>
-            }
-            <p><strong>When:</strong> {{ formatShortDate(selectedRequest()!.start_date) }} - {{ formatShortDate(selectedRequest()!.end_date) }}</p>
-          </div>
+          @if (!showFaceVerification()) {
+            <!-- Initial approval/decline confirmation -->
+            <div class="request-summary">
+              <p><strong>Child:</strong> {{ selectedRequest()!.user_name }}</p>
+              <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
+              <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
+              @if (selectedRequest()!.spending_leave_with) {
+                <p><strong>Spending Leave With:</strong> {{ selectedRequest()!.spending_leave_with }}</p>
+              }
+              <p><strong>When:</strong> {{ formatShortDate(selectedRequest()!.start_date) }} - {{ formatShortDate(selectedRequest()!.end_date) }}</p>
+            </div>
 
-          @if (actionType() === 'approve') {
-            <div class="info-message approve">
-              <span class="info-icon">ℹ️</span>
-              <p>After your approval, the request will be sent to VPSAS for final approval. Once VPSAS approves, a QR code will be generated for your child.</p>
+            @if (actionType() === 'approve') {
+              <div class="info-message approve">
+                <span class="info-icon">🔐</span>
+                <p>For security, we'll need to verify your identity with face recognition before approving this request.</p>
+              </div>
+            } @else {
+              <div class="info-message decline">
+                <span class="info-icon">⚠️</span>
+                <p>If you decline, your child will not be able to leave campus for this request.</p>
+              </div>
+            }
+
+            <div class="form-group">
+              <label for="parentNotes">Message for your child (optional)</label>
+              <textarea 
+                id="parentNotes"
+                rows="3"
+                placeholder="Add a message or note..."
+                [ngModel]="parentNotes()"
+                (ngModelChange)="parentNotes.set($event)"
+              ></textarea>
             </div>
           } @else {
-            <div class="info-message decline">
-              <span class="info-icon">⚠️</span>
-              <p>If you decline, your child will not be able to leave campus for this request.</p>
+            <!-- Face verification step -->
+            <div class="face-verification-section">
+              <div class="verification-header">
+                <span class="verification-icon">🔐</span>
+                <h3>Identity Verification</h3>
+                <p>Please capture your face to verify your identity</p>
+              </div>
+
+              @if (cameraError()) {
+                <div class="camera-error">
+                  <span>⚠️</span> {{ cameraError() }}
+                </div>
+              }
+
+              @if (verificationError()) {
+                <div class="verification-error">
+                  <span>❌</span> {{ verificationError() }}
+                </div>
+              }
+
+              <div class="camera-container">
+                @if (cameraActive() && !capturedFaceImage()) {
+                  <div class="camera-preview">
+                    <video 
+                      #verificationVideo 
+                      autoplay 
+                      playsinline
+                      class="camera-video"
+                    ></video>
+                    <div class="face-frame-overlay">
+                      <div class="face-frame"></div>
+                      <span class="frame-hint">Position your face within the frame</span>
+                    </div>
+                  </div>
+                  <canvas #verificationCanvas style="display: none;"></canvas>
+                  <div class="camera-controls">
+                    <button type="button" class="btn-capture" (click)="capturePhoto()">
+                      📸 Capture
+                    </button>
+                    <button type="button" class="btn-cancel-camera" (click)="cancelFaceVerification()">
+                      Cancel
+                    </button>
+                  </div>
+                }
+
+                @if (capturedFaceImage()) {
+                  <div class="captured-preview">
+                    <img [src]="capturedFaceImage()" alt="Captured face" class="captured-image" />
+                    <div class="captured-controls">
+                      <button type="button" class="btn-retake" (click)="retakePhoto()">
+                        🔄 Retake
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @if (!cameraActive() && !capturedFaceImage()) {
+                  <div class="camera-placeholder">
+                    <span class="placeholder-icon">📷</span>
+                    <p>Starting camera...</p>
+                  </div>
+                }
+              </div>
+
+              <div class="verification-info">
+                <span class="info-icon">ℹ️</span>
+                <p>Your face will be compared with the photo taken during registration to confirm your identity.</p>
+              </div>
             </div>
           }
-
-          <div class="form-group">
-            <label for="parentNotes">Message for your child (optional)</label>
-            <textarea 
-              id="parentNotes"
-              rows="3"
-              placeholder="Add a message or note..."
-              [ngModel]="parentNotes()"
-              (ngModelChange)="parentNotes.set($event)"
-            ></textarea>
-          </div>
         </div>
 
         <div class="modal-actions">
-          <button class="btn-cancel" (click)="closeModal()">Cancel</button>
-          <button 
-            class="btn-confirm"
-            [class.approve]="actionType() === 'approve'"
-            [class.decline]="actionType() === 'decline'"
-            [disabled]="isProcessing()"
-            (click)="confirmAction()"
-          >
-            @if (isProcessing()) {
-              Processing...
-            } @else if (actionType() === 'approve') {
-              Yes, Approve
-            } @else {
-              Yes, Decline
-            }
-          </button>
+          @if (!showFaceVerification()) {
+            <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+            <button 
+              class="btn-confirm"
+              [class.approve]="actionType() === 'approve'"
+              [class.decline]="actionType() === 'decline'"
+              [disabled]="isProcessing()"
+              (click)="confirmAction()"
+            >
+              @if (isProcessing()) {
+                Processing...
+              } @else if (actionType() === 'approve') {
+                Continue to Verify
+              } @else {
+                Yes, Decline
+              }
+            </button>
+          } @else {
+            <button class="btn-cancel" (click)="cancelFaceVerification()">Back</button>
+            <button 
+              class="btn-confirm approve"
+              [disabled]="!capturedFaceImage() || isVerifying()"
+              (click)="confirmAction()"
+            >
+              @if (isVerifying()) {
+                <span class="spinner-small"></span> Verifying...
+              } @else {
+                ✓ Verify & Approve
+              }
+            </button>
+          }
         </div>
       </div>
     </div>
