@@ -235,15 +235,17 @@ export class RegisterParentComponent implements OnDestroy {
 
     if (!context) return;
 
-    // Set canvas size to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Resize to max 640px width while maintaining aspect ratio to reduce file size
+    const maxWidth = 640;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = video.videoWidth * scale;
+    canvas.height = video.videoHeight * scale;
 
-    // Draw the current video frame
+    // Draw the current video frame (scaled down)
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Get the image as base64
-    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    // Get the image as base64 with reduced quality
+    const imageData = canvas.toDataURL('image/jpeg', 0.7);
     
     // Validate the captured image
     this.isValidatingFace.set(true);
