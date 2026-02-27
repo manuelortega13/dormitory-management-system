@@ -52,6 +52,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Migration endpoint (protected)
+const migrate = require('./migrate');
+app.post('/api/admin/run-migrations', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    await migrate();
+    res.json({ success: true, message: 'Migrations completed' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
