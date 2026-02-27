@@ -155,13 +155,25 @@ export class ParentDashboardComponent implements OnInit {
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
       });
       
-      // Wait for view to update
+      // Set cameraActive first so the video element appears in the DOM
+      this.cameraActive.set(true);
+      
+      // Wait for Angular to render the video element, then attach the stream
       setTimeout(() => {
-        if (this.videoElement?.nativeElement) {
+        if (this.videoElement?.nativeElement && this.mediaStream) {
           this.videoElement.nativeElement.srcObject = this.mediaStream;
-          this.cameraActive.set(true);
+        } else {
+          // Retry with longer delay if element not ready
+          setTimeout(() => {
+            if (this.videoElement?.nativeElement && this.mediaStream) {
+              this.videoElement.nativeElement.srcObject = this.mediaStream;
+            } else {
+              this.cameraError.set('Failed to initialize camera. Please try again.');
+              this.stopCamera();
+            }
+          }, 200);
         }
-      }, 100);
+      }, 50);
     } catch (error: any) {
       console.error('Camera error:', error);
       this.cameraError.set('Unable to access camera. Please ensure camera permissions are granted.');
