@@ -6,7 +6,6 @@ require('dotenv').config({ path: '.env.prod' });
 const { testConnection } = require('./config/database');
 const initDatabase = require('./config/init-db');
 const { initializeSocket } = require('./services/socket.service');
-const migrate = require('./migrate');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -71,12 +70,6 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   await testConnection();
   await initDatabase();
-  
-  if (process.env.NODE_ENV === 'production') {
-    console.log('🔄 Running database migrations...');
-    await migrate();
-    console.log('✅ Migrations complete');
-  }
   
   server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

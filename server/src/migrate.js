@@ -95,9 +95,11 @@ async function runMigration(pool, filename) {
         // Only ignore specific MySQL errors that are safe to skip:
         // 1054 = Unknown column (CHANGE on already renamed column)
         // 1060 = Duplicate column name
-        // 1061 = Duplicate key name (index already exists)
+        // 1061 = Duplicate key name (index/constraint already exists)
         // 1050 = Table already exists
-        const ignorableErrors = [1054, 1060, 1061, 1050];
+        // 1451 = Cannot delete/update parent row (handled separately)
+        // 1452 = Cannot add/update child row (handled separately)
+        const ignorableErrors = [1054, 1060, 1061, 1050, 1215, 1553];
         if (ignorableErrors.includes(error.errno)) {
           console.log(`    ⚠️  Skipped (already applied): ${error.message.substring(0, 60)}`);
         } else {
