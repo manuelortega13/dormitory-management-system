@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('dotenv').config({ path: '.env.prod' });
 
 const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
 
