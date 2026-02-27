@@ -35,6 +35,10 @@ export class NotificationService implements OnDestroy {
   // Signal to notify parent dashboard when child's request needs approval
   // Increments when parent_approval_needed notification is detected
   parentApprovalNeededTrigger = signal<number>(0);
+  
+  // Signal to notify admin when new parent registers and needs approval
+  // Increments when registration notification is detected
+  newParentRegistrationTrigger = signal<number>(0);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private lastNotificationIds = new Set<number>();
@@ -282,6 +286,9 @@ export class NotificationService implements OnDestroy {
     }
     if (notification.type === 'vpsas_approval_needed') {
       this.newLeaveRequestTrigger.update(v => v + 1);
+    }
+    if (notification.type === 'registration') {
+      this.newParentRegistrationTrigger.update(v => v + 1);
     }
   }
 

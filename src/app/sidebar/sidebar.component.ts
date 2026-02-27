@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService, User } from '../auth/auth.service';
 import { AdminLeaveRequestService } from '../admin/leave-requests/data/admin-leave-request.service';
+import { ParentRegistrationService } from '../admin/parent-registrations/data/parent-registration.service';
 import { NotificationService } from '../services/notification.service';
 
 interface MenuItem {
@@ -28,10 +29,12 @@ interface MenuSection {
 export class SidebarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private leaveRequestService = inject(AdminLeaveRequestService);
+  private parentRegistrationService = inject(ParentRegistrationService);
   private notificationService = inject(NotificationService);
   private subscription: Subscription | null = null;
   protected readonly isCollapsed = signal(false);
   protected readonly pendingLeaveRequestsCount = signal(0);
+  protected readonly pendingParentRegistrationsCount = signal(0);
   protected readonly currentUser = signal<User | null>(null);
 
   constructor() {
@@ -40,6 +43,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
       const trigger = this.notificationService.newLeaveRequestTrigger();
       if (trigger > 0) {
         this.loadPendingLeaveRequestsCount();
+      }
+    });
+    
+    // Watch for new parent registration notifications
+    effect(() => {
+      const trigger = this.notificationService.newParentRegistrationTrigger();
+      if (trigger > 0) {
+        this.loadPendingParentRegistrationsCount();
       }
     });
   }
@@ -102,18 +113,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   ]);
 
+  private parentRegistrationSubscription: Subscription | null = null;
+
   ngOnInit(): void {
     this.currentUser.set(this.authService.getCurrentUser());
     this.loadPendingLeaveRequestsCount();
+    this.loadPendingParentRegistrationsCount();
     
     // Subscribe to leave request updates
     this.subscription = this.leaveRequestService.leaveRequestUpdated$.subscribe(() => {
       this.loadPendingLeaveRequestsCount();
     });
+    
+    // Subscribe to parent registration updates (approved/declined)
+    this.parentRegistrationSubscription = this.parentRegistrationService.registrationUpdated$.subscribe(() => {
+      this.loadPendingParentRegistrationsCount();
+    });
   }
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();
+    this.parentRegistrationSubscription?.unsubscribe();
   }
 
   private async loadPendingLeaveRequestsCount(): Promise<void> {
@@ -132,6 +152,31 @@ export class SidebarComponent implements OnInit, OnDestroy {
         ...section,
         items: section.items.map(item => 
           item.label === 'Leave Requests' 
+            ? { ...item, badge: count > 0 ? count : undefined }
+            : item
+        )
+      }))
+    );
+  }
+
+  private loadPendingParentRegistrationsCount(): void {
+    this.parentRegistrationService.getPendingCount().subscribe({
+      next: (response) => {
+        this.pendingParentRegistrationsCount.set(response.count);
+        this.updateParentApprovalsBadge(response.count);
+      },
+      error: (error) => {
+        console.error('Failed to load pending parent registrations count:', error);
+      }
+    });
+  }
+
+  private updateParentApprovalsBadge(count: number): void {
+    this.menuSections.update(sections => 
+      sections.map(section => ({
+        ...section,
+        items: section.items.map(item => 
+          item.label === 'Parent Approvals' 
             ? { ...item, badge: count > 0 ? count : undefined }
             : item
         )

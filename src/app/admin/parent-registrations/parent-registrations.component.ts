@@ -1,7 +1,9 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ParentRegistrationService, ParentRegistration, ParentRegistrationDetail } from './data';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-parent-registrations',
@@ -10,8 +12,10 @@ import { ParentRegistrationService, ParentRegistration, ParentRegistrationDetail
   templateUrl: './parent-registrations.component.html',
   styleUrl: './parent-registrations.component.scss'
 })
-export class ParentRegistrationsComponent implements OnInit {
+export class ParentRegistrationsComponent implements OnInit, OnDestroy {
   private readonly parentRegistrationService = inject(ParentRegistrationService);
+  private readonly notificationService = inject(NotificationService);
+  private subscription: Subscription | null = null;
 
   protected readonly searchQuery = signal('');
   protected readonly selectedStatus = signal<'all' | 'pending' | 'approved' | 'declined'>('pending');
@@ -34,9 +38,24 @@ export class ParentRegistrationsComponent implements OnInit {
 
   protected readonly registrations = signal<ParentRegistration[]>([]);
 
+  constructor() {
+    // Watch for new parent registration notifications
+    effect(() => {
+      const trigger = this.notificationService.newParentRegistrationTrigger();
+      if (trigger > 0) {
+        this.loadStats();
+        this.loadRegistrations();
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.loadStats();
     this.loadRegistrations();
+  }
+
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
   }
 
   loadStats(): void {

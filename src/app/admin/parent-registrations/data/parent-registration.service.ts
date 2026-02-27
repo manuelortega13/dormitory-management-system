@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
 export interface ParentRegistration {
@@ -40,6 +40,10 @@ export interface ApprovalResponse {
 export class ParentRegistrationService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/parent-registrations`;
+  
+  // Subject to notify sidebar when registration is approved/declined
+  private registrationUpdatedSubject = new Subject<void>();
+  registrationUpdated$ = this.registrationUpdatedSubject.asObservable();
 
   getPendingCount(): Observable<PendingCountResponse> {
     return this.http.get<PendingCountResponse>(`${this.apiUrl}/pending/count`);
@@ -59,10 +63,14 @@ export class ParentRegistrationService {
   }
 
   approveRegistration(id: number): Observable<ApprovalResponse> {
-    return this.http.post<ApprovalResponse>(`${this.apiUrl}/${id}/approve`, {});
+    return this.http.post<ApprovalResponse>(`${this.apiUrl}/${id}/approve`, {}).pipe(
+      tap(() => this.registrationUpdatedSubject.next())
+    );
   }
 
   declineRegistration(id: number, reason: string): Observable<ApprovalResponse> {
-    return this.http.post<ApprovalResponse>(`${this.apiUrl}/${id}/decline`, { reason });
+    return this.http.post<ApprovalResponse>(`${this.apiUrl}/${id}/decline`, { reason }).pipe(
+      tap(() => this.registrationUpdatedSubject.next())
+    );
   }
 }
