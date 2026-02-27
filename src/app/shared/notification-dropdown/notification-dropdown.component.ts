@@ -99,6 +99,13 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
         }
         break;
 
+      case 'registration':
+        // Admin/Home Dean receives this when a new parent registers
+        if (user.role === 'admin' || user.role === 'home_dean') {
+          this.router.navigate(['/manage/parent-registrations']);
+        }
+        break;
+
       default:
         break;
     }
@@ -127,6 +134,8 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
         return '🚶';
       case 'child_returned_campus':
         return '🏠';
+      case 'registration':
+        return '👨‍👩‍👦';
       default:
         return '🔔';
     }
