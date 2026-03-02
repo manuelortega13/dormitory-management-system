@@ -194,7 +194,11 @@ exports.updateBill = async (req, res) => {
       ]
     );
 
-    res.json({ message: 'Bill updated successfully' });
+    res.json({ 
+      success: true,
+      message: 'Bill updated successfully',
+      data: { ...existing[0], type, description, amount, due_date, status }
+    });
   } catch (error) {
     console.error('Update bill error:', error);
     res.status(500).json({ error: 'Failed to update bill' });

@@ -234,7 +234,6 @@ export class PaymentsComponent implements OnInit {
   }
 
   async saveBill() {
-    console.log('putik');
     if (!this.formResidentId() || !this.formAmount() || !this.formDueDate()) {
       alert('Please fill in all required fields');
       return;
@@ -258,8 +257,6 @@ export class PaymentsComponent implements OnInit {
         await this.paymentService.createBill(billData);
         this.successMessage.set('Bill created successfully!');
       }
-
-      console.log('tangina naman!');
 
       this.closeBillModal();
       await this.loadBills();
