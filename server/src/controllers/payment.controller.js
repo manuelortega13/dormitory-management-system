@@ -13,7 +13,8 @@ exports.getAllBills = async (req, res) => {
              u.first_name, u.last_name, u.student_resident_id,
              CONCAT(u.first_name, ' ', u.last_name) as resident_name,
              r.room_number,
-             COALESCE(SUM(p.amount), 0) as total_paid
+             COALESCE(SUM(CASE WHEN p.status = 'verified' THEN p.amount ELSE 0 END), 0) as total_verified,
+             COALESCE(SUM(CASE WHEN p.status = 'pending' THEN p.amount ELSE 0 END), 0) as total_pending
       FROM bills b
       JOIN users u ON b.resident_id = u.id
       LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
@@ -44,23 +45,16 @@ exports.getAllBills = async (req, res) => {
 
     // Calculate remaining balance for each bill
     const billsWithBalance = bills.map(bill => {
-      const amountPaid = parseFloat(bill.total_paid) || 0;
+      const verifiedAmount = parseFloat(bill.total_verified) || 0;
+      const pendingAmount = parseFloat(bill.total_pending) || 0;
       const billAmount = parseFloat(bill.amount);
-      const remaining = billAmount - amountPaid;
-      
-      // Calculate status based on payments
-      let status = bill.status;
-      if (amountPaid >= billAmount) {
-        status = 'paid';
-      } else if (amountPaid > 0) {
-        status = 'partial';
-      }
       
       return {
         ...bill,
-        amount_paid: amountPaid,
-        remaining_balance: remaining,
-        status
+        amount_paid: verifiedAmount,
+        pending_amount: pendingAmount,
+        remaining_balance: billAmount - verifiedAmount,
+        has_pending_payment: pendingAmount > 0
       };
     });
 
@@ -95,7 +89,8 @@ exports.getResidentBills = async (req, res) => {
     const [bills] = await pool.execute(
       `SELECT b.*, 
               CONCAT(u.first_name, ' ', u.last_name) as resident_name,
-              COALESCE(SUM(p.amount), 0) as total_paid
+              COALESCE(SUM(CASE WHEN p.status = 'verified' THEN p.amount ELSE 0 END), 0) as total_verified,
+              COALESCE(SUM(CASE WHEN p.status = 'pending' THEN p.amount ELSE 0 END), 0) as total_pending
        FROM bills b
        JOIN users u ON b.resident_id = u.id
        LEFT JOIN payments p ON b.id = p.bill_id AND p.status IN ('verified', 'pending')
@@ -106,23 +101,16 @@ exports.getResidentBills = async (req, res) => {
     );
 
     const billsWithBalance = bills.map(bill => {
-      const amountPaid = parseFloat(bill.total_paid) || 0;
+      const verifiedAmount = parseFloat(bill.total_verified) || 0;
+      const pendingAmount = parseFloat(bill.total_pending) || 0;
       const billAmount = parseFloat(bill.amount);
-      const remaining = billAmount - amountPaid;
-      
-      // Calculate status based on payments
-      let status = bill.status;
-      if (amountPaid >= billAmount) {
-        status = 'paid';
-      } else if (amountPaid > 0) {
-        status = 'partial';
-      }
       
       return {
         ...bill,
-        amount_paid: amountPaid,
-        remaining_balance: remaining,
-        status
+        amount_paid: verifiedAmount,
+        pending_amount: pendingAmount,
+        remaining_balance: billAmount - verifiedAmount,
+        has_pending_payment: pendingAmount > 0
       };
     });
 
