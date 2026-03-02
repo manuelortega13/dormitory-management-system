@@ -151,6 +151,13 @@ export class MyPaymentsComponent implements OnInit {
     this.receiptFileName.set('');
   }
 
+  scrollModalToTop() {
+    const modalContent = document.querySelector('.modal-content');
+    if (modalContent) {
+      modalContent.scrollTop = 0;
+    }
+  }
+
   onReceiptFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -188,12 +195,14 @@ export class MyPaymentsComponent implements OnInit {
     
     if (!this.selectedBill() || !this.paymentAmount() || !this.paymentMethod()) {
       this.modalErrorMessage.set('Please fill in all required fields');
+      this.scrollModalToTop();
       return;
     }
 
     // For GCash/Maya, require reference number
     if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.paymentReference()) {
       this.modalErrorMessage.set('Please provide the reference number for your e-wallet transaction');
+      this.scrollModalToTop();
       return;
     }
 
@@ -201,11 +210,13 @@ export class MyPaymentsComponent implements OnInit {
     const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     if (this.paymentAmount() > remaining) {
       this.modalErrorMessage.set('Payment amount cannot exceed the remaining balance');
+      this.scrollModalToTop();
       return;
     }
 
     if (remaining <= 0) {
       this.modalErrorMessage.set('This bill already has sufficient payment pending or completed');
+      this.scrollModalToTop();
       return;
     }
 
