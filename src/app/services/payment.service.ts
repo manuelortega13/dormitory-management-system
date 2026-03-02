@@ -178,22 +178,17 @@ export class PaymentService {
   }
 
   // Admin: Get all payments
-  async getAllPayments(filters?: { status?: string; payment_method?: string }, page: number = 1, limit: number = 10): Promise<void> {
+  async getAllPayments(filters?: { status?: string; payment_method?: string }): Promise<void> {
     this.loading.set(true);
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
       if (filters?.payment_method) params.append('payment_method', filters.payment_method);
-      params.append('page', page.toString());
-      params.append('limit', limit.toString());
 
-      const url = `${this.apiUrl}/payments?${params.toString()}`;
+      const url = `${this.apiUrl}/payments${params.toString() ? '?' + params.toString() : ''}`;
       const response = await firstValueFrom(this.http.get<ApiResponse<Payment[]>>(url));
       if (response.success && response.data) {
         this.payments.set(response.data);
-        if (response.pagination) {
-          this.allPaymentsPagination.set(response.pagination);
-        }
       }
     } catch (error) {
       console.error('Failed to fetch payments:', error);
@@ -206,12 +201,12 @@ export class PaymentService {
   // Admin: Verify payment
   async verifyPayment(id: number, status: 'verified' | 'rejected'): Promise<void> {
     const response = await firstValueFrom(
-      this.http.put<{ message: string }>(`${this.apiUrl}/payments/${id}/verify`, { status })
+      this.http.put<ApiResponse<Payment>>(`${this.apiUrl}/payments/${id}/verify`, { status })
     );
-    if (response && response.message) {
-      this.payments.update(payments => payments.map(p => p.id === id ? { ...p, status } : p));
+    if (response.success && response.data) {
+      this.payments.update(payments => payments.map(p => p.id === id ? response.data! : p));
     } else {
-      throw new Error('Failed to verify payment');
+      throw new Error(response.message || 'Failed to verify payment');
     }
   }
 

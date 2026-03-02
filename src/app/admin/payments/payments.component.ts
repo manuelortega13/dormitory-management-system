@@ -113,7 +113,7 @@ export class PaymentsComponent implements OnInit {
       const filters: any = {};
       if (this.paymentStatusFilter()) filters.status = this.paymentStatusFilter();
       if (this.paymentMethodFilter()) filters.payment_method = this.paymentMethodFilter();
-      await this.paymentService.getAllPayments(filters, this.paymentCurrentPage(), this.paymentPageSize());
+      await this.paymentService.getAllPayments(filters);
       this.payments.set(this.paymentService.payments());
       this.paymentPagination.set(this.paymentService.allPaymentsPagination());
     } catch (error) {
@@ -234,6 +234,7 @@ export class PaymentsComponent implements OnInit {
   }
 
   async saveBill() {
+    console.log('putik');
     if (!this.formResidentId() || !this.formAmount() || !this.formDueDate()) {
       alert('Please fill in all required fields');
       return;
@@ -257,6 +258,8 @@ export class PaymentsComponent implements OnInit {
         await this.paymentService.createBill(billData);
         this.successMessage.set('Bill created successfully!');
       }
+
+      console.log('tangina naman!');
 
       this.closeBillModal();
       await this.loadBills();
