@@ -53,6 +53,13 @@
   }
 }
 
+.error-text {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;

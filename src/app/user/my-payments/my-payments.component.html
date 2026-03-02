@@ -327,6 +327,9 @@
 
         <div class="form-group">
           <label>Payment Amount (₱) *</label>
+          @if (modalErrorMessage()) {
+            <div class="error-text">{{ modalErrorMessage() }}</div>
+          }
           <input 
             type="number" 
             [ngModel]="paymentAmount()" 

@@ -23,6 +23,7 @@ export class MyPaymentsComponent implements OnInit {
   isLoading = signal(true);
   errorMessage = signal('');
   successMessage = signal('');
+  modalErrorMessage = signal('');
 
   // Stats
   totalPaid = signal(0);
@@ -132,13 +133,14 @@ export class MyPaymentsComponent implements OnInit {
   // Payment Modal
   openPaymentModal(bill: Bill) {
     this.selectedBill.set(bill);
-    const remaining = bill.amount - (bill.amount_paid || 0);
+    const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     this.paymentAmount.set(remaining);
     this.paymentMethod.set('gcash');
     this.paymentReference.set('');
     this.paymentNotes.set('');
     this.receiptImage.set(null);
     this.receiptFileName.set('');
+    this.modalErrorMessage.set('');
     this.showPaymentModal.set(true);
   }
 
@@ -182,30 +184,28 @@ export class MyPaymentsComponent implements OnInit {
   }
 
   async submitPayment() {
+    this.modalErrorMessage.set('');
+    
     if (!this.selectedBill() || !this.paymentAmount() || !this.paymentMethod()) {
-      this.errorMessage.set('Please fill in all required fields');
-      setTimeout(() => this.errorMessage.set(''), 5000);
+      this.modalErrorMessage.set('Please fill in all required fields');
       return;
     }
 
     // For GCash/Maya, require reference number
     if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.paymentReference()) {
-      this.errorMessage.set('Please provide the reference number for your e-wallet transaction');
-      setTimeout(() => this.errorMessage.set(''), 5000);
+      this.modalErrorMessage.set('Please provide the reference number for your e-wallet transaction');
       return;
     }
 
     const bill = this.selectedBill()!;
     const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     if (this.paymentAmount() > remaining) {
-      this.errorMessage.set('Payment amount cannot exceed the remaining balance');
-      setTimeout(() => this.errorMessage.set(''), 5000);
+      this.modalErrorMessage.set('Payment amount cannot exceed the remaining balance');
       return;
     }
 
     if (remaining <= 0) {
-      this.errorMessage.set('This bill already has sufficient payment pending or completed');
-      setTimeout(() => this.errorMessage.set(''), 5000);
+      this.modalErrorMessage.set('This bill already has sufficient payment pending or completed');
       return;
     }
 
