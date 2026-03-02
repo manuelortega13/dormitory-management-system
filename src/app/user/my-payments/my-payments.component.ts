@@ -90,19 +90,19 @@ export class MyPaymentsComponent implements OnInit {
     // Total paid from verified payments
     const paid = payments
       .filter(p => p.status === 'verified')
-      .reduce((sum, p) => sum + p.amount, 0);
+      .reduce((sum, p) => sum + Number(p.amount), 0);
     this.totalPaid.set(paid);
 
     // Pending amount
     const pending = bills
       .filter(b => b.status === 'unpaid' || b.status === 'partial')
-      .reduce((sum, b) => sum + b.amount - (b.amount_paid || 0), 0);
+      .reduce((sum, b) => sum + Number(b.amount) - (Number(b.amount_paid) || 0), 0);
     this.pendingAmount.set(pending);
 
     // Overdue amount
     const overdue = bills
       .filter(b => b.status === 'overdue')
-      .reduce((sum, b) => sum + b.amount - (b.amount_paid || 0), 0);
+      .reduce((sum, b) => sum + Number(b.amount) - (Number(b.amount_paid) || 0), 0);
     this.overdueAmount.set(overdue);
 
     // Next due date
