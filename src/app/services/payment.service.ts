@@ -18,7 +18,9 @@ export interface Bill {
   resident_email?: string;
   room_number?: string;
   amount_paid?: number;
+  pending_amount?: number;
   remaining_balance?: number;
+  has_pending_payment?: boolean;
 }
 
 export interface Payment {
