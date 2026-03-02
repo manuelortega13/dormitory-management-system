@@ -193,9 +193,15 @@ export class MyPaymentsComponent implements OnInit {
       return;
     }
 
-    const remaining = this.selectedBill()!.amount - (this.selectedBill()!.amount_paid || 0);
+    const bill = this.selectedBill()!;
+    const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     if (this.paymentAmount() > remaining) {
       alert('Payment amount cannot exceed the remaining balance');
+      return;
+    }
+
+    if (remaining <= 0) {
+      alert('This bill already has sufficient payment pending or completed');
       return;
     }
 
