@@ -246,7 +246,7 @@ exports.getAllPayments = async (req, res) => {
     const dataParams = [...params, Number(pageLimit), Number(offset)];
     console.log('getAllPayments dataQuery:', dataQuery);
     console.log('getAllPayments dataParams:', dataParams);
-    const [payments] = await pool.execute(dataQuery, dataParams);
+    const [payments] = await pool.query(dataQuery, dataParams);
     
     const totalPages = Math.ceil(total / pageLimit);
 
