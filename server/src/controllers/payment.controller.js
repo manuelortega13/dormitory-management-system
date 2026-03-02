@@ -43,11 +43,26 @@ exports.getAllBills = async (req, res) => {
     const [bills] = await pool.execute(query, params);
 
     // Calculate remaining balance for each bill
-    const billsWithBalance = bills.map(bill => ({
-      ...bill,
-      amount_paid: parseFloat(bill.total_paid) || 0,
-      remaining_balance: parseFloat(bill.amount) - parseFloat(bill.total_paid)
-    }));
+    const billsWithBalance = bills.map(bill => {
+      const amountPaid = parseFloat(bill.total_paid) || 0;
+      const billAmount = parseFloat(bill.amount);
+      const remaining = billAmount - amountPaid;
+      
+      // Calculate status based on payments
+      let status = bill.status;
+      if (amountPaid >= billAmount) {
+        status = 'paid';
+      } else if (amountPaid > 0) {
+        status = 'partial';
+      }
+      
+      return {
+        ...bill,
+        amount_paid: amountPaid,
+        remaining_balance: remaining,
+        status
+      };
+    });
 
     res.json({ success: true, data: billsWithBalance });
   } catch (error) {
@@ -87,14 +102,29 @@ exports.getResidentBills = async (req, res) => {
        WHERE b.resident_id = ?
        GROUP BY b.id
        ORDER BY b.due_date DESC`,
-      [residentId]
+       [residentId]
     );
 
-    const billsWithBalance = bills.map(bill => ({
-      ...bill,
-      amount_paid: parseFloat(bill.total_paid) || 0,
-      remaining_balance: parseFloat(bill.amount) - parseFloat(bill.total_paid)
-    }));
+    const billsWithBalance = bills.map(bill => {
+      const amountPaid = parseFloat(bill.total_paid) || 0;
+      const billAmount = parseFloat(bill.amount);
+      const remaining = billAmount - amountPaid;
+      
+      // Calculate status based on payments
+      let status = bill.status;
+      if (amountPaid >= billAmount) {
+        status = 'paid';
+      } else if (amountPaid > 0) {
+        status = 'partial';
+      }
+      
+      return {
+        ...bill,
+        amount_paid: amountPaid,
+        remaining_balance: remaining,
+        status
+      };
+    });
 
     res.json({ success: true, data: billsWithBalance });
   } catch (error) {
