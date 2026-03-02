@@ -240,13 +240,19 @@ export class MyPaymentsComponent implements OnInit {
       };
 
       await this.paymentService.makePayment(paymentData);
-      // Close modal immediately after successful payment
-      this.closePaymentModal();
+      
+      // Show success message first
       this.successMessage.set('Payment submitted successfully! It will be verified by the admin.');
       setTimeout(() => this.successMessage.set(''), 5000);
-      // Refresh data in background
-      await this.loadData();
+      
+      // Reset form and close modal
+      this.selectedBill.set(null);
+      this.receiptImage.set(null);
+      this.receiptFileName.set('');
       this.showPaymentModal.set(false);
+      
+      // Refresh data
+      await this.loadData();
     } catch (error: any) {
       this.errorMessage.set(error.message || 'Failed to submit payment');
       setTimeout(() => this.errorMessage.set(''), 5000);
