@@ -105,10 +105,15 @@
                     <div class="amount-paid">Paid: {{ formatCurrency(bill.amount_paid || 0) }}</div>
                     <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
                   }
+                  @if ((bill.pending_amount || 0) > 0) {
+                    <div class="amount-pending">Pending: {{ formatCurrency(bill.pending_amount || 0) }}</div>
+                  }
                 </div>
-                <button class="btn-pay" (click)="openPaymentModal(bill)">
-                  💳 Pay Now
-                </button>
+                @if (!(bill.has_pending_payment && (bill.pending_amount || 0) >= getRemainingAmount(bill))) {
+                  <button class="btn-pay" (click)="openPaymentModal(bill)">
+                    💳 Pay Now
+                  </button>
+                }
               </div>
             }
           </div>
