@@ -473,6 +473,7 @@ exports.makePayment = async (req, res) => {
     }
 
     res.status(201).json({
+      success: true,
       message: 'Payment submitted successfully. Awaiting verification.',
       data: { id: result.insertId }
     });
