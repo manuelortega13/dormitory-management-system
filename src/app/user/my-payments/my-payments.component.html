@@ -92,7 +92,11 @@
                     <span class="due-date" [class.overdue]="bill.status === 'overdue'">
                       Due: {{ formatDate(bill.due_date) }}
                     </span>
-                    <span class="status-badge {{ getBillStatusClass(bill.status) }}">{{ bill.status }}</span>
+                    @if (bill.has_pending_payment) {
+                      <span class="status-badge badge-warning">⏳ Pending Verification</span>
+                    } @else {
+                      <span class="status-badge {{ getBillStatusClass(bill.status) }}">{{ bill.status }}</span>
+                    }
                   </div>
                 </div>
                 <div class="bill-amount">
