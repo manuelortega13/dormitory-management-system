@@ -183,25 +183,29 @@ export class MyPaymentsComponent implements OnInit {
 
   async submitPayment() {
     if (!this.selectedBill() || !this.paymentAmount() || !this.paymentMethod()) {
-      alert('Please fill in all required fields');
+      this.errorMessage.set('Please fill in all required fields');
+      setTimeout(() => this.errorMessage.set(''), 5000);
       return;
     }
 
     // For GCash/Maya, require reference number
     if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.paymentReference()) {
-      alert('Please provide the reference number for your e-wallet transaction');
+      this.errorMessage.set('Please provide the reference number for your e-wallet transaction');
+      setTimeout(() => this.errorMessage.set(''), 5000);
       return;
     }
 
     const bill = this.selectedBill()!;
     const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     if (this.paymentAmount() > remaining) {
-      alert('Payment amount cannot exceed the remaining balance');
+      this.errorMessage.set('Payment amount cannot exceed the remaining balance');
+      setTimeout(() => this.errorMessage.set(''), 5000);
       return;
     }
 
     if (remaining <= 0) {
-      alert('This bill already has sufficient payment pending or completed');
+      this.errorMessage.set('This bill already has sufficient payment pending or completed');
+      setTimeout(() => this.errorMessage.set(''), 5000);
       return;
     }
 
