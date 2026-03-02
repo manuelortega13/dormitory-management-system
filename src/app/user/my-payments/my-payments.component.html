@@ -304,6 +304,11 @@
         <button class="close-btn" (click)="closePaymentModal()">×</button>
       </div>
       <div class="modal-body">
+        @if (modalErrorMessage()) {
+          <div class="error-state">
+            <p>{{ modalErrorMessage() }}</p>
+          </div>
+        }
         <div class="bill-summary">
           <h4>{{ getTypeLabel(selectedBill()?.type || '') }}</h4>
           <p class="bill-desc">{{ selectedBill()?.description || 'No description' }}</p>
@@ -336,9 +341,6 @@
             step="0.01" 
           />
           <small>Maximum: {{ formatCurrency(getRemainingAmount(selectedBill()!)) }}</small>
-          @if (modalErrorMessage()) {
-            <p class="field-error">{{ modalErrorMessage() }}</p>
-          }
         </div>
 
         <div class="form-group">
