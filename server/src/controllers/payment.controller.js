@@ -311,7 +311,7 @@ exports.getResidentPayments = async (req, res) => {
       [residentId]
     );
 
-    const [payments] = await pool.execute(
+    const [payments] = await pool.query(
       `SELECT p.*, 
               b.type as bill_type, b.description as bill_description,
               payer.first_name as payer_first_name, payer.last_name as payer_last_name,
