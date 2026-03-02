@@ -206,12 +206,12 @@ export class PaymentService {
   // Admin: Verify payment
   async verifyPayment(id: number, status: 'verified' | 'rejected'): Promise<void> {
     const response = await firstValueFrom(
-      this.http.put<ApiResponse<Payment>>(`${this.apiUrl}/payments/${id}/verify`, { status })
+      this.http.put<{ message: string }>(`${this.apiUrl}/payments/${id}/verify`, { status })
     );
-    if (response.success && response.data) {
-      this.payments.update(payments => payments.map(p => p.id === id ? response.data! : p));
+    if (response && response.message) {
+      this.payments.update(payments => payments.map(p => p.id === id ? { ...p, status } : p));
     } else {
-      throw new Error(response.message || 'Failed to verify payment');
+      throw new Error('Failed to verify payment');
     }
   }
 
