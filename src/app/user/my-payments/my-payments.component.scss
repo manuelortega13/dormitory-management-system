@@ -60,6 +60,13 @@
   font-weight: 500;
 }
 
+.field-error {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
