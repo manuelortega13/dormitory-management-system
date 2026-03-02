@@ -1,35 +1,98 @@
 <div class="announcements-container">
-  <div class="coming-soon-banner">
-    <span class="banner-icon">🚧</span>
-    <div class="banner-content">
-      <strong>Feature Coming Soon</strong>
-      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
-    </div>
-  </div>
-
   <div class="page-header">
     <h1>📢 Announcements</h1>
     <p class="subtitle">Stay updated with dormitory news and notices</p>
   </div>
 
-  <div class="announcements-list">
-    @for (announcement of mockAnnouncements; track announcement.id) {
-      <div class="announcement-card {{ getPriorityClass(announcement.priority) }}">
-        <div class="announcement-header">
-          <div class="priority-badge {{ announcement.priority }}">
-            {{ getPriorityIcon(announcement.priority) }} {{ announcement.priority }}
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading announcements...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="loadAnnouncements()">Try Again</button>
+    </div>
+  } @else if (announcements().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">📭</span>
+      <h3>No Announcements</h3>
+      <p>There are no announcements at this time. Check back later!</p>
+    </div>
+  } @else {
+    <!-- Urgent Announcements Section -->
+    @if (urgentAnnouncements().length > 0) {
+      <div class="urgent-section">
+        <h2 class="section-title">🚨 Urgent Notices</h2>
+        @for (announcement of urgentAnnouncements(); track announcement.id) {
+          <div class="announcement-card urgent"
+               [class.expanded]="isExpanded(announcement.id)"
+               (click)="toggleExpand(announcement.id)">
+            <div class="announcement-header">
+              <div class="priority-badge urgent">
+                {{ getPriorityIcon(announcement.priority) }} urgent
+              </div>
+              <span class="audience">{{ announcement.audience }}</span>
+            </div>
+            <div class="announcement-body">
+              <h3>{{ announcement.title }}</h3>
+              @if (isExpanded(announcement.id)) {
+                <p>{{ announcement.content }}</p>
+              } @else {
+                <p>{{ truncateContent(announcement.content) }}</p>
+              }
+              @if (announcement.content.length > 200) {
+                <button class="btn-expand" (click)="$event.stopPropagation(); toggleExpand(announcement.id)">
+                  {{ isExpanded(announcement.id) ? 'Show less' : 'Read more' }}
+                </button>
+              }
+            </div>
+            <div class="announcement-footer">
+              <span class="author">By: {{ announcement.author_name || 'Admin' }}</span>
+              <span class="date">{{ getTimeAgo(announcement.published_at || announcement.created_at) }}</span>
+            </div>
           </div>
-          <span class="category">{{ announcement.category }}</span>
-        </div>
-        <div class="announcement-body">
-          <h3>{{ announcement.title }}</h3>
-          <p>{{ announcement.content }}</p>
-        </div>
-        <div class="announcement-footer">
-          <span class="author">By: {{ announcement.author }}</span>
-          <span class="date">{{ getTimeAgo(announcement.createdAt) }}</span>
-        </div>
+        }
       </div>
     }
-  </div>
+
+    <!-- Regular Announcements -->
+    <div class="announcements-list">
+      @if (urgentAnnouncements().length > 0 && regularAnnouncements().length > 0) {
+        <h2 class="section-title">📋 Other Announcements</h2>
+      }
+
+      @for (announcement of regularAnnouncements(); track announcement.id) {
+        <div class="announcement-card {{ getPriorityClass(announcement.priority) }}"
+             [class.expanded]="isExpanded(announcement.id)"
+             (click)="toggleExpand(announcement.id)">
+          <div class="announcement-header">
+            <div class="priority-badge {{ announcement.priority }}">
+              {{ getPriorityIcon(announcement.priority) }} {{ announcement.priority }}
+            </div>
+            <span class="audience">{{ announcement.audience }}</span>
+          </div>
+          <div class="announcement-body">
+            <h3>{{ announcement.title }}</h3>
+            @if (isExpanded(announcement.id)) {
+              <p>{{ announcement.content }}</p>
+            } @else {
+              <p>{{ truncateContent(announcement.content) }}</p>
+            }
+            @if (announcement.content.length > 200) {
+              <button class="btn-expand" (click)="$event.stopPropagation(); toggleExpand(announcement.id)">
+                {{ isExpanded(announcement.id) ? 'Show less' : 'Read more' }}
+              </button>
+            }
+          </div>
+          <div class="announcement-footer">
+            <span class="author">By: {{ announcement.author_name || 'Admin' }}</span>
+            <span class="date">{{ getTimeAgo(announcement.published_at || announcement.created_at) }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
 </div>

@@ -1,22 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { SettingsService, SystemSetting, SettingUpdate } from '../../services/settings.service';
 
 interface SettingSection {
   id: string;
   title: string;
   icon: string;
   description: string;
-  settings: Setting[];
-}
-
-interface Setting {
-  id: string;
-  label: string;
-  description: string;
-  type: 'toggle' | 'text' | 'number' | 'select';
-  value: any;
-  options?: string[];
 }
 
 @Component({
@@ -26,165 +17,157 @@ interface Setting {
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
-export class SettingsComponent {
-  mockSettings: SettingSection[] = [
+export class SettingsComponent implements OnInit {
+  private settingsService = inject(SettingsService);
+
+  sections: SettingSection[] = [
     {
       id: 'general',
       title: 'General Settings',
       icon: '⚙️',
-      description: 'Basic system configuration',
-      settings: [
-        {
-          id: 'dorm_name',
-          label: 'Dormitory Name',
-          description: 'Name displayed throughout the system',
-          type: 'text',
-          value: 'University Dormitory'
-        },
-        {
-          id: 'timezone',
-          label: 'Timezone',
-          description: 'System timezone for all timestamps',
-          type: 'select',
-          value: 'Asia/Manila',
-          options: ['Asia/Manila', 'Asia/Singapore', 'UTC']
-        },
-        {
-          id: 'maintenance_mode',
-          label: 'Maintenance Mode',
-          description: 'Enable to prevent user access during maintenance',
-          type: 'toggle',
-          value: false
-        }
-      ]
+      description: 'Basic system configuration'
     },
     {
       id: 'notifications',
       title: 'Notification Settings',
       icon: '🔔',
-      description: 'Configure system notifications',
-      settings: [
-        {
-          id: 'email_notifications',
-          label: 'Email Notifications',
-          description: 'Send email notifications for important events',
-          type: 'toggle',
-          value: true
-        },
-        {
-          id: 'sms_notifications',
-          label: 'SMS Notifications',
-          description: 'Send SMS for urgent notifications',
-          type: 'toggle',
-          value: false
-        },
-        {
-          id: 'notification_digest',
-          label: 'Notification Digest',
-          description: 'How often to send notification summaries',
-          type: 'select',
-          value: 'daily',
-          options: ['realtime', 'hourly', 'daily', 'weekly']
-        }
-      ]
+      description: 'Configure system notifications'
     },
     {
       id: 'security',
       title: 'Security Settings',
       icon: '🔒',
-      description: 'Security and access control',
-      settings: [
-        {
-          id: 'session_timeout',
-          label: 'Session Timeout (minutes)',
-          description: 'Auto logout after inactivity',
-          type: 'number',
-          value: 30
-        },
-        {
-          id: 'two_factor_auth',
-          label: 'Two-Factor Authentication',
-          description: 'Require 2FA for admin accounts',
-          type: 'toggle',
-          value: false
-        },
-        {
-          id: 'password_expiry',
-          label: 'Password Expiry (days)',
-          description: 'Force password change after days (0 = never)',
-          type: 'number',
-          value: 90
-        }
-      ]
-    },
-    {
-      id: 'booking',
-      title: 'Booking & Reservations',
-      icon: '📅',
-      description: 'Configure booking policies',
-      settings: [
-        {
-          id: 'max_booking_days',
-          label: 'Max Advance Booking (days)',
-          description: 'How far in advance bookings can be made',
-          type: 'number',
-          value: 30
-        },
-        {
-          id: 'auto_approve_bookings',
-          label: 'Auto-approve Bookings',
-          description: 'Automatically approve facility bookings',
-          type: 'toggle',
-          value: false
-        },
-        {
-          id: 'require_deposit',
-          label: 'Require Deposit',
-          description: 'Require deposit for facility bookings',
-          type: 'toggle',
-          value: true
-        }
-      ]
+      description: 'Security and access control'
     },
     {
       id: 'payments',
       title: 'Payment Settings',
       icon: '💳',
-      description: 'Configure payment options',
-      settings: [
-        {
-          id: 'currency',
-          label: 'Currency',
-          description: 'Default currency for payments',
-          type: 'select',
-          value: 'PHP',
-          options: ['PHP', 'USD', 'EUR']
-        },
-        {
-          id: 'late_fee_percentage',
-          label: 'Late Fee (%)',
-          description: 'Percentage charged for late payments',
-          type: 'number',
-          value: 5
-        },
-        {
-          id: 'grace_period_days',
-          label: 'Grace Period (days)',
-          description: 'Days after due date before late fees apply',
-          type: 'number',
-          value: 7
-        }
-      ]
+      description: 'Configure payment options'
     }
   ];
 
   activeSection = signal('general');
+  isLoading = signal(true);
+  isSaving = signal(false);
+  hasChanges = signal(false);
+  errorMessage = signal('');
+  successMessage = signal('');
+
+  // Local state for edited values
+  editedValues = signal<Record<string, Record<string, any>>>({});
+
+  ngOnInit() {
+    this.loadSettings();
+  }
+
+  async loadSettings() {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    try {
+      await this.settingsService.getAllSettings();
+      // Initialize edited values with current values
+      this.initializeEditedValues();
+    } catch (error: any) {
+      this.errorMessage.set('Failed to load settings');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  initializeEditedValues() {
+    const settings = this.settingsService.settings();
+    const edited: Record<string, Record<string, any>> = {};
+    
+    for (const category in settings) {
+      edited[category] = {};
+      for (const setting of settings[category]) {
+        edited[category][setting.key] = setting.value;
+      }
+    }
+    
+    this.editedValues.set(edited);
+    this.hasChanges.set(false);
+  }
 
   setActiveSection(sectionId: string): void {
     this.activeSection.set(sectionId);
   }
 
-  getActiveSettings(): SettingSection | undefined {
-    return this.mockSettings.find(s => s.id === this.activeSection());
+  getActiveSection(): SettingSection | undefined {
+    return this.sections.find(s => s.id === this.activeSection());
+  }
+
+  getActiveSettings(): SystemSetting[] {
+    const settings = this.settingsService.settings();
+    return settings[this.activeSection()] || [];
+  }
+
+  getSettingValue(category: string, key: string): any {
+    const edited = this.editedValues();
+    return edited[category]?.[key];
+  }
+
+  updateSettingValue(category: string, key: string, value: any) {
+    const edited = { ...this.editedValues() };
+    if (!edited[category]) {
+      edited[category] = {};
+    }
+    edited[category][key] = value;
+    this.editedValues.set(edited);
+    this.hasChanges.set(true);
+    this.successMessage.set('');
+  }
+
+  async saveChanges() {
+    this.isSaving.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    try {
+      const updates: SettingUpdate[] = [];
+      const edited = this.editedValues();
+      const original = this.settingsService.settings();
+
+      // Find all changed values
+      for (const category in edited) {
+        for (const key in edited[category]) {
+          const originalSetting = original[category]?.find(s => s.key === key);
+          if (originalSetting && edited[category][key] !== originalSetting.value) {
+            updates.push({
+              category,
+              key,
+              value: edited[category][key]
+            });
+          }
+        }
+      }
+
+      if (updates.length > 0) {
+        await this.settingsService.updateSettings(updates);
+        this.initializeEditedValues();
+        this.successMessage.set('Settings saved successfully!');
+      } else {
+        this.successMessage.set('No changes to save');
+      }
+    } catch (error: any) {
+      this.errorMessage.set('Failed to save settings');
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  discardChanges() {
+    this.initializeEditedValues();
+    this.successMessage.set('');
+    this.errorMessage.set('');
+  }
+
+  getSettingLabel(key: string): string {
+    // Convert snake_case to Title Case
+    return key
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 }

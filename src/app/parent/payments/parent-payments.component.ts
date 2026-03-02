@@ -2,22 +2,31 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
+import { ParentService } from '../data/parent.service';
+
+interface ChildBills {
+  child_name: string;
+  child_id: number;
+  room_number: string | null;
+  bills: Bill[];
+}
 
 @Component({
-  selector: 'app-my-payments',
+  selector: 'app-parent-payments',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './my-payments.component.html',
-  styleUrl: './my-payments.component.scss'
+  templateUrl: './parent-payments.component.html',
+  styleUrl: './parent-payments.component.scss'
 })
-export class MyPaymentsComponent implements OnInit {
+export class ParentPaymentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
+  private parentService = inject(ParentService);
 
   // Tab management
   activeTab = signal<'bills' | 'history'>('bills');
 
   // Data
-  bills = signal<Bill[]>([]);
+  childBills = signal<ChildBills[]>([]);
   payments = signal<Payment[]>([]);
   settings = signal<PaymentSettings | null>(null);
   isLoading = signal(true);
@@ -25,10 +34,8 @@ export class MyPaymentsComponent implements OnInit {
   successMessage = signal('');
 
   // Stats
-  totalPaid = signal(0);
-  pendingAmount = signal(0);
-  overdueAmount = signal(0);
-  nextDueDate = signal<string | null>(null);
+  totalPending = signal(0);
+  totalOverdue = signal(0);
 
   // Pagination
   currentPage = signal(1);
@@ -38,6 +45,7 @@ export class MyPaymentsComponent implements OnInit {
   // Payment Modal
   showPaymentModal = signal(false);
   selectedBill = signal<Bill | null>(null);
+  selectedChildName = signal('');
   paymentAmount = signal<number>(0);
   paymentMethod = signal<'cash' | 'gcash' | 'maya' | 'other'>('gcash');
   paymentReference = signal('');
@@ -55,7 +63,7 @@ export class MyPaymentsComponent implements OnInit {
     this.errorMessage.set('');
     try {
       await Promise.all([
-        this.loadBills(),
+        this.loadChildBills(),
         this.loadPayments(),
         this.loadSettings()
       ]);
@@ -67,9 +75,32 @@ export class MyPaymentsComponent implements OnInit {
     }
   }
 
-  async loadBills() {
+  async loadSettings() {
+    await this.paymentService.getPaymentSettings();
+    this.settings.set(this.paymentService.settings());
+  }
+
+  async loadChildBills() {
+    // Get bills for all registered children
     await this.paymentService.getMyBills();
-    this.bills.set(this.paymentService.myBills());
+    const bills = this.paymentService.myBills();
+    
+    // Group bills by child (resident)
+    const grouped = new Map<number, ChildBills>();
+    
+    for (const bill of bills) {
+      if (!grouped.has(bill.resident_id)) {
+        grouped.set(bill.resident_id, {
+          child_name: bill.resident_name || 'Unknown',
+          child_id: bill.resident_id,
+          room_number: bill.room_number || null,
+          bills: []
+        });
+      }
+      grouped.get(bill.resident_id)!.bills.push(bill);
+    }
+    
+    this.childBills.set(Array.from(grouped.values()));
   }
 
   async loadPayments() {
@@ -78,41 +109,24 @@ export class MyPaymentsComponent implements OnInit {
     this.pagination.set(this.paymentService.paymentsPagination());
   }
 
-  async loadSettings() {
-    await this.paymentService.getPaymentSettings();
-    this.settings.set(this.paymentService.settings());
-  }
-
   calculateStats() {
-    const bills = this.bills();
-    const payments = this.payments();
+    let pending = 0;
+    let overdue = 0;
 
-    // Total paid from verified payments
-    const paid = payments
-      .filter(p => p.status === 'verified')
-      .reduce((sum, p) => sum + p.amount, 0);
-    this.totalPaid.set(paid);
-
-    // Pending amount
-    const pending = bills
-      .filter(b => b.status === 'unpaid' || b.status === 'partial')
-      .reduce((sum, b) => sum + b.amount - (b.amount_paid || 0), 0);
-    this.pendingAmount.set(pending);
-
-    // Overdue amount
-    const overdue = bills
-      .filter(b => b.status === 'overdue')
-      .reduce((sum, b) => sum + b.amount - (b.amount_paid || 0), 0);
-    this.overdueAmount.set(overdue);
-
-    // Next due date
-    const unpaidBills = bills.filter(b => b.status === 'unpaid' || b.status === 'partial');
-    if (unpaidBills.length > 0) {
-      const sorted = unpaidBills.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-      this.nextDueDate.set(sorted[0].due_date);
-    } else {
-      this.nextDueDate.set(null);
+    for (const child of this.childBills()) {
+      for (const bill of child.bills) {
+        const remaining = bill.amount - (bill.amount_paid || 0);
+        if (bill.status === 'unpaid' || bill.status === 'partial') {
+          pending += remaining;
+        }
+        if (bill.status === 'overdue') {
+          overdue += remaining;
+        }
+      }
     }
+
+    this.totalPending.set(pending);
+    this.totalOverdue.set(overdue);
   }
 
   // Tab switching
@@ -120,18 +134,15 @@ export class MyPaymentsComponent implements OnInit {
     this.activeTab.set(tab);
   }
 
-  // Get unpaid bills for display
-  get unpaidBills(): Bill[] {
-    return this.bills().filter(b => b.status !== 'paid' && b.status !== 'cancelled');
-  }
-
-  get paidBills(): Bill[] {
-    return this.bills().filter(b => b.status === 'paid');
+  // Get unpaid bills for a child
+  getUnpaidBills(child: ChildBills): Bill[] {
+    return child.bills.filter(b => b.status !== 'paid' && b.status !== 'cancelled');
   }
 
   // Payment Modal
-  openPaymentModal(bill: Bill) {
+  openPaymentModal(bill: Bill, childName: string) {
     this.selectedBill.set(bill);
+    this.selectedChildName.set(childName);
     const remaining = bill.amount - (bill.amount_paid || 0);
     this.paymentAmount.set(remaining);
     this.paymentMethod.set('gcash');
@@ -145,6 +156,7 @@ export class MyPaymentsComponent implements OnInit {
   closePaymentModal() {
     this.showPaymentModal.set(false);
     this.selectedBill.set(null);
+    this.selectedChildName.set('');
     this.receiptImage.set(null);
     this.receiptFileName.set('');
   }
@@ -218,12 +230,12 @@ export class MyPaymentsComponent implements OnInit {
       setTimeout(() => this.successMessage.set(''), 5000);
       // Refresh data in background
       await this.loadData();
-      this.showPaymentModal.set(false);
     } catch (error: any) {
       this.errorMessage.set(error.message || 'Failed to submit payment');
       setTimeout(() => this.errorMessage.set(''), 5000);
     } finally {
       this.isSubmitting.set(false);
+      this.showPaymentModal.set(false);
     }
   }
 
@@ -314,5 +326,9 @@ export class MyPaymentsComponent implements OnInit {
 
   getRemainingAmount(bill: Bill): number {
     return bill.amount - (bill.amount_paid || 0);
+  }
+
+  hasUnpaidBills(): boolean {
+    return this.childBills().some(child => this.getUnpaidBills(child).length > 0);
   }
 }

@@ -19,6 +19,9 @@ const visitorRoutes = require('./routes/visitor.routes');
 const incidentRoutes = require('./routes/incident.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const parentRegistrationRoutes = require('./routes/parent-registration.routes');
+const announcementRoutes = require('./routes/announcement.routes');
+const paymentRoutes = require('./routes/payment.routes');
+const settingsRoutes = require('./routes/settings.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -48,6 +51,9 @@ app.use('/api/visitors', visitorRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/parent-registrations', parentRegistrationRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

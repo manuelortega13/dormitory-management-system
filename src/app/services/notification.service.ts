@@ -39,6 +39,10 @@ export class NotificationService implements OnDestroy {
   // Signal to notify admin when new parent registers and needs approval
   // Increments when registration notification is detected
   newParentRegistrationTrigger = signal<number>(0);
+  
+  // Signal to notify when new announcement is published
+  // Increments when announcement notification is detected
+  newAnnouncementTrigger = signal<number>(0);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private lastNotificationIds = new Set<number>();
@@ -243,6 +247,12 @@ export class NotificationService implements OnDestroy {
       console.log('📬 Real-time notification received:', notification);
       this.handleNewNotification(notification);
     });
+
+    // Listen for announcement published events (for real-time page updates)
+    this.socket.on('announcement-published', (announcement: any) => {
+      console.log('📢 New announcement published:', announcement);
+      this.newAnnouncementTrigger.update(v => v + 1);
+    });
   }
 
   /**
@@ -289,6 +299,9 @@ export class NotificationService implements OnDestroy {
     }
     if (notification.type === 'registration') {
       this.newParentRegistrationTrigger.update(v => v + 1);
+    }
+    if (notification.type === 'announcement') {
+      this.newAnnouncementTrigger.update(v => v + 1);
     }
   }
 

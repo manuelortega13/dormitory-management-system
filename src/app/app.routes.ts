@@ -173,6 +173,10 @@ export const routes: Routes = [
       {
         path: 'activity',
         loadComponent: () => import('./parent/activity/parent-activity.component').then(m => m.ParentActivityComponent)
+      },
+      {
+        path: 'payments',
+        loadComponent: () => import('./parent/payments/parent-payments.component').then(m => m.ParentPaymentsComponent)
       }
     ]
   },

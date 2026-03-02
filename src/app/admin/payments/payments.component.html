@@ -1,159 +1,604 @@
 <div class="page-container">
-  <div class="coming-soon-banner">
-    <span class="banner-icon">🚧</span>
-    <div class="banner-content">
-      <strong>Feature Coming Soon</strong>
-      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
-    </div>
-  </div>
-
   <div class="page-header">
     <div class="header-content">
       <h1>💳 Payment Management</h1>
-      <p class="subtitle">Track resident payments and billing</p>
+      <p class="subtitle">Manage bills and track payments</p>
     </div>
-    <button class="btn-primary" disabled>
-      <span>➕</span> Record Payment
+    <button class="btn-primary" (click)="openCreateBillModal()">
+      <span>➕</span> Create Bill
     </button>
   </div>
 
+  <!-- Stats -->
   <div class="stats-container">
     <div class="stat-card">
       <div class="stat-icon total">💰</div>
       <div class="stat-info">
-        <span class="stat-value">{{ formatCurrency(stats.totalCollected) }}</span>
-        <span class="stat-label">Total Collected</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon pending">⏳</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ stats.pending }}</span>
-        <span class="stat-label">Pending</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon overdue">⚠️</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ stats.overdue }}</span>
-        <span class="stat-label">Overdue</span>
+        <span class="stat-value">{{ formatCurrency(stats()?.total_billed || 0) }}</span>
+        <span class="stat-label">Total Billed</span>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon completed">✓</div>
       <div class="stat-info">
-        <span class="stat-value">{{ stats.thisMonth }}</span>
-        <span class="stat-label">Paid This Month</span>
+        <span class="stat-value">{{ formatCurrency(stats()?.total_collected || 0) }}</span>
+        <span class="stat-label">Collected</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">⏳</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats()?.pending_payments || 0 }}</span>
+        <span class="stat-label">Pending Verification</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon overdue">⚠️</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats()?.overdue_bills || 0 }}</span>
+        <span class="stat-label">Overdue Bills</span>
       </div>
     </div>
   </div>
 
-  <div class="filters-bar">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="Search payments..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
-    </div>
-    <div class="filter-group">
-      <select disabled>
-        <option>All Status</option>
-      </select>
-      <select disabled>
-        <option>All Types</option>
-      </select>
-    </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'bills'" (click)="switchTab('bills')">
+      📋 Bills
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'payments'" (click)="switchTab('payments')">
+      💵 Payments
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'settings'" (click)="switchTab('settings')">
+      ⚙️ Settings
+    </button>
   </div>
 
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Resident</th>
-          <th>Room</th>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Due Date</th>
-          <th>Paid Date</th>
-          <th>Method</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (payment of mockPayments; track payment.id) {
-          <tr>
-            <td>{{ payment.residentName }}</td>
-            <td>{{ payment.roomNumber }}</td>
-            <td>{{ getTypeLabel(payment.type) }}</td>
-            <td class="amount">{{ formatCurrency(payment.amount) }}</td>
-            <td>{{ formatDate(payment.dueDate) }}</td>
-            <td>{{ formatDate(payment.paidDate) }}</td>
-            <td>{{ payment.paymentMethod || '-' }}</td>
-            <td>
-              <span class="status-badge {{ getStatusClass(payment.status) }}">
-                {{ payment.status }}
-              </span>
-            </td>
-            <td class="actions">
-              <button class="btn-icon" title="View" disabled>👁️</button>
-              <button class="btn-icon" title="Receipt" disabled>🧾</button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  <!-- Bills Tab -->
+  @if (activeTab() === 'bills') {
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search bills..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      </div>
+      <div class="filter-group">
+        <select [ngModel]="billStatusFilter()" (ngModelChange)="billStatusFilter.set($event); onBillFilterChange()">
+          <option value="">All Status</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="partial">Partial</option>
+          <option value="paid">Paid</option>
+          <option value="overdue">Overdue</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select [ngModel]="billTypeFilter()" (ngModelChange)="billTypeFilter.set($event); onBillFilterChange()">
+          <option value="">All Types</option>
+          <option value="rent">Rent</option>
+          <option value="deposit">Deposit</option>
+          <option value="utility">Utility</option>
+          <option value="fine">Fine</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
 
-    <!-- Mobile Card View -->
-    <div class="mobile-cards">
-      @for (payment of mockPayments; track payment.id) {
-        <div class="mobile-card">
-          <div class="card-header">
-            <h4 class="card-title">{{ payment.residentName }}</h4>
-            <span class="status-badge {{ getStatusClass(payment.status) }}">
-              {{ payment.status }}
-            </span>
-          </div>
-          <div class="card-body">
-            <div class="card-row">
-              <span class="row-icon">🚪</span>
-              <span class="row-label">Room:</span>
-              <span class="row-value">{{ payment.roomNumber }}</span>
-            </div>
-            <div class="card-row">
-              <span class="row-icon">📋</span>
-              <span class="row-label">Type:</span>
-              <span class="row-value">{{ getTypeLabel(payment.type) }}</span>
-            </div>
-            <div class="card-row">
-              <span class="row-icon">💰</span>
-              <span class="row-label">Amount:</span>
-              <span class="row-value amount">{{ formatCurrency(payment.amount) }}</span>
-            </div>
-            <div class="card-row">
-              <span class="row-icon">📅</span>
-              <span class="row-label">Due:</span>
-              <span class="row-value">{{ formatDate(payment.dueDate) }}</span>
-            </div>
-            @if (payment.paidDate) {
-              <div class="card-row">
-                <span class="row-icon">✅</span>
-                <span class="row-label">Paid:</span>
-                <span class="row-value">{{ formatDate(payment.paidDate) }}</span>
-              </div>
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading bills...</p>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="error-state">
+        <p>{{ errorMessage() }}</p>
+        <button class="btn-primary" (click)="loadData()">Retry</button>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Resident</th>
+              <th>Room</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Paid</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (bill of filteredBills; track bill.id) {
+              <tr>
+                <td>{{ bill.resident_name }}</td>
+                <td>{{ bill.room_number || '-' }}</td>
+                <td>{{ getTypeLabel(bill.type) }}</td>
+                <td>{{ bill.description || '-' }}</td>
+                <td class="amount">{{ formatCurrency(bill.amount) }}</td>
+                <td class="amount">{{ formatCurrency(bill.amount_paid || 0) }}</td>
+                <td>{{ formatDate(bill.due_date) }}</td>
+                <td>
+                  <span class="status-badge {{ getBillStatusClass(bill.status) }}">
+                    {{ bill.status }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon" title="Edit" (click)="openEditBillModal(bill)">✏️</button>
+                  <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(bill)">🗑️</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">No bills found</td>
+              </tr>
             }
-            @if (payment.paymentMethod) {
-              <div class="card-row">
-                <span class="row-icon">💳</span>
-                <span class="row-label">Method:</span>
-                <span class="row-value">{{ payment.paymentMethod }}</span>
+          </tbody>
+        </table>
+
+        <!-- Mobile Card View for Bills -->
+        <div class="mobile-cards">
+          @for (bill of filteredBills; track bill.id) {
+            <div class="mobile-card">
+              <div class="card-header">
+                <h4 class="card-title">{{ bill.resident_name }}</h4>
+                <span class="status-badge {{ getBillStatusClass(bill.status) }}">
+                  {{ bill.status }}
+                </span>
               </div>
+              <div class="card-body">
+                <div class="card-row">
+                  <span class="row-icon">🚪</span>
+                  <span class="row-label">Room:</span>
+                  <span class="row-value">{{ bill.room_number || '-' }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">📋</span>
+                  <span class="row-label">Type:</span>
+                  <span class="row-value">{{ getTypeLabel(bill.type) }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">💰</span>
+                  <span class="row-label">Amount:</span>
+                  <span class="row-value amount">{{ formatCurrency(bill.amount) }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">✅</span>
+                  <span class="row-label">Paid:</span>
+                  <span class="row-value amount">{{ formatCurrency(bill.amount_paid || 0) }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">📅</span>
+                  <span class="row-label">Due:</span>
+                  <span class="row-value">{{ formatDate(bill.due_date) }}</span>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button class="btn-icon" title="Edit" (click)="openEditBillModal(bill)">✏️ Edit</button>
+                <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(bill)">🗑️ Delete</button>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-card">No bills found</div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Payments Tab -->
+  @if (activeTab() === 'payments') {
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search payments..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      </div>
+      <div class="filter-group">
+        <select [ngModel]="paymentStatusFilter()" (ngModelChange)="paymentStatusFilter.set($event); onPaymentFilterChange()">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="verified">Verified</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select [ngModel]="paymentMethodFilter()" (ngModelChange)="paymentMethodFilter.set($event); onPaymentFilterChange()">
+          <option value="">All Methods</option>
+          <option value="cash">Cash</option>
+          <option value="gcash">GCash</option>
+          <option value="maya">Maya</option>
+          <option value="card">Card</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading payments...</p>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="error-state">
+        <p>{{ errorMessage() }}</p>
+        <button class="btn-primary" (click)="loadData()">Retry</button>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Resident</th>
+              <th>Paid By</th>
+              <th>Bill</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (payment of filteredPayments; track payment.id) {
+              <tr>
+                <td>{{ payment.resident_name }}</td>
+                <td>{{ payment.payer_name }}</td>
+                <td>{{ payment.bill_type ? getTypeLabel(payment.bill_type) : '-' }}</td>
+                <td class="amount">{{ formatCurrency(payment.amount) }}</td>
+                <td>{{ getPaymentMethodLabel(payment.payment_method) }}</td>
+                <td>{{ payment.reference_number || '-' }}</td>
+                <td>{{ formatDate(payment.created_at) }}</td>
+                <td>
+                  <span class="status-badge {{ getPaymentStatusClass(payment.status) }}">
+                    {{ payment.status }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon" title="View" (click)="openPaymentDetailModal(payment)">👁️</button>
+                  @if (payment.status === 'pending') {
+                    <button class="btn-icon verify" title="Verify" (click)="openVerifyModal(payment)">✓</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">No payments found</td>
+              </tr>
             }
+          </tbody>
+        </table>
+
+        <!-- Mobile Card View for Payments -->
+        <div class="mobile-cards">
+          @for (payment of filteredPayments; track payment.id) {
+            <div class="mobile-card">
+              <div class="card-header">
+                <h4 class="card-title">{{ payment.resident_name }}</h4>
+                <span class="status-badge {{ getPaymentStatusClass(payment.status) }}">
+                  {{ payment.status }}
+                </span>
+              </div>
+              <div class="card-body">
+                <div class="card-row">
+                  <span class="row-icon">👤</span>
+                  <span class="row-label">Paid By:</span>
+                  <span class="row-value">{{ payment.payer_name }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">📋</span>
+                  <span class="row-label">Bill:</span>
+                  <span class="row-value">{{ payment.bill_type ? getTypeLabel(payment.bill_type) : '-' }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">💰</span>
+                  <span class="row-label">Amount:</span>
+                  <span class="row-value amount">{{ formatCurrency(payment.amount) }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">💳</span>
+                  <span class="row-label">Method:</span>
+                  <span class="row-value">{{ getPaymentMethodLabel(payment.payment_method) }}</span>
+                </div>
+                <div class="card-row">
+                  <span class="row-icon">📅</span>
+                  <span class="row-label">Date:</span>
+                  <span class="row-value">{{ formatDate(payment.created_at) }}</span>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button class="btn-icon" title="View" (click)="openPaymentDetailModal(payment)">👁️ View</button>
+                @if (payment.status === 'pending') {
+                  <button class="btn-icon verify" title="Verify" (click)="openVerifyModal(payment)">✓ Verify</button>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-card">No payments found</div>
+          }
+        </div>
+
+        <!-- Pagination Controls -->
+        @if (paymentPagination()) {
+          <div class="pagination-container">
+            <div class="pagination-info">
+              <span>Page {{ paymentPagination()!.page }} of {{ paymentPagination()!.pages }} • Total: {{ paymentPagination()!.total }} payments</span>
+            </div>
+            <div class="pagination-controls">
+              <button 
+                class="pagination-btn" 
+                (click)="prevPaymentPage()" 
+                [disabled]="!paymentPagination()!.hasPrevPage"
+              >
+                ← Previous
+              </button>
+              <div class="page-numbers">
+                @for (pageNum of getPaymentPageNumbers(); track pageNum) {
+                  <button 
+                    class="page-number" 
+                    [class.active]="pageNum === paymentCurrentPage()"
+                    (click)="goToPaymentPage(pageNum)"
+                  >
+                    {{ pageNum }}
+                  </button>
+                }
+              </div>
+              <button 
+                class="pagination-btn" 
+                (click)="nextPaymentPage()" 
+                [disabled]="!paymentPagination()!.hasNextPage"
+              >
+                Next →
+              </button>
+            </div>
           </div>
-          <div class="card-footer">
-            <button class="btn-icon" title="View" disabled>👁️ View</button>
-            <button class="btn-icon" title="Receipt" disabled>🧾 Receipt</button>
+        }
+      </div>
+    }
+  }
+
+  <!-- Settings Tab -->
+  @if (activeTab() === 'settings') {
+    <div class="settings-container">
+      <div class="settings-card">
+        <h3>📱 GCash Settings</h3>
+        <p class="settings-description">Configure your GCash account details for receiving payments.</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>GCash Number</label>
+            <input 
+              type="text" 
+              [ngModel]="settingsGcashNumber()" 
+              (ngModelChange)="settingsGcashNumber.set($event)" 
+              placeholder="e.g., 09171234567"
+            />
+          </div>
+          <div class="form-group">
+            <label>Account Name</label>
+            <input 
+              type="text" 
+              [ngModel]="settingsGcashName()" 
+              (ngModelChange)="settingsGcashName.set($event)" 
+              placeholder="e.g., Juan Dela Cruz"
+            />
           </div>
         </div>
-      }
+      </div>
+
+      <div class="settings-card">
+        <h3>📲 Maya Settings</h3>
+        <p class="settings-description">Configure your Maya account details for receiving payments.</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Maya Number</label>
+            <input 
+              type="text" 
+              [ngModel]="settingsMayaNumber()" 
+              (ngModelChange)="settingsMayaNumber.set($event)" 
+              placeholder="e.g., 09181234567"
+            />
+          </div>
+          <div class="form-group">
+            <label>Account Name</label>
+            <input 
+              type="text" 
+              [ngModel]="settingsMayaName()" 
+              (ngModelChange)="settingsMayaName.set($event)" 
+              placeholder="e.g., Juan Dela Cruz"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>💵 Cash Payment Instructions</h3>
+        <p class="settings-description">Instructions shown to residents for making cash payments.</p>
+        <div class="form-group">
+          <label>Cash Instructions</label>
+          <textarea 
+            [ngModel]="settingsCashInstructions()" 
+            (ngModelChange)="settingsCashInstructions.set($event)" 
+            placeholder="e.g., Please proceed to the Admin Office (Room 101) during office hours (8AM-5PM, Mon-Fri)."
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>📝 Additional Payment Notes</h3>
+        <p class="settings-description">Any additional notes or instructions to display to residents when making payments.</p>
+        <div class="form-group">
+          <label>Payment Notes</label>
+          <textarea 
+            [ngModel]="settingsPaymentNotes()" 
+            (ngModelChange)="settingsPaymentNotes.set($event)" 
+            placeholder="e.g., Always include your name and room number as reference."
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button class="btn-primary" (click)="saveSettings()" [disabled]="isSavingSettings()">
+          {{ isSavingSettings() ? 'Saving...' : '💾 Save Settings' }}
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Create/Edit Bill Modal -->
+@if (showBillModal()) {
+  <div class="modal-overlay" (click)="closeBillModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditingBill() ? 'Edit Bill' : 'Create New Bill' }}</h2>
+        <button class="close-btn" (click)="closeBillModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Resident *</label>
+          <select [ngModel]="formResidentId()" (ngModelChange)="formResidentId.set($event)" [disabled]="isEditingBill()">
+            <option [ngValue]="null">Select resident...</option>
+            @for (resident of residents(); track resident.id) {
+              <option [ngValue]="resident.id">{{ resident.name }} {{ resident.room_number ? '(' + resident.room_number + ')' : '' }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Bill Type *</label>
+          <select [ngModel]="formBillType()" (ngModelChange)="formBillType.set($event)">
+            <option value="rent">Rent</option>
+            <option value="deposit">Deposit</option>
+            <option value="utility">Utility</option>
+            <option value="fine">Fine</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" [ngModel]="formDescription()" (ngModelChange)="formDescription.set($event)" placeholder="e.g., January 2025 Rent" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₱) *</label>
+            <input type="number" [ngModel]="formAmount()" (ngModelChange)="formAmount.set($event)" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Due Date *</label>
+            <input type="date" [ngModel]="formDueDate()" (ngModelChange)="formDueDate.set($event)" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeBillModal()">Cancel</button>
+        <button class="btn-primary" (click)="saveBill()" [disabled]="isSavingBill()">
+          {{ isSavingBill() ? 'Saving...' : (isEditingBill() ? 'Update Bill' : 'Create Bill') }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
+}
+
+<!-- Delete Bill Modal -->
+@if (showDeleteModal()) {
+  <div class="modal-overlay" (click)="closeDeleteModal()">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Delete Bill</h2>
+        <button class="close-btn" (click)="closeDeleteModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this bill for <strong>{{ deletingBill()?.resident_name }}</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" (click)="confirmDeleteBill()" [disabled]="isDeleting()">
+          {{ isDeleting() ? 'Deleting...' : 'Delete Bill' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Verify Payment Modal -->
+@if (showVerifyModal()) {
+  <div class="modal-overlay" (click)="closeVerifyModal()">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Verify Payment</h2>
+        <button class="close-btn" (click)="closeVerifyModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="payment-details">
+          <p><strong>Resident:</strong> {{ verifyingPayment()?.resident_name }}</p>
+          <p><strong>Paid By:</strong> {{ verifyingPayment()?.payer_name }}</p>
+          <p><strong>Amount:</strong> {{ formatCurrency(verifyingPayment()?.amount || 0) }}</p>
+          <p><strong>Method:</strong> {{ getPaymentMethodLabel(verifyingPayment()?.payment_method || '') }}</p>
+          <p><strong>Reference:</strong> {{ verifyingPayment()?.reference_number || 'N/A' }}</p>
+          @if (verifyingPayment()?.notes) {
+            <p><strong>Notes:</strong> {{ verifyingPayment()?.notes }}</p>
+          }
+        </div>
+        @if (verifyingPayment()?.receipt_image) {
+          <div class="receipt-section">
+            <h4>📄 E-Receipt</h4>
+            <div class="receipt-image-container">
+              <img [src]="verifyingPayment()?.receipt_image" alt="Payment Receipt" />
+            </div>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeVerifyModal()">Cancel</button>
+        <button class="btn-danger" (click)="verifyPayment('rejected')" [disabled]="isVerifying()">Reject</button>
+        <button class="btn-success" (click)="verifyPayment('verified')" [disabled]="isVerifying()">
+          {{ isVerifying() ? 'Processing...' : 'Verify Payment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Payment Detail Modal -->
+@if (showPaymentDetailModal()) {
+  <div class="modal-overlay" (click)="closePaymentDetailModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Payment Details</h2>
+        <button class="close-btn" (click)="closePaymentDetailModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="payment-details">
+          <p><strong>Resident:</strong> {{ viewingPayment()?.resident_name }}</p>
+          <p><strong>Paid By:</strong> {{ viewingPayment()?.payer_name }}</p>
+          <p><strong>Bill Type:</strong> {{ viewingPayment()?.bill_type ? getTypeLabel(viewingPayment()!.bill_type!) : '-' }}</p>
+          <p><strong>Description:</strong> {{ viewingPayment()?.bill_description || '-' }}</p>
+          <p><strong>Amount:</strong> {{ formatCurrency(viewingPayment()?.amount || 0) }}</p>
+          <p><strong>Payment Method:</strong> {{ getPaymentMethodLabel(viewingPayment()?.payment_method || '') }}</p>
+          <p><strong>Reference Number:</strong> {{ viewingPayment()?.reference_number || 'N/A' }}</p>
+          <p><strong>Notes:</strong> {{ viewingPayment()?.notes || '-' }}</p>
+          <p><strong>Status:</strong> 
+            <span class="status-badge {{ getPaymentStatusClass(viewingPayment()?.status || '') }}">
+              {{ viewingPayment()?.status }}
+            </span>
+          </p>
+          <p><strong>Date:</strong> {{ formatDate(viewingPayment()?.created_at) }}</p>
+          @if (viewingPayment()?.verified_at) {
+            <p><strong>Verified By:</strong> {{ viewingPayment()?.verifier_name }}</p>
+            <p><strong>Verified At:</strong> {{ formatDate(viewingPayment()?.verified_at) }}</p>
+          }
+        </div>
+        @if (viewingPayment()?.receipt_image) {
+          <div class="receipt-section">
+            <h4>📄 E-Receipt</h4>
+            <div class="receipt-image-container">
+              <img [src]="viewingPayment()?.receipt_image" alt="Payment Receipt" />
+            </div>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closePaymentDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

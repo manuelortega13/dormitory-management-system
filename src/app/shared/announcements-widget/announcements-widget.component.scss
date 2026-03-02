@@ -1,0 +1,230 @@
+.announcements-widget {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+
+  .badge {
+    background: #4318FF;
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  gap: 0.75rem;
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #f0f0f0;
+    border-top-color: #4318FF;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  p {
+    margin: 0;
+    color: #888;
+    font-size: 0.85rem;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Error State
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  gap: 0.75rem;
+  text-align: center;
+
+  p {
+    margin: 0;
+    color: #dc3545;
+    font-size: 0.9rem;
+  }
+
+  .btn-retry {
+    background: #4318FF;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+
+    &:hover {
+      background: #3614cc;
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    margin: 0;
+    color: #888;
+    font-size: 0.9rem;
+  }
+}
+
+// Urgent Section
+.urgent-section {
+  padding: 0.75rem;
+  background: #fff8f8;
+  border-bottom: 1px solid #ffe0e0;
+}
+
+// Regular Section
+.regular-section {
+  padding: 0.75rem;
+}
+
+// Announcement Item
+.announcement-item {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 0.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    background: #f5f5f5;
+  }
+
+  &.urgent {
+    background: #fff0f0;
+    border-left: 3px solid #dc3545;
+
+    &:hover {
+      background: #ffe8e8;
+    }
+  }
+
+  &.priority-high {
+    border-left: 3px solid #ffc107;
+  }
+
+  &.priority-normal {
+    border-left: 3px solid #007bff;
+  }
+
+  &.priority-low {
+    border-left: 3px solid #6c757d;
+  }
+
+  &.expanded {
+    background: #f5f5f5;
+  }
+}
+
+.announcement-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  .priority-icon {
+    font-size: 0.9rem;
+  }
+
+  .title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1a1a2e;
+  }
+
+  .date {
+    font-size: 0.75rem;
+    color: #888;
+    white-space: nowrap;
+  }
+}
+
+.announcement-content {
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #555;
+    line-height: 1.5;
+  }
+}
+
+.btn-expand {
+  background: none;
+  border: none;
+  color: #4318FF;
+  font-size: 0.8rem;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Responsive
+@media (max-width: 480px) {
+  .widget-header {
+    padding: 0.75rem 1rem;
+
+    h3 {
+      font-size: 0.9rem;
+    }
+  }
+
+  .announcement-header {
+    flex-wrap: wrap;
+
+    .date {
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+  }
+}

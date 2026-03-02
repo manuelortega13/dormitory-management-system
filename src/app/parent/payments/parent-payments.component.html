@@ -1,4 +1,4 @@
-<div class="my-payments-container">
+<div class="parent-payments-container">
   <!-- Success Message Toast -->
   @if (successMessage()) {
     <div class="toast-message success">
@@ -18,37 +18,23 @@
   }
 
   <div class="page-header">
-    <h1>💰 My Payments</h1>
-    <p class="subtitle">View your bills and make payments</p>
+    <h1>💰 Child's Payments</h1>
+    <p class="subtitle">View and pay your child's dormitory bills</p>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card paid">
-      <div class="stat-icon">✓</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ formatCurrency(totalPaid()) }}</span>
-        <span class="stat-label">Total Paid</span>
-      </div>
-    </div>
     <div class="stat-card pending">
       <div class="stat-icon">⏳</div>
       <div class="stat-info">
-        <span class="stat-value">{{ formatCurrency(pendingAmount()) }}</span>
-        <span class="stat-label">Pending</span>
+        <span class="stat-value">{{ formatCurrency(totalPending()) }}</span>
+        <span class="stat-label">Pending Amount</span>
       </div>
     </div>
     <div class="stat-card overdue">
       <div class="stat-icon">⚠️</div>
       <div class="stat-info">
-        <span class="stat-value">{{ formatCurrency(overdueAmount()) }}</span>
-        <span class="stat-label">Overdue</span>
-      </div>
-    </div>
-    <div class="stat-card next-due">
-      <div class="stat-icon">📅</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ nextDueDate() ? formatDate(nextDueDate()) : 'None' }}</span>
-        <span class="stat-label">Next Due Date</span>
+        <span class="stat-value">{{ formatCurrency(totalOverdue()) }}</span>
+        <span class="stat-label">Overdue Amount</span>
       </div>
     </div>
   </div>
@@ -56,7 +42,7 @@
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab" [class.active]="activeTab() === 'bills'" (click)="switchTab('bills')">
-      📋 My Bills
+      📋 Child's Bills
     </button>
     <button class="tab" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">
       💳 Payment History
@@ -76,170 +62,154 @@
   } @else {
     <!-- Bills Tab -->
     @if (activeTab() === 'bills') {
-      <div class="payments-section">
-        <div class="section-header">
-          <h2>Outstanding Bills</h2>
-        </div>
+      @if (hasUnpaidBills()) {
+        @for (child of childBills(); track child.child_id) {
+          @if (getUnpaidBills(child).length > 0) {
+            <div class="child-section">
+              <div class="child-header">
+                <h2>👤 {{ child.child_name }}</h2>
+                @if (child.room_number) {
+                  <span class="room-badge">Room {{ child.room_number }}</span>
+                }
+              </div>
 
-        @if (unpaidBills.length > 0) {
-          <div class="bills-list">
-            @for (bill of unpaidBills; track bill.id) {
-              <div class="bill-card" [class.overdue]="bill.status === 'overdue'">
-                <div class="bill-info">
-                  <div class="bill-type">{{ getTypeLabel(bill.type) }}</div>
-                  <div class="bill-description">{{ bill.description || 'No description' }}</div>
-                  <div class="bill-meta">
-                    <span class="due-date" [class.overdue]="bill.status === 'overdue'">
-                      Due: {{ formatDate(bill.due_date) }}
-                    </span>
-                    <span class="status-badge {{ getBillStatusClass(bill.status) }}">{{ bill.status }}</span>
+              <div class="bills-list">
+                @for (bill of getUnpaidBills(child); track bill.id) {
+                  <div class="bill-card" [class.overdue]="bill.status === 'overdue'">
+                    <div class="bill-info">
+                      <div class="bill-type">{{ getTypeLabel(bill.type) }}</div>
+                      <div class="bill-description">{{ bill.description || 'No description' }}</div>
+                      <div class="bill-meta">
+                        <span class="due-date" [class.overdue]="bill.status === 'overdue'">
+                          Due: {{ formatDate(bill.due_date) }}
+                        </span>
+                        <span class="status-badge {{ getBillStatusClass(bill.status) }}">{{ bill.status }}</span>
+                      </div>
+                    </div>
+                    <div class="bill-amount">
+                      <div class="amount-total">{{ formatCurrency(bill.amount) }}</div>
+                      @if ((bill.amount_paid || 0) > 0) {
+                        <div class="amount-paid">Paid: {{ formatCurrency(bill.amount_paid || 0) }}</div>
+                        <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
+                      }
+                    </div>
+                    <button class="btn-pay" (click)="openPaymentModal(bill, child.child_name)">
+                      💳 Pay Now
+                    </button>
                   </div>
-                </div>
-                <div class="bill-amount">
-                  <div class="amount-total">{{ formatCurrency(bill.amount) }}</div>
-                  @if ((bill.amount_paid || 0) > 0) {
-                    <div class="amount-paid">Paid: {{ formatCurrency(bill.amount_paid || 0) }}</div>
-                    <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
-                  }
-                </div>
-                <button class="btn-pay" (click)="openPaymentModal(bill)">
-                  💳 Pay Now
-                </button>
+                }
               </div>
-            }
-          </div>
-        } @else {
-          <div class="empty-state">
-            <span class="empty-icon">✓</span>
-            <p>No outstanding bills! You're all caught up.</p>
-          </div>
+            </div>
+          }
         }
-
-        @if (paidBills.length > 0) {
-          <div class="section-header" style="margin-top: 2rem;">
-            <h2>Paid Bills</h2>
-          </div>
-          <div class="paid-bills-list">
-            @for (bill of paidBills; track bill.id) {
-              <div class="bill-card paid">
-                <div class="bill-info">
-                  <div class="bill-type">{{ getTypeLabel(bill.type) }}</div>
-                  <div class="bill-description">{{ bill.description || 'No description' }}</div>
-                </div>
-                <div class="bill-amount">
-                  <div class="amount-total">{{ formatCurrency(bill.amount) }}</div>
-                </div>
-                <span class="status-badge badge-success">Paid</span>
-              </div>
-            }
-          </div>
-        }
-      </div>
+      } @else {
+        <div class="empty-state">
+          <span class="empty-icon">✓</span>
+          <p>No outstanding bills! All payments are up to date.</p>
+        </div>
+      }
     }
 
     <!-- Payment History Tab -->
     @if (activeTab() === 'history') {
-      <div class="payments-section">
-        <div class="section-header">
-          <h2>Payment History</h2>
+      @if (payments().length > 0) {
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Child</th>
+                <th>Bill</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (payment of payments(); track payment.id) {
+                <tr>
+                  <td>{{ formatDate(payment.created_at) }}</td>
+                  <td>{{ payment.resident_name }}</td>
+                  <td>{{ payment.bill_type ? getTypeLabel(payment.bill_type) : '-' }}</td>
+                  <td class="amount">{{ formatCurrency(payment.amount) }}</td>
+                  <td>{{ getPaymentMethodLabel(payment.payment_method) }}</td>
+                  <td>{{ payment.reference_number || '-' }}</td>
+                  <td>
+                    <span class="status-badge {{ getPaymentStatusClass(payment.status) }}">
+                      {{ payment.status }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
 
-        @if (payments().length > 0) {
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Bill</th>
-                  <th>Amount</th>
-                  <th>Method</th>
-                  <th>Reference</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (payment of payments(); track payment.id) {
-                  <tr>
-                    <td>{{ formatDate(payment.created_at) }}</td>
-                    <td>{{ payment.bill_type ? getTypeLabel(payment.bill_type) : '-' }}</td>
-                    <td class="amount">{{ formatCurrency(payment.amount) }}</td>
-                    <td>{{ getPaymentMethodLabel(payment.payment_method) }}</td>
-                    <td>{{ payment.reference_number || '-' }}</td>
-                    <td>
-                      <span class="status-badge {{ getPaymentStatusClass(payment.status) }}">
-                        {{ payment.status }}
-                      </span>
-                    </td>
-                  </tr>
+        <!-- Mobile Card View -->
+        <div class="mobile-cards">
+          @for (payment of payments(); track payment.id) {
+            <div class="payment-card">
+              <div class="payment-header">
+                <span class="payment-date">{{ formatDate(payment.created_at) }}</span>
+                <span class="status-badge {{ getPaymentStatusClass(payment.status) }}">{{ payment.status }}</span>
+              </div>
+              <div class="payment-body">
+                <div class="payment-child">For: {{ payment.resident_name }}</div>
+                <div class="payment-amount">{{ formatCurrency(payment.amount) }}</div>
+                <div class="payment-meta">
+                  <span>{{ payment.bill_type ? getTypeLabel(payment.bill_type) : '-' }}</span>
+                  <span>{{ getPaymentMethodLabel(payment.payment_method) }}</span>
+                </div>
+                @if (payment.reference_number) {
+                  <div class="payment-ref">Ref: {{ payment.reference_number }}</div>
                 }
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile Card View -->
-          <div class="mobile-cards">
-            @for (payment of payments(); track payment.id) {
-              <div class="payment-card">
-                <div class="payment-header">
-                  <span class="payment-date">{{ formatDate(payment.created_at) }}</span>
-                  <span class="status-badge {{ getPaymentStatusClass(payment.status) }}">{{ payment.status }}</span>
-                </div>
-                <div class="payment-body">
-                  <div class="payment-amount">{{ formatCurrency(payment.amount) }}</div>
-                  <div class="payment-meta">
-                    <span>{{ payment.bill_type ? getTypeLabel(payment.bill_type) : '-' }}</span>
-                    <span>{{ getPaymentMethodLabel(payment.payment_method) }}</span>
-                  </div>
-                  @if (payment.reference_number) {
-                    <div class="payment-ref">Ref: {{ payment.reference_number }}</div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-
-          <!-- Pagination Controls -->
-          @if (pagination()) {
-            <div class="pagination-container">
-              <div class="pagination-info">
-                <span>Page {{ pagination()!.page }} of {{ pagination()!.pages }} • Total: {{ pagination()!.total }} payments</span>
-              </div>
-              <div class="pagination-controls">
-                <button 
-                  class="pagination-btn" 
-                  (click)="prevPage()" 
-                  [disabled]="!pagination()!.hasPrevPage"
-                >
-                  ← Previous
-                </button>
-                <div class="page-numbers">
-                  @for (pageNum of getPageNumbers(); track pageNum) {
-                    <button 
-                      class="page-number" 
-                      [class.active]="pageNum === currentPage()"
-                      (click)="goToPage(pageNum)"
-                    >
-                      {{ pageNum }}
-                    </button>
-                  }
-                </div>
-                <button 
-                  class="pagination-btn" 
-                  (click)="nextPage()" 
-                  [disabled]="!pagination()!.hasNextPage"
-                >
-                  Next →
-                </button>
               </div>
             </div>
           }
-        } @else {
-          <div class="empty-state">
-            <span class="empty-icon">📭</span>
-            <p>No payment history yet.</p>
+        </div>
+
+        <!-- Pagination Controls -->
+        @if (pagination()) {
+          <div class="pagination-container">
+            <div class="pagination-info">
+              <span>Page {{ pagination()!.page }} of {{ pagination()!.pages }} • Total: {{ pagination()!.total }} payments</span>
+            </div>
+            <div class="pagination-controls">
+              <button 
+                class="pagination-btn" 
+                (click)="prevPage()" 
+                [disabled]="!pagination()!.hasPrevPage"
+              >
+                ← Previous
+              </button>
+              <div class="page-numbers">
+                @for (pageNum of getPageNumbers(); track pageNum) {
+                  <button 
+                    class="page-number" 
+                    [class.active]="pageNum === currentPage()"
+                    (click)="goToPage(pageNum)"
+                  >
+                    {{ pageNum }}
+                  </button>
+                }
+              </div>
+              <button 
+                class="pagination-btn" 
+                (click)="nextPage()" 
+                [disabled]="!pagination()!.hasNextPage"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         }
-      </div>
+      } @else {
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <p>No payment history yet.</p>
+        </div>
+      }
     }
   }
 
@@ -296,6 +266,7 @@
       </div>
       <div class="modal-body">
         <div class="bill-summary">
+          <div class="child-info">Paying for: <strong>{{ selectedChildName() }}</strong></div>
           <h4>{{ getTypeLabel(selectedBill()?.type || '') }}</h4>
           <p class="bill-desc">{{ selectedBill()?.description || 'No description' }}</p>
           <div class="bill-amounts">
@@ -411,7 +382,7 @@
 
         <div class="payment-notice">
           <span class="notice-icon">ℹ️</span>
-          <p>Your payment will be verified by the admin. You will receive a notification once it's confirmed.</p>
+          <p>Your payment will be verified by the admin. You and your child will receive a notification once it's confirmed.</p>
         </div>
       </div>
       <div class="modal-footer">

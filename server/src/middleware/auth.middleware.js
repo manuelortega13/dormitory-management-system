@@ -24,8 +24,9 @@ const roleMiddleware = (...allowedRoles) => {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // Treat home_dean and vpsas as admin for permission purposes
-    const effectiveRole = (req.user.role === 'home_dean' || req.user.role === 'vpsas') ? 'admin' : req.user.role;
+    // Treat home_dean, home_dean_men, home_dean_women, and vpsas as admin for permission purposes
+    const adminEquivalentRoles = ['home_dean', 'home_dean_men', 'home_dean_women', 'vpsas'];
+    const effectiveRole = adminEquivalentRoles.includes(req.user.role) ? 'admin' : req.user.role;
 
     if (!allowedRoles.includes(req.user.role) && !allowedRoles.includes(effectiveRole)) {
       return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });

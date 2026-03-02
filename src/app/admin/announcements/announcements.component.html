@@ -1,48 +1,46 @@
 <div class="page-container">
-  <div class="coming-soon-banner">
-    <span class="banner-icon">🚧</span>
-    <div class="banner-content">
-      <strong>Feature Coming Soon</strong>
-      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
-    </div>
-  </div>
-
   <div class="page-header">
     <div class="header-content">
       <h1>📢 Announcements</h1>
       <p class="subtitle">Manage and publish announcements for residents and staff</p>
     </div>
-    <button class="btn-primary" disabled>
+    <button class="btn-primary" (click)="openCreateModal()">
       <span>➕</span> New Announcement
     </button>
   </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span>⚠️</span> {{ errorMessage() }}
+    </div>
+  }
 
   <div class="stats-container">
     <div class="stat-card">
       <div class="stat-icon total">📋</div>
       <div class="stat-info">
-        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-value">{{ stats().total }}</span>
         <span class="stat-label">Total</span>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon completed">✓</div>
       <div class="stat-info">
-        <span class="stat-value">{{ stats.published }}</span>
+        <span class="stat-value">{{ stats().published }}</span>
         <span class="stat-label">Published</span>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon pending">📝</div>
       <div class="stat-info">
-        <span class="stat-value">{{ stats.drafts }}</span>
+        <span class="stat-value">{{ stats().drafts }}</span>
         <span class="stat-label">Drafts</span>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon urgent">🚨</div>
       <div class="stat-info">
-        <span class="stat-value">{{ stats.urgent }}</span>
+        <span class="stat-value">{{ stats().urgent }}</span>
         <span class="stat-label">Urgent</span>
       </div>
     </div>
@@ -54,49 +52,174 @@
       <input type="text" placeholder="Search announcements..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
     </div>
     <div class="filter-group">
-      <select disabled>
-        <option>All Status</option>
+      <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); onFilterChange()">
+        <option value="">All Status</option>
+        <option value="draft">Draft</option>
+        <option value="published">Published</option>
+        <option value="expired">Expired</option>
       </select>
-      <select disabled>
-        <option>All Priority</option>
+      <select [ngModel]="priorityFilter()" (ngModelChange)="priorityFilter.set($event); onFilterChange()">
+        <option value="">All Priority</option>
+        <option value="low">Low</option>
+        <option value="normal">Normal</option>
+        <option value="high">High</option>
+        <option value="urgent">Urgent</option>
+      </select>
+      <select [ngModel]="audienceFilter()" (ngModelChange)="audienceFilter.set($event); onFilterChange()">
+        <option value="">All Audience</option>
+        <option value="all">Everyone</option>
+        <option value="residents">Residents</option>
+        <option value="parents">Parents</option>
+        <option value="staff">Staff</option>
       </select>
     </div>
   </div>
 
-  <div class="announcements-list">
-    @for (announcement of mockAnnouncements; track announcement.id) {
-      <div class="announcement-card {{ getPriorityClass(announcement.priority) }}">
-        <div class="announcement-header">
-          <div class="header-left">
-            <span class="priority-indicator"></span>
-            <h3>{{ announcement.title }}</h3>
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading announcements...</p>
+    </div>
+  } @else if (filteredAnnouncements.length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">📢</span>
+      <h3>No announcements found</h3>
+      <p>Create your first announcement to get started</p>
+    </div>
+  } @else {
+    <div class="announcements-list">
+      @for (announcement of filteredAnnouncements; track announcement.id) {
+        <div class="announcement-card {{ getPriorityClass(announcement.priority) }}">
+          <div class="announcement-header">
+            <div class="header-left">
+              <span class="priority-indicator"></span>
+              <h3>{{ announcement.title }}</h3>
+            </div>
+            <div class="header-right">
+              <span class="audience-badge">
+                {{ getAudienceIcon(announcement.audience) }} {{ announcement.audience }}
+              </span>
+              <span class="status-badge {{ getStatusClass(announcement.status) }}">
+                {{ announcement.status }}
+              </span>
+            </div>
           </div>
-          <div class="header-right">
-            <span class="audience-badge">
-              {{ getAudienceIcon(announcement.audience) }} {{ announcement.audience }}
-            </span>
-            <span class="status-badge {{ getStatusClass(announcement.status) }}">
-              {{ announcement.status }}
-            </span>
+          <div class="announcement-body">
+            <p>{{ announcement.content }}</p>
+          </div>
+          <div class="announcement-footer">
+            <div class="meta-info">
+              <span>By: {{ announcement.author_name || 'Unknown' }}</span>
+              <span>Posted: {{ formatDate(announcement.created_at) }}</span>
+              @if (announcement.expires_at) {
+                <span>Expires: {{ formatDate(announcement.expires_at) }}</span>
+              }
+            </div>
+            <div class="actions">
+              @if (announcement.status === 'draft') {
+                <button class="btn-icon publish" title="Publish" (click)="publishAnnouncement(announcement)">🚀</button>
+              }
+              <button class="btn-icon" title="Edit" (click)="openEditModal(announcement)">✏️</button>
+              <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(announcement)">🗑️</button>
+            </div>
           </div>
         </div>
-        <div class="announcement-body">
-          <p>{{ announcement.content }}</p>
+      }
+    </div>
+  }
+</div>
+
+<!-- Create/Edit Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditing() ? 'Edit Announcement' : 'New Announcement' }}</h2>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" [ngModel]="formTitle()" (ngModelChange)="formTitle.set($event)" placeholder="Enter announcement title" />
         </div>
-        <div class="announcement-footer">
-          <div class="meta-info">
-            <span>By: {{ announcement.author }}</span>
-            <span>Posted: {{ formatDate(announcement.createdAt) }}</span>
-            @if (announcement.expiresAt) {
-              <span>Expires: {{ formatDate(announcement.expiresAt) }}</span>
-            }
+
+        <div class="form-group">
+          <label>Content *</label>
+          <textarea [ngModel]="formContent()" (ngModelChange)="formContent.set($event)" placeholder="Enter announcement content" rows="5"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority</label>
+            <select [ngModel]="formPriority()" (ngModelChange)="formPriority.set($event)">
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
           </div>
-          <div class="actions">
-            <button class="btn-icon" title="Edit" disabled>✏️</button>
-            <button class="btn-icon" title="Delete" disabled>🗑️</button>
+
+          <div class="form-group">
+            <label>Audience</label>
+            <select [ngModel]="formAudience()" (ngModelChange)="formAudience.set($event)">
+              <option value="all">Everyone</option>
+              <option value="residents">Residents Only</option>
+              <option value="parents">Parents Only</option>
+              <option value="staff">Staff Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select [ngModel]="formStatus()" (ngModelChange)="formStatus.set($event)">
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Expires At (optional)</label>
+            <input type="date" [ngModel]="formExpiresAt()" (ngModelChange)="formExpiresAt.set($event)" />
           </div>
         </div>
       </div>
-    }
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+        <button class="btn-primary" [disabled]="isSaving()" (click)="saveAnnouncement()">
+          @if (isSaving()) {
+            Saving...
+          } @else {
+            {{ isEditing() ? 'Update' : 'Create' }}
+          }
+        </button>
+      </div>
+    </div>
   </div>
-</div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal()) {
+  <div class="modal-overlay" (click)="closeDeleteModal()">
+    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header delete">
+        <h2>🗑️ Delete Announcement</h2>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete "<strong>{{ deletingAnnouncement()?.title }}</strong>"?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="closeDeleteModal()">Cancel</button>
+        <button class="btn-delete" [disabled]="isDeleting()" (click)="confirmDelete()">
+          @if (isDeleting()) {
+            Deleting...
+          } @else {
+            Delete
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -3,7 +3,10 @@
  * Uses face-api.js for face detection and comparison
  */
 
-const faceapi = require('@vladmandic/face-api');
+// Use the WASM version which is compatible with all Node.js versions
+const faceapi = require('@vladmandic/face-api/dist/face-api.node-wasm.js');
+const tf = require('@tensorflow/tfjs');
+const wasm = require('@tensorflow/tfjs-backend-wasm');
 const canvas = require('canvas');
 const path = require('path');
 
@@ -12,12 +15,33 @@ const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 
 let modelsLoaded = false;
+let backendInitialized = false;
+
+/**
+ * Initialize WASM backend
+ */
+async function initializeBackend() {
+  if (backendInitialized) return;
+  
+  // Set the WASM path
+  wasm.setWasmPaths(path.join(__dirname, '../../node_modules/@tensorflow/tfjs-backend-wasm/dist/'));
+  
+  // Initialize the backend
+  await tf.setBackend('wasm');
+  await tf.ready();
+  
+  backendInitialized = true;
+  console.log('TensorFlow WASM backend initialized');
+}
 
 /**
  * Load face-api.js models
  */
 async function loadModels() {
   if (modelsLoaded) return;
+
+  // Ensure backend is initialized first
+  await initializeBackend();
 
   const modelsPath = path.join(__dirname, '../../models');
   

@@ -13,7 +13,8 @@
     "postinstall": "cp -r node_modules/@vladmandic/face-api/model models || true"
   },
   "dependencies": {
-    "@tensorflow/tfjs-node": "^4.22.0",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
     "@vladmandic/face-api": "^1.7.15",
     "bcryptjs": "^2.4.3",
     "canvas": "^3.2.1",

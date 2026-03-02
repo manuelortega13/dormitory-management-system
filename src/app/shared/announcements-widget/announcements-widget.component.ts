@@ -17,20 +17,20 @@ interface Announcement {
 }
 
 @Component({
-  selector: 'app-user-announcements',
+  selector: 'app-announcements-widget',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './user-announcements.component.html',
-  styleUrls: ['./user-announcements.component.scss']
+  templateUrl: './announcements-widget.component.html',
+  styleUrls: ['./announcements-widget.component.scss']
 })
-export class UserAnnouncementsComponent implements OnInit {
+export class AnnouncementsWidgetComponent implements OnInit {
   private http = inject(HttpClient);
   private notificationService = inject(NotificationService);
 
   announcements = signal<Announcement[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
-  expandedIds = signal<Set<number>>(new Set());
+  expandedId = signal<number | null>(null);
 
   urgentAnnouncements = computed(() =>
     this.announcements().filter(a => a.priority === 'urgent')
@@ -67,61 +67,56 @@ export class UserAnnouncementsComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load announcements:', err);
-        this.error.set('Failed to load announcements. Please try again.');
+        this.error.set('Failed to load announcements');
         this.loading.set(false);
       }
     });
   }
 
   toggleExpand(id: number) {
-    const ids = new Set(this.expandedIds());
-    if (ids.has(id)) {
-      ids.delete(id);
-    } else {
-      ids.add(id);
-    }
-    this.expandedIds.set(ids);
+    this.expandedId.set(this.expandedId() === id ? null : id);
   }
 
   isExpanded(id: number): boolean {
-    return this.expandedIds().has(id);
+    return this.expandedId() === id;
   }
 
   getPriorityClass(priority: string): string {
-    return priority;
+    return `priority-${priority}`;
   }
 
   getPriorityIcon(priority: string): string {
-    const icons: Record<string, string> = {
-      urgent: '🚨',
-      high: '⚠️',
-      normal: '📢',
-      low: 'ℹ️'
-    };
-    return icons[priority] || '📢';
+    switch (priority) {
+      case 'urgent': return '🚨';
+      case 'high': return '⚠️';
+      case 'normal': return '📢';
+      case 'low': return 'ℹ️';
+      default: return '📢';
+    }
   }
 
-  formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  }
-
-  getTimeAgo(date: string): string {
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
     const now = new Date();
-    const past = new Date(date);
-    const diffDays = Math.floor((now.getTime() - past.getTime()) / (1000 * 60 * 60 * 24));
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return this.formatDate(date);
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
   }
 
-  truncateContent(content: string, maxLength: number = 200): string {
+  truncateContent(content: string, maxLength: number = 150): string {
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength).trim() + '...';
   }
