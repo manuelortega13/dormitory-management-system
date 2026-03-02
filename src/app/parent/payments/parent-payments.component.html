@@ -83,19 +83,28 @@
                         <span class="due-date" [class.overdue]="bill.status === 'overdue'">
                           Due: {{ formatDate(bill.due_date) }}
                         </span>
-                        <span class="status-badge {{ getBillStatusClass(bill.status) }}">{{ bill.status }}</span>
+                        @if (bill.has_pending_payment) {
+                          <span class="status-badge badge-warning">⏳ Pending Verification</span>
+                        } @else {
+                          <span class="status-badge {{ getBillStatusClass(bill.status) }}">{{ bill.status }}</span>
+                        }
                       </div>
                     </div>
                     <div class="bill-amount">
                       <div class="amount-total">{{ formatCurrency(bill.amount) }}</div>
                       @if ((bill.amount_paid || 0) > 0) {
                         <div class="amount-paid">Paid: {{ formatCurrency(bill.amount_paid || 0) }}</div>
-                        <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
                       }
+                      @if ((bill.pending_amount || 0) > 0) {
+                        <div class="amount-pending">Pending: {{ formatCurrency(bill.pending_amount || 0) }}</div>
+                      }
+                      <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
                     </div>
-                    <button class="btn-pay" (click)="openPaymentModal(bill, child.child_name)">
-                      💳 Pay Now
-                    </button>
+                    @if (!(bill.has_pending_payment && (bill.pending_amount || 0) >= getRemainingAmount(bill))) {
+                      <button class="btn-pay" (click)="openPaymentModal(bill, child.child_name)">
+                        💳 Pay Now
+                      </button>
+                    }
                   </div>
                 }
               </div>
