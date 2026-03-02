@@ -1,4 +1,7 @@
 <div class="page-container">
+  @if (successMessage()) {
+    <div class="success-banner">{{ successMessage() }}</div>
+  }
   <div class="page-header">
     <div class="header-content">
       <h1>💳 Payment Management</h1>

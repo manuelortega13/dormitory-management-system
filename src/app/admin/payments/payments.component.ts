@@ -31,6 +31,7 @@ export class PaymentsComponent implements OnInit {
   settings = signal<PaymentSettings | null>(null);
   isLoading = signal(true);
   errorMessage = signal('');
+  successMessage = signal('');
 
   // Pagination for payments
   paymentCurrentPage = signal(1);
@@ -251,15 +252,17 @@ export class PaymentsComponent implements OnInit {
 
       if (this.isEditingBill() && this.editingBillId()) {
         await this.paymentService.updateBill(this.editingBillId()!, billData);
-        alert('Bill updated successfully!');
+        this.successMessage.set('Bill updated successfully!');
       } else {
         await this.paymentService.createBill(billData);
-        alert('Bill created successfully!');
+        this.successMessage.set('Bill created successfully!');
       }
 
       this.closeBillModal();
       await this.loadBills();
       await this.loadStats();
+      
+      setTimeout(() => this.successMessage.set(''), 3000);
     } catch (error: any) {
       alert(error.message || 'Failed to save bill');
     } finally {

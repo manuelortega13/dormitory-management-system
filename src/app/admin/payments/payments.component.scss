@@ -1,5 +1,14 @@
 @use '../shared/placeholder-pages.scss' as *;
 
+.success-banner {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
 .amount {
   font-weight: 600;
   color: #1a1a2e;
