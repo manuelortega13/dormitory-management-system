@@ -32,6 +32,7 @@ export class ParentPaymentsComponent implements OnInit {
   isLoading = signal(true);
   errorMessage = signal('');
   successMessage = signal('');
+  modalErrorMessage = signal('');
 
   // Stats
   totalPending = signal(0);
@@ -143,13 +144,14 @@ export class ParentPaymentsComponent implements OnInit {
   openPaymentModal(bill: Bill, childName: string) {
     this.selectedBill.set(bill);
     this.selectedChildName.set(childName);
-    const remaining = bill.amount - (bill.amount_paid || 0);
+    const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     this.paymentAmount.set(remaining);
     this.paymentMethod.set('gcash');
     this.paymentReference.set('');
     this.paymentNotes.set('');
     this.receiptImage.set(null);
     this.receiptFileName.set('');
+    this.modalErrorMessage.set('');
     this.showPaymentModal.set(true);
   }
 
@@ -159,6 +161,13 @@ export class ParentPaymentsComponent implements OnInit {
     this.selectedChildName.set('');
     this.receiptImage.set(null);
     this.receiptFileName.set('');
+  }
+
+  scrollModalToTop() {
+    const modalContent = document.querySelector('.modal-content');
+    if (modalContent) {
+      modalContent.scrollTop = 0;
+    }
   }
 
   onReceiptFileSelected(event: Event) {
@@ -194,20 +203,39 @@ export class ParentPaymentsComponent implements OnInit {
   }
 
   async submitPayment() {
+    this.modalErrorMessage.set('');
+    
     if (!this.selectedBill() || !this.paymentAmount() || !this.paymentMethod()) {
-      alert('Please fill in all required fields');
+      this.modalErrorMessage.set('Please fill in all required fields');
+      this.scrollModalToTop();
       return;
     }
 
     // For GCash/Maya, require reference number
     if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.paymentReference()) {
-      alert('Please provide the reference number for your e-wallet transaction');
+      this.modalErrorMessage.set('Please provide the reference number for your e-wallet transaction');
+      this.scrollModalToTop();
       return;
     }
 
-    const remaining = this.selectedBill()!.amount - (this.selectedBill()!.amount_paid || 0);
+    // For GCash/Maya, require e-receipt
+    if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.receiptImage()) {
+      this.modalErrorMessage.set('Please upload the e-receipt screenshot');
+      this.scrollModalToTop();
+      return;
+    }
+
+    const bill = this.selectedBill()!;
+    const remaining = bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
     if (this.paymentAmount() > remaining) {
-      alert('Payment amount cannot exceed the remaining balance');
+      this.modalErrorMessage.set('Payment amount cannot exceed the remaining balance');
+      this.scrollModalToTop();
+      return;
+    }
+
+    if (remaining <= 0) {
+      this.modalErrorMessage.set('This bill already has sufficient payment pending or completed');
+      this.scrollModalToTop();
       return;
     }
 
@@ -224,18 +252,24 @@ export class ParentPaymentsComponent implements OnInit {
       };
 
       await this.paymentService.makePayment(paymentData);
-      // Close modal immediately after successful payment
-      this.closePaymentModal();
+      
+      // Show success message first
       this.successMessage.set('Payment submitted successfully! It will be verified by the admin.');
       setTimeout(() => this.successMessage.set(''), 5000);
-      // Refresh data in background
+      
+      // Reset form and close modal
+      this.selectedBill.set(null);
+      this.receiptImage.set(null);
+      this.receiptFileName.set('');
+      this.showPaymentModal.set(false);
+      
+      // Refresh data
       await this.loadData();
     } catch (error: any) {
       this.errorMessage.set(error.message || 'Failed to submit payment');
       setTimeout(() => this.errorMessage.set(''), 5000);
     } finally {
       this.isSubmitting.set(false);
-      this.showPaymentModal.set(false);
     }
   }
 
@@ -325,7 +359,7 @@ export class ParentPaymentsComponent implements OnInit {
   }
 
   getRemainingAmount(bill: Bill): number {
-    return bill.amount - (bill.amount_paid || 0);
+    return bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
   }
 
   hasUnpaidBills(): boolean {

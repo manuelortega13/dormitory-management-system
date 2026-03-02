@@ -265,6 +265,11 @@
         <button class="close-btn" (click)="closePaymentModal()">×</button>
       </div>
       <div class="modal-body">
+        @if (modalErrorMessage()) {
+          <div class="error-state">
+            <p>{{ modalErrorMessage() }}</p>
+          </div>
+        }
         <div class="bill-summary">
           <div class="child-info">Paying for: <strong>{{ selectedChildName() }}</strong></div>
           <h4>{{ getTypeLabel(selectedBill()?.type || '') }}</h4>
@@ -278,6 +283,12 @@
               <div class="amount-row">
                 <span>Already Paid:</span>
                 <span>{{ formatCurrency(selectedBill()?.amount_paid || 0) }}</span>
+              </div>
+            }
+            @if ((selectedBill()?.pending_amount || 0) > 0) {
+              <div class="amount-row pending">
+                <span>Pending:</span>
+                <span>{{ formatCurrency(selectedBill()?.pending_amount || 0) }}</span>
               </div>
             }
             <div class="amount-row remaining">
@@ -343,7 +354,7 @@
         <!-- Receipt Upload -->
         @if (paymentMethod() === 'gcash' || paymentMethod() === 'maya') {
           <div class="form-group">
-            <label>Upload E-Receipt (Optional)</label>
+            <label>Upload E-Receipt (Required) *</label>
             <div class="receipt-upload-area">
               @if (!receiptImage()) {
                 <label class="upload-label">
