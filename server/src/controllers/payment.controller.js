@@ -499,14 +499,24 @@ exports.verifyPayment = async (req, res) => {
     }
 
     // Notify payer about verification status
+    const notifTitle = status === 'verified' ? 'Payment Verified' : 'Payment Rejected';
+    const notifMessage = status === 'verified' 
+      ? `Your payment of ₱${parseFloat(existing[0].amount).toLocaleString()} has been verified.`
+      : `Your payment of ₱${parseFloat(existing[0].amount).toLocaleString()} has been rejected. Please contact admin.`;
+    
+    // Save notification to database
+    await pool.execute(
+      `INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)`,
+      [existing[0].paid_by, 'payment', notifTitle, notifMessage]
+    );
+    
+    // Send real-time notification
     sendNotificationToUser(existing[0].paid_by, {
       id: Date.now(),
       user_id: existing[0].paid_by,
       type: 'payment',
       title: status === 'verified' ? '✅ Payment Verified' : '❌ Payment Rejected',
-      message: status === 'verified' 
-        ? `Your payment of ₱${parseFloat(existing[0].amount).toLocaleString()} has been verified.`
-        : `Your payment of ₱${parseFloat(existing[0].amount).toLocaleString()} has been rejected. Please contact admin.`,
+      message: notifMessage,
       is_read: false,
       created_at: new Date().toISOString()
     });

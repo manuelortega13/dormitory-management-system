@@ -136,6 +136,8 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
         return '🏠';
       case 'registration':
         return '👨‍👩‍👦';
+      case 'payment':
+        return '💳';
       default:
         return '🔔';
     }

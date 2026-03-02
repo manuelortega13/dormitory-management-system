@@ -480,6 +480,8 @@ export class NotificationService implements OnDestroy {
       case 'child_left_campus':
       case 'child_returned_campus':
         return 'bi-door-open';
+      case 'payment':
+        return 'bi-credit-card';
       default:
         return 'bi-bell';
     }
