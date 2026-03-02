@@ -152,7 +152,7 @@ export class MyPaymentsComponent implements OnInit {
   }
 
   scrollModalToTop() {
-    const modalContent = document.querySelector('.modal-content');
+    const modalContent = document.querySelector('.modal');
     if (modalContent) {
       modalContent.scrollTop = 0;
     }
@@ -202,6 +202,13 @@ export class MyPaymentsComponent implements OnInit {
     // For GCash/Maya, require reference number
     if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.paymentReference()) {
       this.modalErrorMessage.set('Please provide the reference number for your e-wallet transaction');
+      this.scrollModalToTop();
+      return;
+    }
+
+    // For GCash/Maya, require e-receipt
+    if ((this.paymentMethod() === 'gcash' || this.paymentMethod() === 'maya') && !this.receiptImage()) {
+      this.modalErrorMessage.set('Please upload the e-receipt screenshot');
       this.scrollModalToTop();
       return;
     }
