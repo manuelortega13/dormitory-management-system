@@ -251,8 +251,10 @@ export class PaymentsComponent implements OnInit {
 
       if (this.isEditingBill() && this.editingBillId()) {
         await this.paymentService.updateBill(this.editingBillId()!, billData);
+        alert('Bill updated successfully!');
       } else {
         await this.paymentService.createBill(billData);
+        alert('Bill created successfully!');
       }
 
       this.closeBillModal();
