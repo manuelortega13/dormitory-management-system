@@ -64,9 +64,9 @@ exports.getResidentBills = async (req, res) => {
     let residentId;
 
     if (userRole === 'parent') {
-      // Get the parent's child ID from users table (parent_id points to the linked student)
+      // Get the parent's child ID from users table (parent_id in resident's record points to the parent)
       const [children] = await pool.execute(
-        `SELECT parent_id as resident_id FROM users WHERE id = ? AND role = 'parent' AND registration_status = 'approved'`,
+        `SELECT id as resident_id FROM users WHERE parent_id = ? AND role = 'resident'`,
         [userId]
       );
       if (children.length === 0 || !children[0].resident_id) {
@@ -130,9 +130,21 @@ exports.createBill = async (req, res) => {
       created_at: new Date().toISOString()
     });
 
+    const createdBill = {
+      id: result.insertId,
+      resident_id,
+      type: type || 'rent',
+      description,
+      amount,
+      due_date,
+      status: 'unpaid',
+      created_at: new Date().toISOString()
+    };
+
     res.status(201).json({
+      success: true,
       message: 'Bill created successfully',
-      data: { id: result.insertId }
+      data: createdBill
     });
   } catch (error) {
     console.error('Create bill error:', error);
@@ -281,9 +293,9 @@ exports.getResidentPayments = async (req, res) => {
     let residentId;
 
     if (userRole === 'parent') {
-      // Get the parent's child ID from users table
+      // Get the parent's child ID from users table (parent_id in resident's record points to the parent)
       const [children] = await pool.execute(
-        `SELECT parent_id as resident_id FROM users WHERE id = ? AND role = 'parent' AND registration_status = 'approved'`,
+        `SELECT id as resident_id FROM users WHERE parent_id = ? AND role = 'resident'`,
         [userId]
       );
       if (children.length === 0 || !children[0].resident_id) {
