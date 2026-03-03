@@ -347,6 +347,6 @@ export class MyPaymentsComponent implements OnInit {
   }
 
   getRemainingAmount(bill: Bill): number {
-    return bill.amount - (bill.amount_paid || 0);
+    return bill.amount - (bill.amount_paid || 0) - (bill.pending_amount || 0);
   }
 }
