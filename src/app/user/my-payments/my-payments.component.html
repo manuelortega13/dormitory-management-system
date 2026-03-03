@@ -103,11 +103,11 @@
                   <div class="amount-total">{{ formatCurrency(bill.amount) }}</div>
                   @if ((bill.amount_paid || 0) > 0) {
                     <div class="amount-paid">Paid: {{ formatCurrency(bill.amount_paid || 0) }}</div>
-                    <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
                   }
                   @if ((bill.pending_amount || 0) > 0) {
                     <div class="amount-pending">Pending: {{ formatCurrency(bill.pending_amount || 0) }}</div>
                   }
+                  <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
                 </div>
                 @if (!(bill.has_pending_payment && (bill.pending_amount || 0) >= getRemainingAmount(bill))) {
                   <button class="btn-pay" (click)="openPaymentModal(bill)">
