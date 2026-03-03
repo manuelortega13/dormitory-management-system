@@ -100,7 +100,7 @@
                       }
                       <div class="amount-remaining">Remaining: {{ formatCurrency(getRemainingAmount(bill)) }}</div>
                     </div>
-                    @if (!(bill.has_pending_payment && (bill.pending_amount || 0) >= getRemainingAmount(bill))) {
+                    @if (!(bill.has_pending_payment && (bill.pending_amount || 0) >= (bill.amount - (bill.amount_paid || 0)))) {
                       <button class="btn-pay" (click)="openPaymentModal(bill, child.child_name)">
                         💳 Pay Now
                       </button>
