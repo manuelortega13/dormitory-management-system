@@ -22,6 +22,7 @@ const parentRegistrationRoutes = require('./routes/parent-registration.routes');
 const announcementRoutes = require('./routes/announcement.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const settingsRoutes = require('./routes/settings.routes');
+const chatbotRoutes = require('./routes/chatbot.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -54,6 +55,7 @@ app.use('/api/parent-registrations', parentRegistrationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

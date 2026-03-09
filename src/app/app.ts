@@ -2,10 +2,11 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from './shared/toast-container/toast-container.component';
 import { NotificationPromptComponent } from './shared/notification-prompt/notification-prompt.component';
+import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainerComponent, NotificationPromptComponent],
+  imports: [RouterOutlet, ToastContainerComponent, NotificationPromptComponent, ChatbotWidgetComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
