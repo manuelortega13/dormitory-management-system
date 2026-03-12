@@ -335,11 +335,23 @@
           <div class="recipient-info">
             <strong>Send to:</strong> {{ settings()?.gcash_number }} ({{ settings()?.gcash_name }})
           </div>
+          @if (settings()?.gcash_qr) {
+            <div class="qr-display">
+              <p class="qr-label">Scan QR Code to pay via GCash:</p>
+              <img [src]="settings()?.gcash_qr" alt="GCash QR Code" class="qr-image" />
+            </div>
+          }
         }
         @if (paymentMethod() === 'maya' && settings()?.maya_number) {
           <div class="recipient-info">
             <strong>Send to:</strong> {{ settings()?.maya_number }} ({{ settings()?.maya_name }})
           </div>
+          @if (settings()?.maya_qr) {
+            <div class="qr-display">
+              <p class="qr-label">Scan QR Code to pay via Maya:</p>
+              <img [src]="settings()?.maya_qr" alt="Maya QR Code" class="qr-image" />
+            </div>
+          }
         }
         @if (paymentMethod() === 'cash') {
           <div class="recipient-info">

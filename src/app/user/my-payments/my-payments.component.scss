@@ -545,6 +545,30 @@
   color: #4338ca;
 }
 
+// QR Code display in payment modal
+.qr-display {
+  margin-top: 0.75rem;
+  text-align: center;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  .qr-label {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .qr-image {
+    max-width: 220px;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+}
+
 // Receipt Upload Styles
 .receipt-upload-area {
   border: 2px dashed #d1d5db;

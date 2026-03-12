@@ -66,6 +66,18 @@
     }
   }
 
+  .resident-avatar-photo {
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 3px solid #e9ecef;
+
+    &.xlarge {
+      width: 80px;
+      height: 80px;
+    }
+  }
+
   .resident-title {
     h2 {
       margin: 0 0 0.25rem;

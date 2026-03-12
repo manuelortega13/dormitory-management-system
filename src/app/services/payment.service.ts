@@ -65,8 +65,10 @@ export interface MakePaymentRequest {
 export interface PaymentSettings {
   gcash_number: string;
   gcash_name: string;
+  gcash_qr: string;
   maya_number: string;
   maya_name: string;
+  maya_qr: string;
   cash_instructions: string;
   payment_notes: string;
 }
@@ -116,24 +118,32 @@ export class PaymentService {
   residents = signal<Resident[]>([]);
   settings = signal<PaymentSettings | null>(null);
   loading = signal<boolean>(false);
-  
+
   // Pagination metadata
   paymentsPagination = signal<PaginationMeta | null>(null);
   allPaymentsPagination = signal<PaginationMeta | null>(null);
+  billsPagination = signal<PaginationMeta | null>(null);
 
   // Admin: Get all bills
-  async getAllBills(filters?: { status?: string; type?: string; resident_id?: number }): Promise<void> {
+  async getAllBills(filters?: { status?: string; type?: string; resident_id?: number; page?: number; limit?: number; sort_by?: string; sort_order?: string }): Promise<void> {
     this.loading.set(true);
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
       if (filters?.type) params.append('type', filters.type);
       if (filters?.resident_id) params.append('resident_id', filters.resident_id.toString());
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+      if (filters?.sort_by) params.append('sort_by', filters.sort_by);
+      if (filters?.sort_order) params.append('sort_order', filters.sort_order);
 
       const url = `${this.apiUrl}/bills${params.toString() ? '?' + params.toString() : ''}`;
       const response = await firstValueFrom(this.http.get<ApiResponse<Bill[]>>(url));
       if (response.success && response.data) {
         this.bills.set(response.data);
+      }
+      if (response.pagination) {
+        this.billsPagination.set(response.pagination);
       }
     } catch (error) {
       console.error('Failed to fetch bills:', error);
@@ -180,17 +190,22 @@ export class PaymentService {
   }
 
   // Admin: Get all payments
-  async getAllPayments(filters?: { status?: string; payment_method?: string }): Promise<void> {
+  async getAllPayments(filters?: { status?: string; payment_method?: string; page?: number; limit?: number }): Promise<void> {
     this.loading.set(true);
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
       if (filters?.payment_method) params.append('payment_method', filters.payment_method);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
 
       const url = `${this.apiUrl}/payments${params.toString() ? '?' + params.toString() : ''}`;
       const response = await firstValueFrom(this.http.get<ApiResponse<Payment[]>>(url));
       if (response.success && response.data) {
         this.payments.set(response.data);
+      }
+      if (response.pagination) {
+        this.allPaymentsPagination.set(response.pagination);
       }
     } catch (error) {
       console.error('Failed to fetch payments:', error);

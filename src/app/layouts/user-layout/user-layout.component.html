@@ -1,21 +1,14 @@
 <div class="user-layout">
+  <!-- Top bar (mobile: compact, desktop: full header) -->
   <header class="user-header">
     <div class="header-container">
       <div class="logo">
         <span class="logo-icon">🏠</span>
         <span class="logo-text">PAC DormHub</span>
       </div>
-      
-      <!-- Mobile menu button -->
-      <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
-        <span class="hamburger-icon" [class.open]="isMobileMenuOpen()">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      </button>
-      
-      <nav class="user-nav" [class.mobile-open]="isMobileMenuOpen()">
+
+      <!-- Desktop nav -->
+      <nav class="desktop-nav">
         <a routerLink="/my-leave-request" routerLinkActive="active" class="nav-item primary">
           <span class="nav-icon">📤</span>
           Request Leave
@@ -41,21 +34,49 @@
           Announcements
         </a>
       </nav>
+
       <div class="user-profile">
         <app-notification-dropdown />
-        <div class="avatar">{{ userInitials() }}</div>
-        <span class="user-name">{{ userName() }}</span>
+        <a routerLink="/profile" class="profile-link" title="View Profile">
+          @if (userPhotoUrl()) {
+            <img class="avatar-photo" [src]="userPhotoUrl()" alt="Profile photo" />
+          } @else {
+            <div class="avatar">{{ userInitials() }}</div>
+          }
+          <span class="user-name">{{ userName() }}</span>
+        </a>
         <button class="logout-btn" (click)="logout()" title="Logout">🚪</button>
       </div>
     </div>
   </header>
-  
-  <!-- Mobile menu overlay -->
-  @if (isMobileMenuOpen()) {
-    <div class="mobile-overlay" (click)="closeMobileMenu()"></div>
-  }
-  
+
   <main class="user-content">
     <router-outlet />
   </main>
+
+  <!-- Mobile bottom tab bar -->
+  <nav class="bottom-tab-bar">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="tab-item">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">Home</span>
+    </a>
+    <a routerLink="/my-requests" routerLinkActive="active" class="tab-item">
+      <span class="tab-icon">📋</span>
+      <span class="tab-label">Requests</span>
+    </a>
+    <a routerLink="/my-leave-request" routerLinkActive="active" class="tab-item tab-primary">
+      <span class="tab-icon-wrap">
+        <span class="tab-icon">📤</span>
+      </span>
+      <span class="tab-label">Leave</span>
+    </a>
+    <a routerLink="/my-payments" routerLinkActive="active" class="tab-item">
+      <span class="tab-icon">💰</span>
+      <span class="tab-label">Payments</span>
+    </a>
+    <a routerLink="/announcements" routerLinkActive="active" class="tab-item">
+      <span class="tab-icon">📢</span>
+      <span class="tab-label">More</span>
+    </a>
+  </nav>
 </div>

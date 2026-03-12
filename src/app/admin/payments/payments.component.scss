@@ -14,6 +14,21 @@
   color: #1a1a2e;
 }
 
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #4361ee;
+  }
+
+  .sort-indicator {
+    margin-left: 4px;
+    font-size: 0.8em;
+  }
+}
+
 .stat-card .stat-icon.overdue {
   background-color: #dc3545;
 }
@@ -173,6 +188,24 @@
   padding: 1.5rem;
 }
 
+.modal-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+
+  .modal-error-icon {
+    flex-shrink: 0;
+  }
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -221,6 +254,82 @@
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
+  }
+}
+
+.searchable-dropdown {
+  position: relative;
+
+  .selected-resident {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #f0f4ff;
+    font-size: 1rem;
+    color: #1a1a2e;
+
+    .clear-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+
+      &:hover {
+        color: #ef4444;
+      }
+    }
+  }
+
+  .dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover,
+    &.highlighted {
+      background: #f0f4ff;
+    }
+
+    .resident-name {
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    .resident-room {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+  }
+
+  .dropdown-empty {
+    padding: 0.75rem;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.9rem;
   }
 }
 
@@ -277,6 +386,35 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #4361ee, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3a56d4, #6d2ed4);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(67, 97, 238, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
   }
 }
 
@@ -372,6 +510,84 @@
     textarea {
       resize: vertical;
       min-height: 80px;
+    }
+  }
+}
+
+// QR code upload
+.qr-upload-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+
+  > label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+  }
+
+  .settings-description {
+    margin-bottom: 0.75rem;
+  }
+}
+
+.qr-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+
+  img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    padding: 4px;
+  }
+}
+
+.btn-remove-qr {
+  padding: 0.5rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #fecaca;
+  }
+}
+
+.qr-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  span {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  &:hover {
+    border-color: #4361ee;
+    background: #f0f4ff;
+
+    span {
+      color: #4361ee;
     }
   }
 }

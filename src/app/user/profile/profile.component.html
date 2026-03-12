@@ -1,0 +1,220 @@
+<div class="profile-page">
+  @if (successMessage()) {
+    <div class="success-banner">{{ successMessage() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading profile...</p>
+    </div>
+  } @else if (errorMessage() && !profile()) {
+    <div class="error-state">
+      <p>{{ errorMessage() }}</p>
+      <button class="btn-primary" (click)="loadProfile()">Retry</button>
+    </div>
+  } @else if (profile(); as p) {
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="photo-section">
+        @if (photoDisplay) {
+          <img class="profile-photo" [src]="photoDisplay" alt="Profile photo" />
+        } @else {
+          <div class="profile-initials">{{ initials }}</div>
+        }
+        @if (isEditing()) {
+          <label class="photo-upload-btn">
+            <input type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden />
+            <span>Change Photo</span>
+          </label>
+        }
+      </div>
+      <div class="header-info">
+        <h1>{{ p.first_name }} {{ p.last_name }}</h1>
+        @if (p.student_resident_id) {
+          <span class="student-id">{{ p.student_resident_id }}</span>
+        }
+        <span class="role-badge">Resident</span>
+      </div>
+      @if (!isEditing()) {
+        <button class="btn-edit" (click)="startEditing()">
+          <i class="bi bi-pencil-square"></i> Edit Profile
+        </button>
+      }
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-banner">{{ errorMessage() }}</div>
+    }
+
+    <div class="profile-content">
+      <!-- Personal Information -->
+      <div class="profile-card">
+        <h2>Personal Information</h2>
+        @if (isEditing()) {
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name *</label>
+              <input
+                type="text"
+                [ngModel]="formFirstName()"
+                (ngModelChange)="formFirstName.set($event)"
+              />
+            </div>
+            <div class="form-group">
+              <label>Last Name *</label>
+              <input
+                type="text"
+                [ngModel]="formLastName()"
+                (ngModelChange)="formLastName.set($event)"
+              />
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select [ngModel]="formGender()" (ngModelChange)="formGender.set($event)">
+                <option value="">Not specified</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input
+                type="tel"
+                [ngModel]="formPhone()"
+                (ngModelChange)="formPhone.set($event)"
+                placeholder="e.g., 09171234567"
+              />
+            </div>
+            <div class="form-group full-width">
+              <label>Address</label>
+              <input
+                type="text"
+                [ngModel]="formAddress()"
+                (ngModelChange)="formAddress.set($event)"
+                placeholder="e.g., 123 Main St, Manila"
+              />
+            </div>
+          </div>
+        } @else {
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Full Name</span>
+              <span class="info-value">{{ p.first_name }} {{ p.last_name }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Gender</span>
+              <span class="info-value">{{ p.gender ? (p.gender === 'male' ? 'Male' : 'Female') : 'Not specified' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email</span>
+              <span class="info-value">{{ p.email }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Phone</span>
+              <span class="info-value">{{ p.phone || 'Not provided' }}</span>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">Address</span>
+              <span class="info-value">{{ p.address || 'Not provided' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Academic Information -->
+      <div class="profile-card">
+        <h2>Academic Information</h2>
+        @if (isEditing()) {
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Course / Program</label>
+              <input
+                type="text"
+                [ngModel]="formCourse()"
+                (ngModelChange)="formCourse.set($event)"
+                placeholder="e.g., BS Computer Science"
+              />
+            </div>
+            <div class="form-group">
+              <label>Year Level</label>
+              <select [ngModel]="formYearLevel()" (ngModelChange)="formYearLevel.set(+$event || null)">
+                <option [ngValue]="null">Not specified</option>
+                <option [ngValue]="1">1st Year</option>
+                <option [ngValue]="2">2nd Year</option>
+                <option [ngValue]="3">3rd Year</option>
+                <option [ngValue]="4">4th Year</option>
+                <option [ngValue]="5">5th Year</option>
+              </select>
+            </div>
+          </div>
+        } @else {
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Student ID</span>
+              <span class="info-value">{{ p.student_resident_id || 'Not assigned' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Course / Program</span>
+              <span class="info-value">{{ p.course || 'Not provided' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Year Level</span>
+              <span class="info-value">{{ p.year_level ? p.year_level + (p.year_level === 1 ? 'st' : p.year_level === 2 ? 'nd' : p.year_level === 3 ? 'rd' : 'th') + ' Year' : 'Not specified' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Room Assignment -->
+      <div class="profile-card">
+        <h2>Room Assignment</h2>
+        @if (room(); as r) {
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Room Number</span>
+              <span class="info-value">{{ r.room_number }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Floor</span>
+              <span class="info-value">{{ r.floor }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Room Type</span>
+              <span class="info-value">{{ getRoomTypeLabel(r.room_type) }}</span>
+            </div>
+          </div>
+        } @else {
+          <p class="no-data">No room assignment found</p>
+        }
+      </div>
+
+      <!-- Account Info -->
+      <div class="profile-card">
+        <h2>Account</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Status</span>
+            <span class="status-badge" [class.active]="p.status === 'active'" [class.inactive]="p.status !== 'active'">
+              {{ p.status }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Member Since</span>
+            <span class="info-value">{{ formatDate(p.created_at) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Actions -->
+      @if (isEditing()) {
+        <div class="edit-actions">
+          <button class="btn-secondary" (click)="cancelEditing()" [disabled]="isSaving()">Cancel</button>
+          <button class="btn-primary" (click)="saveProfile()" [disabled]="isSaving()">
+            {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>

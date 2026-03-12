@@ -105,7 +105,12 @@
               <th>Description</th>
               <th>Amount</th>
               <th>Paid</th>
-              <th>Due Date</th>
+              <th class="sortable" (click)="toggleBillSort('due_date')">
+                Due Date
+                @if (billSortBy() === 'due_date') {
+                  <span class="sort-indicator">{{ billSortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                }
+              </th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -184,6 +189,42 @@
             <div class="empty-card">No bills found</div>
           }
         </div>
+
+        <!-- Bills Pagination Controls -->
+        @if (billPagination()) {
+          <div class="pagination-container">
+            <div class="pagination-info">
+              <span>Page {{ billPagination()!.page }} of {{ billPagination()!.pages }} • Total: {{ billPagination()!.total }} bills</span>
+            </div>
+            <div class="pagination-controls">
+              <button
+                class="pagination-btn"
+                (click)="prevBillPage()"
+                [disabled]="!billPagination()!.hasPrevPage"
+              >
+                ← Previous
+              </button>
+              <div class="page-numbers">
+                @for (pageNum of getBillPageNumbers(); track pageNum) {
+                  <button
+                    class="page-number"
+                    [class.active]="pageNum === billCurrentPage()"
+                    (click)="goToBillPage(pageNum)"
+                  >
+                    {{ pageNum }}
+                  </button>
+                }
+              </div>
+              <button
+                class="pagination-btn"
+                (click)="nextBillPage()"
+                [disabled]="!billPagination()!.hasNextPage"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        }
       </div>
     }
   }
@@ -366,22 +407,37 @@
         <div class="form-row">
           <div class="form-group">
             <label>GCash Number</label>
-            <input 
-              type="text" 
-              [ngModel]="settingsGcashNumber()" 
-              (ngModelChange)="settingsGcashNumber.set($event)" 
+            <input
+              type="text"
+              [ngModel]="settingsGcashNumber()"
+              (ngModelChange)="settingsGcashNumber.set($event)"
               placeholder="e.g., 09171234567"
             />
           </div>
           <div class="form-group">
             <label>Account Name</label>
-            <input 
-              type="text" 
-              [ngModel]="settingsGcashName()" 
-              (ngModelChange)="settingsGcashName.set($event)" 
+            <input
+              type="text"
+              [ngModel]="settingsGcashName()"
+              (ngModelChange)="settingsGcashName.set($event)"
               placeholder="e.g., Juan Dela Cruz"
             />
           </div>
+        </div>
+        <div class="qr-upload-section">
+          <label>GCash QR Code</label>
+          <p class="settings-description">Upload a QR code image so residents/parents can scan to pay.</p>
+          @if (settingsGcashQr()) {
+            <div class="qr-preview">
+              <img [src]="settingsGcashQr()" alt="GCash QR Code" />
+              <button class="btn-remove-qr" (click)="removeQr('gcash')">Remove</button>
+            </div>
+          } @else {
+            <label class="qr-upload-btn">
+              <input type="file" accept="image/*" (change)="onQrSelected($event, 'gcash')" hidden />
+              <span>📷 Upload QR Code</span>
+            </label>
+          }
         </div>
       </div>
 
@@ -391,22 +447,37 @@
         <div class="form-row">
           <div class="form-group">
             <label>Maya Number</label>
-            <input 
-              type="text" 
-              [ngModel]="settingsMayaNumber()" 
-              (ngModelChange)="settingsMayaNumber.set($event)" 
+            <input
+              type="text"
+              [ngModel]="settingsMayaNumber()"
+              (ngModelChange)="settingsMayaNumber.set($event)"
               placeholder="e.g., 09181234567"
             />
           </div>
           <div class="form-group">
             <label>Account Name</label>
-            <input 
-              type="text" 
-              [ngModel]="settingsMayaName()" 
-              (ngModelChange)="settingsMayaName.set($event)" 
+            <input
+              type="text"
+              [ngModel]="settingsMayaName()"
+              (ngModelChange)="settingsMayaName.set($event)"
               placeholder="e.g., Juan Dela Cruz"
             />
           </div>
+        </div>
+        <div class="qr-upload-section">
+          <label>Maya QR Code</label>
+          <p class="settings-description">Upload a QR code image so residents/parents can scan to pay.</p>
+          @if (settingsMayaQr()) {
+            <div class="qr-preview">
+              <img [src]="settingsMayaQr()" alt="Maya QR Code" />
+              <button class="btn-remove-qr" (click)="removeQr('maya')">Remove</button>
+            </div>
+          } @else {
+            <label class="qr-upload-btn">
+              <input type="file" accept="image/*" (change)="onQrSelected($event, 'maya')" hidden />
+              <span>📷 Upload QR Code</span>
+            </label>
+          }
         </div>
       </div>
 
@@ -456,14 +527,58 @@
         <button class="close-btn" (click)="closeBillModal()">×</button>
       </div>
       <div class="modal-body">
+        @if (billModalError()) {
+          <div class="modal-error">
+            <span class="modal-error-icon">⚠️</span>
+            <span>{{ billModalError() }}</span>
+          </div>
+        }
         <div class="form-group">
           <label>Resident *</label>
-          <select [ngModel]="formResidentId()" (ngModelChange)="formResidentId.set($event)" [disabled]="isEditingBill()">
-            <option [ngValue]="null">Select resident...</option>
-            @for (resident of residents(); track resident.id) {
-              <option [ngValue]="resident.id">{{ resident.name }} {{ resident.room_number ? '(' + resident.room_number + ')' : '' }}</option>
-            }
-          </select>
+          @if (isEditingBill()) {
+            <input type="text" [value]="selectedResidentName()" disabled class="resident-display" />
+          } @else {
+            <div class="searchable-dropdown">
+              @if (formResidentId()) {
+                <div class="selected-resident">
+                  <span>{{ selectedResidentName() }}</span>
+                  <button type="button" class="clear-btn" (click)="clearResidentSelection()">×</button>
+                </div>
+              } @else {
+                <input
+                  type="text"
+                  [ngModel]="residentSearchQuery()"
+                  (ngModelChange)="residentSearchQuery.set($event); highlightedResidentIndex.set(-1)"
+                  (focus)="onResidentSearchFocus()"
+                  (blur)="onResidentSearchBlur()"
+                  (keydown)="onResidentSearchKeydown($event)"
+                  placeholder="Search resident by name or room..."
+                  autocomplete="off"
+                />
+                @if (showResidentDropdown()) {
+                  <div class="dropdown-list">
+                    @if (filteredResidents.length === 0) {
+                      <div class="dropdown-empty">No residents found</div>
+                    } @else {
+                      @for (resident of filteredResidents; track resident.id; let i = $index) {
+                        <div
+                          class="dropdown-item"
+                          [class.highlighted]="i === highlightedResidentIndex()"
+                          (mousedown)="selectResident(resident)"
+                          (mouseenter)="highlightedResidentIndex.set(i)"
+                        >
+                          <span class="resident-name">{{ resident.name }}</span>
+                          @if (resident.room_number) {
+                            <span class="resident-room">Room {{ resident.room_number }}</span>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              }
+            </div>
+          }
         </div>
         <div class="form-group">
           <label>Bill Type *</label>

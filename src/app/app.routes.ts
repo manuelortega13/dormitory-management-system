@@ -59,6 +59,10 @@ export const routes: Routes = [
       {
         path: 'announcements',
         loadComponent: () => import('./user/announcements/user-announcements.component').then(m => m.UserAnnouncementsComponent)
+      },
+      {
+        path: 'profile',
+        loadComponent: () => import('./user/profile/profile.component').then(m => m.ProfileComponent)
       }
     ]
   },

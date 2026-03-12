@@ -285,6 +285,14 @@
   }
 }
 
+// Mobile: push FAB above bottom tab bar
+@media (max-width: 768px) {
+  .chat-fab {
+    bottom: 80px; // 64px tab bar + 16px spacing
+    right: 16px;
+  }
+}
+
 // Mobile responsive: full-screen chat
 @media (max-width: 480px) {
   .chat-panel {
@@ -293,10 +301,5 @@
     width: 100%;
     height: 100%;
     border-radius: 0;
-  }
-
-  .chat-fab {
-    bottom: 16px;
-    right: 16px;
   }
 }

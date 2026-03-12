@@ -11,7 +11,8 @@
     </div>
   </header>
 
-  <nav class="nav">
+  <!-- Desktop nav -->
+  <nav class="nav desktop-nav">
     <a routerLink="/parent" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
       📋 Pending Requests
     </a>
@@ -29,4 +30,24 @@
   <main class="main-content">
     <router-outlet></router-outlet>
   </main>
+
+  <!-- Mobile bottom tab bar -->
+  <nav class="bottom-tab-bar">
+    <a routerLink="/parent" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="tab-item">
+      <span class="tab-icon">📋</span>
+      <span class="tab-label">Requests</span>
+    </a>
+    <a routerLink="/parent/history" routerLinkActive="active" class="tab-item">
+      <span class="tab-icon">📜</span>
+      <span class="tab-label">History</span>
+    </a>
+    <a routerLink="/parent/activity" routerLinkActive="active" class="tab-item">
+      <span class="tab-icon">📍</span>
+      <span class="tab-label">Activity</span>
+    </a>
+    <a routerLink="/parent/payments" routerLinkActive="active" class="tab-item">
+      <span class="tab-icon">💰</span>
+      <span class="tab-label">Payments</span>
+    </a>
+  </nav>
 </div>

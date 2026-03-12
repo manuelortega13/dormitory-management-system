@@ -95,12 +95,16 @@
       @for (resident of filteredResidents(); track resident.id) {
         <div class="table-row" [class]="getStatusClass(resident.status)">
           <div class="col-name">
-            <div 
-              class="resident-avatar" 
-              [style.background]="getAvatarColor(resident.first_name)"
-            >
-              {{ getInitials(resident) }}
-            </div>
+            @if (resident.photo_url) {
+              <img class="resident-avatar-photo" [src]="resident.photo_url" alt="Photo" />
+            } @else {
+              <div
+                class="resident-avatar"
+                [style.background]="getAvatarColor(resident.first_name)"
+              >
+                {{ getInitials(resident) }}
+              </div>
+            }
             <div class="resident-info">
               <span class="name">{{ getFullName(resident) }}</span>
               <span class="student-id">{{ resident.student_resident_id || 'No ID' }}</span>
@@ -169,12 +173,16 @@
       @for (resident of filteredResidents(); track resident.id) {
         <article class="resident-card" [class]="getStatusClass(resident.status)">
           <div class="card-header">
-            <div 
-              class="resident-avatar large" 
-              [style.background]="getAvatarColor(resident.first_name)"
-            >
-              {{ getInitials(resident) }}
-            </div>
+            @if (resident.photo_url) {
+              <img class="resident-avatar-photo large" [src]="resident.photo_url" alt="Photo" />
+            } @else {
+              <div
+                class="resident-avatar large"
+                [style.background]="getAvatarColor(resident.first_name)"
+              >
+                {{ getInitials(resident) }}
+              </div>
+            }
             <span class="status-badge" [class]="resident.status">
               {{ resident.status | titlecase }}
             </span>

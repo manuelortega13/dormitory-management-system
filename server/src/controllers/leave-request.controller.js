@@ -296,10 +296,13 @@ exports.adminApprove = async (req, res) => {
     const { notes } = req.body;
     const adminId = req.user.id;
 
-    // Get current request with user info
+    // Get current request with user and parent info
     const [requests] = await pool.execute(
-      `SELECT lr.*, u.parent_id, u.first_name, u.last_name FROM leave_requests lr
+      `SELECT lr.*, u.parent_id, u.first_name, u.last_name,
+              p.first_name as parent_first_name, p.last_name as parent_last_name, p.phone as parent_phone
+       FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
+       LEFT JOIN users p ON u.parent_id = p.id
        WHERE lr.id = ?`,
       [id]
     );
@@ -321,10 +324,19 @@ exports.adminApprove = async (req, res) => {
     if (hasParent && request.parent_status === 'pending') {
       // Needs parent approval next
       newStatus = 'pending_parent';
-      
+
       // Notify parent about approval needed
       await notificationController.notifyParentApprovalNeeded(request.parent_id, childName, id);
-      
+
+      // Send SMS to parent
+      const smsService = require('../services/sms.service');
+      const parentName = `${request.parent_first_name} ${request.parent_last_name}`;
+      smsService.notifyParentLeaveApproval(request.parent_phone, parentName, childName, {
+        destination: request.destination,
+        departure_date: request.departure_date,
+        return_date: request.return_date,
+      });
+
       // Notify resident that dean approved (awaiting parent)
       await notificationController.notifyResidentDeanApproved(request.user_id, id);
     } else {

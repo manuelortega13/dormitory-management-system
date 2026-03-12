@@ -1,8 +1,10 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { AuthService, User } from '../../auth/auth.service';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
+import { environment } from '../../../environments/environment';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -15,36 +17,37 @@ import { filter } from 'rxjs/operators';
 export class UserLayoutComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
-  
+  private http = inject(HttpClient);
+
   protected readonly userName = signal('User');
   protected readonly userInitials = signal('U');
-  protected readonly isMobileMenuOpen = signal(false);
+  protected readonly userPhotoUrl = signal<string | null>(null);
 
   ngOnInit() {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.userName.set(`${user.firstName} ${user.lastName}`);
       this.userInitials.set(this.getInitials(user.firstName, user.lastName));
+      this.loadUserPhoto(user.id);
     }
 
-    // Close mobile menu on route change
+    // Refresh photo on navigation (in case profile was updated)
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
-      this.closeMobileMenu();
+      const u = this.authService.getCurrentUser();
+      if (u) this.loadUserPhoto(u.id);
+    });
+  }
+
+  private loadUserPhoto(userId: number) {
+    this.http.get<any>(`${environment.apiUrl}/users/${userId}`).subscribe({
+      next: (profile) => this.userPhotoUrl.set(profile.photo_url || null),
     });
   }
 
   private getInitials(firstName: string, lastName: string): string {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  }
-
-  toggleMobileMenu() {
-    this.isMobileMenuOpen.update(v => !v);
-  }
-
-  closeMobileMenu() {
-    this.isMobileMenuOpen.set(false);
   }
 
   logout() {

@@ -1,5 +1,5 @@
 import { Component, signal, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { SidebarComponent } from '../../sidebar/sidebar.component';
 import { CommonModule } from '@angular/common';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
@@ -8,7 +8,7 @@ import { AuthService } from '../../auth/auth.service';
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, CommonModule, NotificationDropdownComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, CommonModule, NotificationDropdownComponent],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.scss'
 })

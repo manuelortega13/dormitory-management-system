@@ -365,6 +365,7 @@
   color: #fff;
   font-weight: 600;
   font-size: 0.9rem;
+  flex-shrink: 0;
 
   &.large {
     width: 60px;
@@ -376,6 +377,25 @@
     width: 80px;
     height: 80px;
     font-size: 1.5rem;
+  }
+}
+
+.resident-avatar-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #e9ecef;
+
+  &.large {
+    width: 60px;
+    height: 60px;
+  }
+
+  &.xlarge {
+    width: 80px;
+    height: 80px;
   }
 }
 

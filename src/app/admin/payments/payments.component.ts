@@ -33,6 +33,15 @@ export class PaymentsComponent implements OnInit {
   errorMessage = signal('');
   successMessage = signal('');
 
+  // Sorting for bills
+  billSortBy = signal<string>('');
+  billSortOrder = signal<'asc' | 'desc'>('desc');
+
+  // Pagination for bills
+  billCurrentPage = signal(1);
+  billPageSize = signal(10);
+  billPagination = signal<PaginationMeta | null>(null);
+
   // Pagination for payments
   paymentCurrentPage = signal(1);
   paymentPageSize = signal(10);
@@ -43,6 +52,7 @@ export class PaymentsComponent implements OnInit {
   isEditingBill = signal(false);
   editingBillId = signal<number | null>(null);
   isSavingBill = signal(false);
+  billModalError = signal('');
 
   // Bill form data
   formResidentId = signal<number | null>(null);
@@ -50,6 +60,12 @@ export class PaymentsComponent implements OnInit {
   formDescription = signal('');
   formAmount = signal<number>(0);
   formDueDate = signal('');
+
+  // Searchable resident dropdown
+  residentSearchQuery = signal('');
+  showResidentDropdown = signal(false);
+  selectedResidentName = signal('');
+  highlightedResidentIndex = signal(-1);
 
   // Delete confirmation
   showDeleteModal = signal(false);
@@ -68,8 +84,10 @@ export class PaymentsComponent implements OnInit {
   // Settings form
   settingsGcashNumber = signal('');
   settingsGcashName = signal('');
+  settingsGcashQr = signal<string>('');
   settingsMayaNumber = signal('');
   settingsMayaName = signal('');
+  settingsMayaQr = signal<string>('');
   settingsCashInstructions = signal('');
   settingsPaymentNotes = signal('');
   isSavingSettings = signal(false);
@@ -98,11 +116,19 @@ export class PaymentsComponent implements OnInit {
 
   async loadBills() {
     try {
-      const filters: any = {};
+      const filters: any = {
+        page: this.billCurrentPage(),
+        limit: this.billPageSize(),
+      };
       if (this.billStatusFilter()) filters.status = this.billStatusFilter();
       if (this.billTypeFilter()) filters.type = this.billTypeFilter();
+      if (this.billSortBy()) {
+        filters.sort_by = this.billSortBy();
+        filters.sort_order = this.billSortOrder();
+      }
       await this.paymentService.getAllBills(filters);
       this.bills.set(this.paymentService.bills());
+      this.billPagination.set(this.paymentService.billsPagination());
     } catch (error) {
       console.error('Failed to load bills:', error);
     }
@@ -110,7 +136,10 @@ export class PaymentsComponent implements OnInit {
 
   async loadPayments() {
     try {
-      const filters: any = {};
+      const filters: any = {
+        page: this.paymentCurrentPage(),
+        limit: this.paymentPageSize(),
+      };
       if (this.paymentStatusFilter()) filters.status = this.paymentStatusFilter();
       if (this.paymentMethodFilter()) filters.payment_method = this.paymentMethodFilter();
       await this.paymentService.getAllPayments(filters);
@@ -138,8 +167,10 @@ export class PaymentsComponent implements OnInit {
     if (s) {
       this.settingsGcashNumber.set(s.gcash_number || '');
       this.settingsGcashName.set(s.gcash_name || '');
+      this.settingsGcashQr.set(s.gcash_qr || '');
       this.settingsMayaNumber.set(s.maya_number || '');
       this.settingsMayaName.set(s.maya_name || '');
+      this.settingsMayaQr.set(s.maya_qr || '');
       this.settingsCashInstructions.set(s.cash_instructions || '');
       this.settingsPaymentNotes.set(s.payment_notes || '');
     }
@@ -151,16 +182,53 @@ export class PaymentsComponent implements OnInit {
       await this.paymentService.updatePaymentSettings({
         gcash_number: this.settingsGcashNumber(),
         gcash_name: this.settingsGcashName(),
+        gcash_qr: this.settingsGcashQr(),
         maya_number: this.settingsMayaNumber(),
         maya_name: this.settingsMayaName(),
+        maya_qr: this.settingsMayaQr(),
         cash_instructions: this.settingsCashInstructions(),
         payment_notes: this.settingsPaymentNotes()
       });
-      alert('Payment settings saved successfully!');
+      this.successMessage.set('Payment settings saved successfully!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => this.successMessage.set(''), 3000);
     } catch (error: any) {
-      alert(error.message || 'Failed to save settings');
+      this.errorMessage.set(error.message || 'Failed to save settings');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => this.errorMessage.set(''), 3000);
     } finally {
       this.isSavingSettings.set(false);
+    }
+  }
+
+  onQrSelected(event: Event, type: 'gcash' | 'maya') {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const file = input.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      this.errorMessage.set('QR code image must be less than 5MB');
+      setTimeout(() => this.errorMessage.set(''), 3000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (type === 'gcash') {
+        this.settingsGcashQr.set(dataUrl);
+      } else {
+        this.settingsMayaQr.set(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeQr(type: 'gcash' | 'maya') {
+    if (type === 'gcash') {
+      this.settingsGcashQr.set('');
+    } else {
+      this.settingsMayaQr.set('');
     }
   }
 
@@ -194,10 +262,12 @@ export class PaymentsComponent implements OnInit {
 
   // Filter change handlers
   onBillFilterChange() {
+    this.billCurrentPage.set(1);
     this.loadBills();
   }
 
   onPaymentFilterChange() {
+    this.paymentCurrentPage.set(1);
     this.loadPayments();
   }
 
@@ -213,6 +283,9 @@ export class PaymentsComponent implements OnInit {
     this.isEditingBill.set(true);
     this.editingBillId.set(bill.id);
     this.formResidentId.set(bill.resident_id);
+    this.selectedResidentName.set(
+      `${bill.resident_name}${bill.room_number ? ' (' + bill.room_number + ')' : ''}`
+    );
     this.formBillType.set(bill.type);
     this.formDescription.set(bill.description || '');
     this.formAmount.set(bill.amount);
@@ -231,11 +304,98 @@ export class PaymentsComponent implements OnInit {
     this.formDescription.set('');
     this.formAmount.set(0);
     this.formDueDate.set('');
+    this.residentSearchQuery.set('');
+    this.showResidentDropdown.set(false);
+    this.selectedResidentName.set('');
+    this.billModalError.set('');
+  }
+
+  get filteredResidents(): Resident[] {
+    const query = this.residentSearchQuery().toLowerCase();
+    if (!query) return this.residents();
+    return this.residents().filter(r =>
+      r.name.toLowerCase().includes(query) ||
+      (r.room_number && r.room_number.toLowerCase().includes(query))
+    );
+  }
+
+  selectResident(resident: Resident) {
+    this.formResidentId.set(resident.id);
+    this.selectedResidentName.set(
+      `${resident.name}${resident.room_number ? ' (' + resident.room_number + ')' : ''}`
+    );
+    this.residentSearchQuery.set('');
+    this.showResidentDropdown.set(false);
+  }
+
+  clearResidentSelection() {
+    this.formResidentId.set(null);
+    this.selectedResidentName.set('');
+    this.residentSearchQuery.set('');
+  }
+
+  onResidentSearchFocus() {
+    this.showResidentDropdown.set(true);
+    this.highlightedResidentIndex.set(-1);
+  }
+
+  onResidentSearchBlur() {
+    // Delay to allow click on dropdown item
+    setTimeout(() => this.showResidentDropdown.set(false), 200);
+  }
+
+  onResidentSearchKeydown(event: KeyboardEvent) {
+    const list = this.filteredResidents;
+    if (!this.showResidentDropdown() || list.length === 0) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        this.showResidentDropdown.set(true);
+        this.highlightedResidentIndex.set(0);
+        event.preventDefault();
+      }
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.highlightedResidentIndex.set(
+          (this.highlightedResidentIndex() + 1) % list.length
+        );
+        this.scrollToHighlighted();
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.highlightedResidentIndex.set(
+          this.highlightedResidentIndex() <= 0
+            ? list.length - 1
+            : this.highlightedResidentIndex() - 1
+        );
+        this.scrollToHighlighted();
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.highlightedResidentIndex() >= 0 && this.highlightedResidentIndex() < list.length) {
+          this.selectResident(list[this.highlightedResidentIndex()]);
+        }
+        break;
+      case 'Escape':
+        this.showResidentDropdown.set(false);
+        break;
+    }
+  }
+
+  private scrollToHighlighted() {
+    setTimeout(() => {
+      const el = document.querySelector('.dropdown-item.highlighted');
+      el?.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   async saveBill() {
+    this.billModalError.set('');
+
     if (!this.formResidentId() || !this.formAmount() || !this.formDueDate()) {
-      alert('Please fill in all required fields');
+      this.billModalError.set('Please fill in all required fields');
       return;
     }
 
@@ -261,10 +421,10 @@ export class PaymentsComponent implements OnInit {
       this.closeBillModal();
       await this.loadBills();
       await this.loadStats();
-      
+
       setTimeout(() => this.successMessage.set(''), 3000);
     } catch (error: any) {
-      alert(error.message || 'Failed to save bill');
+      this.billModalError.set(error.message || 'Failed to save bill');
     } finally {
       this.isSavingBill.set(false);
     }
@@ -318,8 +478,14 @@ export class PaymentsComponent implements OnInit {
       await this.loadPayments();
       await this.loadBills();
       await this.loadStats();
+
+      this.successMessage.set(
+        status === 'verified' ? 'Payment verified successfully!' : 'Payment rejected.'
+      );
+      setTimeout(() => this.successMessage.set(''), 3000);
     } catch (error: any) {
-      alert(error.message || 'Failed to verify payment');
+      this.errorMessage.set(error.message || 'Failed to verify payment');
+      setTimeout(() => this.errorMessage.set(''), 3000);
     } finally {
       this.isVerifying.set(false);
     }
@@ -334,6 +500,73 @@ export class PaymentsComponent implements OnInit {
   closePaymentDetailModal() {
     this.showPaymentDetailModal.set(false);
     this.viewingPayment.set(null);
+  }
+
+  // Sorting for bills
+  toggleBillSort(column: string) {
+    if (this.billSortBy() === column) {
+      this.billSortOrder.set(this.billSortOrder() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.billSortBy.set(column);
+      this.billSortOrder.set('asc');
+    }
+    this.billCurrentPage.set(1);
+    this.loadBills();
+  }
+
+  // Pagination methods for bills
+  async nextBillPage() {
+    const paginationData = this.billPagination();
+    if (paginationData && paginationData.hasNextPage) {
+      this.billCurrentPage.set(this.billCurrentPage() + 1);
+      await this.loadBills();
+    }
+  }
+
+  async prevBillPage() {
+    const paginationData = this.billPagination();
+    if (paginationData && paginationData.hasPrevPage) {
+      this.billCurrentPage.set(this.billCurrentPage() - 1);
+      await this.loadBills();
+    }
+  }
+
+  async goToBillPage(page: number) {
+    const paginationData = this.billPagination();
+    if (paginationData && page > 0 && page <= paginationData.pages) {
+      this.billCurrentPage.set(page);
+      await this.loadBills();
+    }
+  }
+
+  getBillPageNumbers(): number[] {
+    const paginationData = this.billPagination();
+    if (!paginationData) return [];
+
+    const totalPages = paginationData.pages;
+    const currentPage = this.billCurrentPage();
+    const maxPagesToShow = 5;
+    const pages: number[] = [];
+
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const halfWindow = Math.floor(maxPagesToShow / 2);
+      let startPage = Math.max(1, currentPage - halfWindow);
+      let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+      if (endPage - startPage + 1 < maxPagesToShow) {
+        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+
+    return pages;
   }
 
   // Pagination methods for payments

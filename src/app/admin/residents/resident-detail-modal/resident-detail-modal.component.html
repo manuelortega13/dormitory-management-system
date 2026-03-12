@@ -3,12 +3,16 @@
     <button class="modal-close" (click)="onClose()">✕</button>
     
     <div class="modal-header">
-      <div 
-        class="resident-avatar xlarge" 
-        [style.background]="getAvatarColor()"
-      >
-        {{ getInitials() }}
-      </div>
+      @if (resident.photo_url) {
+        <img class="resident-avatar-photo xlarge" [src]="resident.photo_url" alt="Photo" />
+      } @else {
+        <div
+          class="resident-avatar xlarge"
+          [style.background]="getAvatarColor()"
+        >
+          {{ getInitials() }}
+        </div>
+      }
       <div class="resident-title">
         <h2>{{ getFullName() }}</h2>
         <p class="resident-id">{{ resident.student_resident_id || 'No Student ID' }}</p>

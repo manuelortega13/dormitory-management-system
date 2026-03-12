@@ -45,7 +45,9 @@ exports.getById = async (req, res) => {
     }
 
     const [users] = await pool.execute(
-      'SELECT id, email, first_name, last_name, role, phone, photo_url, status, created_at FROM users WHERE id = ?',
+      `SELECT id, email, first_name, last_name, role, phone, photo_url, status,
+              student_resident_id, gender, address, course, year_level, created_at
+       FROM users WHERE id = ?`,
       [id]
     );
 
@@ -63,7 +65,7 @@ exports.getById = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, password, parentId, gender, address, course, yearLevel } = req.body;
+    const { firstName, lastName, phone, password, parentId, gender, address, course, yearLevel, photoUrl } = req.body;
 
     // Users can only update their own profile unless admin
     if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
@@ -101,6 +103,10 @@ exports.update = async (req, res) => {
     if (yearLevel !== undefined) {
       query += ', year_level = ?';
       params.push(yearLevel || null);
+    }
+    if (photoUrl !== undefined) {
+      query += ', photo_url = ?';
+      params.push(photoUrl || null);
     }
 
     query += ' WHERE id = ?';

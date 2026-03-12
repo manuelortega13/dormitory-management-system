@@ -44,6 +44,10 @@ export class NotificationService implements OnDestroy {
   // Increments when announcement notification is detected
   newAnnouncementTrigger = signal<number>(0);
 
+  // Signal to notify resident when payment status changes (verified/rejected)
+  // Increments when payment notification is detected
+  paymentStatusUpdateTrigger = signal<number>(0);
+
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private lastNotificationIds = new Set<number>();
 
@@ -303,6 +307,9 @@ export class NotificationService implements OnDestroy {
     if (notification.type === 'announcement') {
       this.newAnnouncementTrigger.update(v => v + 1);
     }
+    if (notification.type === 'payment') {
+      this.paymentStatusUpdateTrigger.update(v => v + 1);
+    }
   }
 
   /**
@@ -334,6 +341,7 @@ export class NotificationService implements OnDestroy {
       let hasStatusUpdate = false;
       let hasParentApprovalNeeded = false;
       let hasVpsasApprovalNeeded = false;
+      let hasPaymentUpdate = false;
       
       for (const notif of newNotifications) {
         if (!isInitialLoad && !this.lastNotificationIds.has(notif.id)) {
@@ -358,6 +366,10 @@ export class NotificationService implements OnDestroy {
           if (notif.type === 'vpsas_approval_needed') {
             hasVpsasApprovalNeeded = true;
           }
+          // Payment status update notification (for resident)
+          if (notif.type === 'payment') {
+            hasPaymentUpdate = true;
+          }
         }
         this.lastNotificationIds.add(notif.id);
       }
@@ -371,6 +383,9 @@ export class NotificationService implements OnDestroy {
       }
       if (hasParentApprovalNeeded) {
         this.parentApprovalNeededTrigger.update(v => v + 1);
+      }
+      if (hasPaymentUpdate) {
+        this.paymentStatusUpdateTrigger.update(v => v + 1);
       }
       
       this.notifications.set(newNotifications);

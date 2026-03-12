@@ -1,7 +1,8 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-my-payments',
@@ -12,6 +13,7 @@ import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, Pag
 })
 export class MyPaymentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
+  private notificationService = inject(NotificationService);
 
   // Tab management
   activeTab = signal<'bills' | 'history'>('bills');
@@ -46,6 +48,16 @@ export class MyPaymentsComponent implements OnInit {
   receiptImage = signal<string | null>(null);
   receiptFileName = signal<string>('');
   isSubmitting = signal(false);
+
+  constructor() {
+    // Auto-reload when payment status changes (verified/rejected by admin)
+    effect(() => {
+      const trigger = this.notificationService.paymentStatusUpdateTrigger();
+      if (trigger > 0) {
+        this.loadData();
+      }
+    });
+  }
 
   ngOnInit() {
     this.loadData();

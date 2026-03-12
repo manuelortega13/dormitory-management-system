@@ -6,10 +6,45 @@ const { sendNotificationToUser } = require('../services/socket.service');
 // Get all bills (admin view)
 exports.getAllBills = async (req, res) => {
   try {
-    const { status, type, resident_id } = req.query;
+    const { status, type, resident_id, page = 1, limit = 10, sort_by, sort_order } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageLimit = Math.min(50, Math.max(1, parseInt(limit) || 10));
+    const offset = (pageNum - 1) * pageLimit;
 
-    let query = `
-      SELECT b.*, 
+    // Validate sort params to prevent SQL injection
+    const allowedSortColumns = { created_at: 'b.created_at', due_date: 'b.due_date', amount: 'b.amount' };
+    const orderColumn = allowedSortColumns[sort_by] || 'b.created_at';
+    const orderDir = sort_order === 'asc' ? 'ASC' : 'DESC';
+
+    const whereConditions = [];
+    const params = [];
+
+    if (status) {
+      whereConditions.push('b.status = ?');
+      params.push(status);
+    }
+
+    if (type) {
+      whereConditions.push('b.type = ?');
+      params.push(type);
+    }
+
+    if (resident_id) {
+      whereConditions.push('b.resident_id = ?');
+      params.push(resident_id);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? ' WHERE ' + whereConditions.join(' AND ')
+      : '';
+
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM bills b${whereClause}`;
+    const [[{ total }]] = await pool.execute(countQuery, params);
+
+    // Get paginated results
+    const dataQuery = `
+      SELECT b.*,
              u.first_name, u.last_name, u.student_resident_id,
              CONCAT(u.first_name, ' ', u.last_name) as resident_name,
              r.room_number,
@@ -20,35 +55,21 @@ exports.getAllBills = async (req, res) => {
       LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
       LEFT JOIN rooms r ON ra.room_id = r.id
       LEFT JOIN payments p ON b.id = p.bill_id AND p.status IN ('verified', 'pending')
-      WHERE 1=1
+      ${whereClause}
+      GROUP BY b.id, r.room_number
+      ORDER BY ${orderColumn} ${orderDir}
+      LIMIT ? OFFSET ?
     `;
-    const params = [];
 
-    if (status) {
-      query += ' AND b.status = ?';
-      params.push(status);
-    }
-
-    if (type) {
-      query += ' AND b.type = ?';
-      params.push(type);
-    }
-
-    if (resident_id) {
-      query += ' AND b.resident_id = ?';
-      params.push(resident_id);
-    }
-
-    query += ' GROUP BY b.id, r.room_number ORDER BY b.due_date DESC';
-
-    const [bills] = await pool.execute(query, params);
+    const dataParams = [...params, Number(pageLimit), Number(offset)];
+    const [bills] = await pool.query(dataQuery, dataParams);
 
     // Calculate remaining balance for each bill
     const billsWithBalance = bills.map(bill => {
       const verifiedAmount = parseFloat(bill.total_verified) || 0;
       const pendingAmount = parseFloat(bill.total_pending) || 0;
       const billAmount = parseFloat(bill.amount);
-      
+
       return {
         ...bill,
         amount_paid: verifiedAmount,
@@ -58,7 +79,20 @@ exports.getAllBills = async (req, res) => {
       };
     });
 
-    res.json({ success: true, data: billsWithBalance });
+    const totalPages = Math.ceil(total / pageLimit);
+
+    res.json({
+      success: true,
+      data: billsWithBalance,
+      pagination: {
+        page: pageNum,
+        limit: pageLimit,
+        total: total,
+        pages: totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      }
+    });
   } catch (error) {
     console.error('Get bills error:', error);
     res.status(500).json({ error: 'Failed to fetch bills' });
@@ -556,7 +590,26 @@ exports.verifyPayment = async (req, res) => {
       created_at: new Date().toISOString()
     });
 
-    res.json({ message: `Payment ${status} successfully` });
+    // Re-fetch the updated payment to return to frontend
+    const [updated] = await pool.query(
+      `SELECT p.id, p.bill_id, p.resident_id, p.paid_by, p.amount, p.payment_method,
+        p.reference_number, p.notes, p.receipt_image, p.status, p.verified_by,
+        p.verified_at, p.payment_date, p.created_at, p.updated_at,
+        CONCAT(u.first_name, ' ', u.last_name) as resident_name,
+        CONCAT(payer.first_name, ' ', payer.last_name) as payer_name,
+        b.type as bill_type, b.description as bill_description,
+        r.room_number
+       FROM payments p
+       JOIN users u ON p.resident_id = u.id
+       JOIN users payer ON p.paid_by = payer.id
+       LEFT JOIN bills b ON p.bill_id = b.id
+       LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
+       LEFT JOIN rooms r ON ra.room_id = r.id
+       WHERE p.id = ?`,
+      [id]
+    );
+
+    res.json({ success: true, message: `Payment ${status} successfully`, data: updated[0] || null });
   } catch (error) {
     console.error('Verify payment error:', error);
     res.status(500).json({ error: 'Failed to verify payment' });
@@ -630,14 +683,14 @@ exports.updatePaymentSettings = async (req, res) => {
     const adminId = req.user.id;
 
     const allowedKeys = [
-      'gcash_number', 'gcash_name',
-      'maya_number', 'maya_name',
+      'gcash_number', 'gcash_name', 'gcash_qr',
+      'maya_number', 'maya_name', 'maya_qr',
       'cash_instructions', 'payment_notes'
     ];
 
     for (const [key, value] of Object.entries(settings)) {
       if (allowedKeys.includes(key)) {
-        await pool.execute(
+        await pool.query(
           `UPDATE payment_settings SET setting_value = ?, updated_by = ? WHERE setting_key = ?`,
           [value || '', adminId, key]
         );
