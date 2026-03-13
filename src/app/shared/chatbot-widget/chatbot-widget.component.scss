@@ -288,7 +288,7 @@
 // Mobile: push FAB above bottom tab bar
 @media (max-width: 768px) {
   .chat-fab {
-    bottom: 80px; // 64px tab bar + 16px spacing
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
     right: 16px;
   }
 }

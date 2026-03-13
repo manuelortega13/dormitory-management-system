@@ -63,11 +63,12 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-top, 0px));
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   z-index: 999;
   align-items: center;
   padding: 0 1rem;
+  padding-top: env(safe-area-inset-top, 0);
   gap: 1rem;
 
   .header-right {
@@ -140,8 +141,8 @@
 @media (max-width: 768px) {
   .admin-content {
     margin-left: 0;
-    padding-top: 56px;
-    padding-bottom: 72px;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
   }
 
   .desktop-top-bar {

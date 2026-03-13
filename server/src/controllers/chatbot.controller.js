@@ -17,7 +17,7 @@ const MAX_TOOL_ROUNDS = 5;
 
 function buildSystemPrompt(user) {
   const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-  return `You are a helpful assistant for a university dormitory management system.
+  return `You are a helpful assistant for PAC DMS (Dormitory Management System).
 You help users with questions about residents, campus activity, announcements, leave requests, payments, rooms, and visitors.
 
 Current user: ${user.firstName} ${user.lastName} (ID: ${user.id}), role: ${user.role}

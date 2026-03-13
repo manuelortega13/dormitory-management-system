@@ -191,6 +191,7 @@
     left: 0;
     right: 0;
     z-index: 1000;
+    padding-top: env(safe-area-inset-top, 0);
   }
 
   .header-container {
@@ -238,10 +239,10 @@
     }
   }
 
-  // Content area — account for top bar and bottom tab bar
+  // Content area — account for top bar and bottom tab bar + safe areas
   .user-content {
-    padding-top: 56px;
-    padding-bottom: 72px;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
     min-height: 100vh;
   }
 
@@ -346,7 +347,7 @@
   }
 
   .user-content {
-    padding-top: 50px;
+    padding-top: calc(50px + env(safe-area-inset-top, 0px));
   }
 
   .logo {

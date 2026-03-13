@@ -83,7 +83,7 @@ async function notifyParentLeaveApproval(parentPhone, parentName, childName, lea
   });
 
   const message =
-    `PAC DormHub: Hi ${parentName}, your child ${childName} has requested a leave ` +
+    `PAC DMS: Hi ${parentName}, your child ${childName} has requested a leave ` +
     `from ${departure} to ${returnDate} (Destination: ${leaveDetails.destination}). ` +
     `Please log in to the Parent Portal to approve or decline this request.`;
 

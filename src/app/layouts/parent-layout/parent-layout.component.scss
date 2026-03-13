@@ -143,7 +143,8 @@
     flex-direction: row;
     gap: 0;
     padding: 0 1rem;
-    height: 56px;
+    padding-top: env(safe-area-inset-top, 0);
+    height: calc(56px + env(safe-area-inset-top, 0px));
 
     .header-left {
       gap: 0.5rem;
@@ -178,8 +179,8 @@
 
   .main-content {
     padding: 1rem;
-    padding-top: calc(56px + 1rem);
-    padding-bottom: calc(72px + 0.5rem);
+    padding-top: calc(56px + env(safe-area-inset-top, 0px) + 1rem);
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
   }
 
   // ── Bottom Tab Bar ──
@@ -246,12 +247,12 @@
 
 @media (max-width: 480px) {
   .header {
-    height: 50px;
+    height: calc(50px + env(safe-area-inset-top, 0px));
   }
 
   .main-content {
     padding: 0.75rem;
-    padding-top: calc(50px + 0.75rem);
-    padding-bottom: calc(72px + 0.5rem);
+    padding-top: calc(50px + env(safe-area-inset-top, 0px) + 0.75rem);
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
   }
 }

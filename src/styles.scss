@@ -87,10 +87,8 @@ body {
 
 /* ── Native mobile app enhancements ── */
 @media (max-width: 768px) {
-  // Safe area padding for notched devices
-  body {
-    padding-top: env(safe-area-inset-top, 0);
-  }
+  // Safe area handled by fixed headers/tab bars per layout — not on body
+  // to avoid double-offset when headers are position:fixed
 
   // Smoother scrolling
   main, .main-content, .user-content, .admin-content, .security-content {
