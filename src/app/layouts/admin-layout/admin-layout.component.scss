@@ -178,15 +178,15 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
     background: #fff;
     border-top: 1px solid #e5e7eb;
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
     z-index: 1000;
     padding: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-top: 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .tab-item {
