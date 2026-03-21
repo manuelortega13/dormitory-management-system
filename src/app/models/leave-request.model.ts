@@ -24,6 +24,7 @@ export interface LeaveRequest {
   admin_reviewed_by?: number;
   admin_reviewed_at?: string;
   admin_notes?: string;
+  parent_id?: number | null;
   parent_status: 'pending' | 'approved' | 'declined' | 'not_required';
   parent_reviewed_at?: string;
   parent_notes?: string;

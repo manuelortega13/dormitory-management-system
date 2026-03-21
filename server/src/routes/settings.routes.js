@@ -3,7 +3,10 @@ const router = express.Router();
 const settingsController = require('../controllers/settings.controller');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
 
-// All settings routes require authentication and admin role
+// Public routes (no auth required)
+router.get('/public/branding', settingsController.getPublicBranding);
+
+// All other settings routes require authentication and admin role
 router.use(authMiddleware);
 
 // Get all settings (admin only)

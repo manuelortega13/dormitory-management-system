@@ -161,6 +161,16 @@
                 </div>
               </div>
 
+              @if (verificationResult()?.action === 'exit' && request.parent_status === 'not_required' && !request.parent_id) {
+                <div class="parent-warning">
+                  <span class="warning-icon">⚠️</span>
+                  <div class="warning-content">
+                    <strong>No Parent/Guardian on Record</strong>
+                    <p>This resident does not have a registered parent/guardian. Please ask the student to call their parent/guardian so you can hear and receive <strong>oral approval</strong> before allowing exit.</p>
+                  </div>
+                </div>
+              }
+
               <div class="action-section">
                 @if (verificationResult()?.action === 'exit') {
                   <div class="action-info exit">

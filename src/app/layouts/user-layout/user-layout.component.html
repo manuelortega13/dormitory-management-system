@@ -3,36 +3,49 @@
   <header class="user-header">
     <div class="header-container">
       <div class="logo">
-        <span class="logo-icon">🏠</span>
-        <span class="logo-text">PAC DMS</span>
+        @if (settingsService.systemLogo()) {
+          <img class="logo-img" [src]="settingsService.systemLogo()" alt="PAC DMS" />
+        } @else {
+          <span class="logo-icon">🏠</span>
+        }
+        <span class="logo-text">{{ settingsService.systemName() }}</span>
       </div>
 
       <!-- Desktop nav -->
       <nav class="desktop-nav">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+          Home
+        </a>
         <a routerLink="/my-leave-request" routerLinkActive="active" class="nav-item primary">
-          <span class="nav-icon">📤</span>
           Request Leave
         </a>
         <a routerLink="/my-requests" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">📋</span>
           My Requests
         </a>
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
-          <span class="nav-icon">🏠</span>
-          Home
-        </a>
-        <a routerLink="/my-room" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">🛏️</span>
-          My Room
-        </a>
         <a routerLink="/my-payments" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">💰</span>
           Payments
         </a>
-        <a routerLink="/announcements" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">📢</span>
-          Announcements
-        </a>
+        <div class="nav-more" (mouseenter)="showMore.set(true)" (mouseleave)="showMore.set(false)">
+          <button class="nav-item nav-more-btn" [class.active]="isMoreActive()">
+            More <span class="more-arrow">&#9662;</span>
+          </button>
+          @if (showMore()) {
+            <div class="more-dropdown">
+              <a routerLink="/my-room" routerLinkActive="active" class="dropdown-item" (click)="showMore.set(false)">
+                <span class="dropdown-icon">🛏️</span>
+                My Room
+              </a>
+              <a routerLink="/announcements" routerLinkActive="active" class="dropdown-item" (click)="showMore.set(false)">
+                <span class="dropdown-icon">📢</span>
+                Announcements
+              </a>
+              <a routerLink="/profile" routerLinkActive="active" class="dropdown-item" (click)="showMore.set(false)">
+                <span class="dropdown-icon">👤</span>
+                Profile
+              </a>
+            </div>
+          }
+        </div>
       </nav>
 
       <div class="user-profile">
@@ -74,9 +87,33 @@
       <span class="tab-icon">💰</span>
       <span class="tab-label">Payments</span>
     </a>
-    <a routerLink="/announcements" routerLinkActive="active" class="tab-item">
-      <span class="tab-icon">📢</span>
+    <button class="tab-item" [class.active]="showMobileMore()" (click)="showMobileMore.set(!showMobileMore())">
+      <span class="tab-icon">☰</span>
       <span class="tab-label">More</span>
-    </a>
+    </button>
   </nav>
+
+  <!-- Mobile more menu overlay -->
+  @if (showMobileMore()) {
+    <div class="mobile-more-overlay" (click)="showMobileMore.set(false)"></div>
+    <div class="mobile-more-sheet">
+      <div class="sheet-handle"></div>
+      <a routerLink="/my-room" routerLinkActive="active" class="sheet-item" (click)="showMobileMore.set(false)">
+        <span class="sheet-icon">🛏️</span>
+        <span class="sheet-label">My Room</span>
+      </a>
+      <a routerLink="/announcements" routerLinkActive="active" class="sheet-item" (click)="showMobileMore.set(false)">
+        <span class="sheet-icon">📢</span>
+        <span class="sheet-label">Announcements</span>
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" class="sheet-item" (click)="showMobileMore.set(false)">
+        <span class="sheet-icon">👤</span>
+        <span class="sheet-label">Profile</span>
+      </a>
+      <button class="sheet-item sheet-logout" (click)="showMobileMore.set(false); logout()">
+        <span class="sheet-icon">🚪</span>
+        <span class="sheet-label">Logout</span>
+      </button>
+    </div>
+  }
 </div>

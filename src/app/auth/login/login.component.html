@@ -1,8 +1,12 @@
 <div class="login-page">
   <div class="login-card">
     <div class="login-header">
-      <div class="logo">🏠</div>
-      <h1>PAC DMS</h1>
+      @if (logoUrl()) {
+        <img class="login-logo" [src]="logoUrl()" [alt]="systemName()" />
+      } @else {
+        <div class="logo">🏠</div>
+      }
+      <h1>{{ systemName() }}</h1>
       <p>Dormitory Management System</p>
     </div>
 

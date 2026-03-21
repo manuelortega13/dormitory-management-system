@@ -6,6 +6,7 @@ import { AuthService, User } from '../auth/auth.service';
 import { AdminLeaveRequestService } from '../admin/leave-requests/data/admin-leave-request.service';
 import { ParentRegistrationService } from '../admin/parent-registrations/data/parent-registration.service';
 import { NotificationService } from '../services/notification.service';
+import { SettingsService } from '../services/settings.service';
 
 interface MenuItem {
   label: string;
@@ -31,6 +32,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private leaveRequestService = inject(AdminLeaveRequestService);
   private parentRegistrationService = inject(ParentRegistrationService);
   private notificationService = inject(NotificationService);
+  protected settingsService = inject(SettingsService);
   private subscription: Subscription | null = null;
   protected readonly isCollapsed = signal(false);
   protected readonly pendingLeaveRequestsCount = signal(0);

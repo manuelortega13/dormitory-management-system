@@ -190,6 +190,25 @@ exports.updateSetting = async (req, res) => {
   }
 };
 
+// Get public branding (logo + name, no auth required)
+exports.getPublicBranding = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT setting_key, setting_value FROM system_settings WHERE category = 'general' AND setting_key IN ('system_logo', 'dorm_name')`
+    );
+
+    const result = { logo: '', name: 'PAC DMS' };
+    for (const row of rows) {
+      if (row.setting_key === 'system_logo') result.logo = row.setting_value || '';
+      if (row.setting_key === 'dorm_name') result.name = row.setting_value || 'PAC DMS';
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching public branding:', error);
+    res.json({ logo: '', name: 'PAC DMS' });
+  }
+};
+
 // Get a single setting value
 exports.getSetting = async (req, res) => {
   try {

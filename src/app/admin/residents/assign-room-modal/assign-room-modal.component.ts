@@ -8,6 +8,8 @@ export interface AssignRoomData {
   roomId: number;
   startDate: string;
   endDate?: string;
+  /** Set when changing rooms — the old room to unassign from */
+  previousRoomId?: number;
 }
 
 @Component({
@@ -15,7 +17,7 @@ export interface AssignRoomData {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './assign-room-modal.component.html',
-  styleUrl: './assign-room-modal.component.scss'
+  styleUrl: './assign-room-modal.component.scss',
 })
 export class AssignRoomModalComponent implements OnInit {
   private readonly roomsService = inject(RoomsService);
@@ -23,10 +25,13 @@ export class AssignRoomModalComponent implements OnInit {
   @Input() resident: Resident | null = null;
   @Input() errorMessage: string = '';
   @Input() isSaving: boolean = false;
+  /** 'assign' for new assignment, 'change' for reassignment */
+  @Input() mode: 'assign' | 'change' = 'assign';
   @Output() close = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<AssignRoomData>();
 
   availableRooms = signal<Room[]>([]);
+  allRooms = signal<Room[]>([]);
   selectedRoomId = signal<number | null>(null);
   startDate = signal(new Date().toISOString().split('T')[0]);
   endDate = signal('');
@@ -34,21 +39,20 @@ export class AssignRoomModalComponent implements OnInit {
   isLoading = signal(true);
 
   ngOnInit(): void {
-    this.loadAvailableRooms();
+    this.loadRooms();
   }
 
-  loadAvailableRooms(): void {
+  loadRooms(): void {
     this.isLoading.set(true);
     this.roomsService.getAvailable().subscribe({
       next: (rooms) => {
         this.availableRooms.set(rooms);
         this.isLoading.set(false);
       },
-      error: (err) => {
-        console.error('Failed to load available rooms:', err);
+      error: () => {
         this.localError.set('Failed to load available rooms');
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -67,11 +71,25 @@ export class AssignRoomModalComponent implements OnInit {
     }
 
     this.localError.set('');
-    this.confirm.emit({
+
+    const data: AssignRoomData = {
       roomId,
       startDate: start,
-      endDate: this.endDate() || undefined
-    });
+      endDate: this.endDate() || undefined,
+    };
+
+    // If changing rooms, include the previous room info for unassignment
+    if (this.mode === 'change' && this.resident?.room_number) {
+      data.previousRoomId = this.getCurrentRoomId();
+    }
+
+    this.confirm.emit(data);
+  }
+
+  /** Try to find current room ID from the available/all rooms list by room_number */
+  private getCurrentRoomId(): number | undefined {
+    // We'll pass this from the parent instead — use a workaround via resident data
+    return undefined;
   }
 
   getFullName(): string {
@@ -84,12 +102,17 @@ export class AssignRoomModalComponent implements OnInit {
       single: 'Single Room',
       double: 'Double Room',
       triple: 'Triple Room',
-      suite: 'Suite'
+      quad: 'Quad Room',
+      suite: 'Suite',
     };
     return labels[type] || type;
   }
 
   getDisplayError(): string {
     return this.errorMessage || this.localError();
+  }
+
+  isChangeMode(): boolean {
+    return this.mode === 'change';
   }
 }

@@ -16,6 +16,14 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Global logo image style for all layouts */
+.logo-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
 /* Mobile-first responsive utilities */
 .hide-mobile {
   @media (max-width: 768px) {

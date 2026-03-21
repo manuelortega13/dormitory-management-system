@@ -1,112 +1,190 @@
 <div class="my-room-container">
-  <div class="coming-soon-banner">
-    <span class="banner-icon">🚧</span>
-    <div class="banner-content">
-      <strong>Feature Coming Soon</strong>
-      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading room information...</p>
     </div>
-  </div>
+  }
 
-  <div class="page-header">
-    <h1>🛏️ My Room</h1>
-    <p class="subtitle">View your room details and information</p>
-  </div>
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-state">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error() }}</p>
+      <button class="btn-primary" (click)="loadRoomData()">Try Again</button>
+    </div>
+  }
 
-  <div class="room-grid">
-    <!-- Room Details Card -->
-    <div class="card room-details">
-      <div class="card-header">
-        <h2>Room Information</h2>
-      </div>
-      <div class="card-body">
-        <div class="room-number-display">
-          <span class="room-badge">{{ mockRoom.roomNumber }}</span>
-        </div>
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="label">Building</span>
-            <span class="value">{{ mockRoom.building }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Floor</span>
-            <span class="value">{{ mockRoom.floor }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Room Type</span>
-            <span class="value">{{ getRoomTypeLabel(mockRoom.type) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Occupancy</span>
-            <span class="value">{{ mockRoom.currentOccupants }} / {{ mockRoom.capacity }}</span>
-          </div>
-        </div>
-      </div>
+  <!-- No Room Assigned State -->
+  @if (!loading() && !error() && !hasRoom()) {
+    <div class="no-room-state">
+      <div class="no-room-icon">🏠</div>
+      <h2>No Room Assigned</h2>
+      <p>You don't have a room assigned yet. Please contact the dormitory administration for room assignment.</p>
+    </div>
+  }
+
+  <!-- Room Data -->
+  @if (!loading() && !error() && hasRoom()) {
+    <div class="page-header">
+      <h1>My Room</h1>
+      <p class="subtitle">Your room details and information</p>
     </div>
 
-    <!-- Roommates Card -->
-    <div class="card roommates">
-      <div class="card-header">
-        <h2>👥 Roommates</h2>
-      </div>
-      <div class="card-body">
-        @if (mockRoommates.length > 0) {
-          @for (roommate of mockRoommates; track roommate.id) {
-            <div class="roommate-item">
-              <div class="roommate-avatar">{{ roommate.name.charAt(0) }}</div>
-              <div class="roommate-info">
-                <span class="roommate-name">{{ roommate.name }}</span>
-                <span class="roommate-course">{{ roommate.course }} - {{ roommate.year }}</span>
-                <span class="roommate-date">Since {{ formatDate(roommate.moveInDate) }}</span>
+    <div class="room-grid">
+      <!-- Room Info Card -->
+      <div class="card room-details">
+        <div class="card-header">
+          <h2>Room Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="room-number-display">
+            <span class="room-badge">{{ room()!.room_number }}</span>
+            <span class="room-type-label">{{ getRoomTypeLabel(room()!.room_type) }}</span>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Floor</span>
+              <span class="value">{{ room()!.floor | number }}{{ room()!.floor === 1 ? 'st' : room()!.floor === 2 ? 'nd' : room()!.floor === 3 ? 'rd' : 'th' }} Floor</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Occupancy</span>
+              <span class="value">
+                {{ room()!.current_occupants }} / {{ room()!.capacity }}
+              </span>
+              <div class="occupancy-bar">
+                <div class="occupancy-fill" [style.width.%]="getOccupancyPercent()"></div>
               </div>
             </div>
-          }
-        } @else {
-          <p class="no-roommates">No roommates assigned</p>
-        }
-      </div>
-    </div>
+            @if (room()!.price_per_month) {
+              <div class="info-item">
+                <span class="label">Monthly Rate</span>
+                <span class="value price">{{ room()!.price_per_month | currency:'PHP':'symbol':'1.0-0' }}</span>
+              </div>
+            }
+            <div class="info-item">
+              <span class="label">Move-in Date</span>
+              <span class="value">{{ formatDate(assignment()!.start_date) }}</span>
+            </div>
+          </div>
 
-    <!-- Amenities Card -->
-    <div class="card amenities">
-      <div class="card-header">
-        <h2>🏠 Room Amenities</h2>
+          <div class="stay-duration">
+            <span class="duration-label">Length of Stay</span>
+            <span class="duration-value">{{ getStayDuration() }}</span>
+          </div>
+        </div>
       </div>
-      <div class="card-body">
-        <div class="amenities-grid">
-          @for (amenity of mockAmenities; track amenity.name) {
-            <div class="amenity-item" [class.needs-repair]="amenity.status === 'needs-repair'">
-              <span class="amenity-icon">{{ amenity.icon }}</span>
-              <span class="amenity-name">{{ amenity.name }}</span>
-              @if (amenity.status === 'needs-repair') {
-                <span class="repair-badge">Needs Repair</span>
-              }
+
+      <!-- Roommates Card -->
+      <div class="card roommates">
+        <div class="card-header">
+          <h2>Roommates</h2>
+          <span class="count-badge">{{ roommates().length }}</span>
+        </div>
+        <div class="card-body">
+          @if (roommates().length > 0) {
+            @for (mate of roommates(); track mate.id) {
+              <div class="roommate-item">
+                @if (mate.photo_url) {
+                  <img class="roommate-photo" [src]="mate.photo_url" [alt]="mate.first_name" />
+                } @else {
+                  <div class="roommate-avatar">{{ getInitials(mate.first_name, mate.last_name) }}</div>
+                }
+                <div class="roommate-info">
+                  <span class="roommate-name">{{ mate.first_name }} {{ mate.last_name }}</span>
+                  @if (mate.course) {
+                    <span class="roommate-course">{{ mate.course }}@if (mate.year_level) { - {{ getYearLabel(mate.year_level) }}}</span>
+                  }
+                  <span class="roommate-since">Since {{ formatDate(mate.start_date) }}</span>
+                </div>
+                @if (mate.phone) {
+                  <a class="roommate-contact" [href]="'tel:' + mate.phone" title="Call">
+                    📞
+                  </a>
+                }
+              </div>
+            }
+          } @else {
+            <div class="empty-state-inline">
+              <p>No roommates — you have the room to yourself!</p>
             </div>
           }
         </div>
       </div>
-    </div>
 
-    <!-- Room Rules Card -->
-    <div class="card rules">
-      <div class="card-header">
-        <h2>📋 Room Rules</h2>
-      </div>
-      <div class="card-body">
-        <ul class="rules-list">
-          @for (rule of mockRules; track rule) {
-            <li>{{ rule }}</li>
-          }
-        </ul>
+      <!-- Amenities Card -->
+      @if (room()!.amenities && room()!.amenities!.length > 0) {
+        <div class="card amenities">
+          <div class="card-header">
+            <h2>Room Amenities</h2>
+          </div>
+          <div class="card-body">
+            <div class="amenities-grid">
+              @for (amenity of room()!.amenities!; track amenity) {
+                <div class="amenity-item">
+                  <span class="amenity-icon">{{ getAmenityIcon(amenity) }}</span>
+                  <span class="amenity-name">{{ amenity }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Pending Bills Card -->
+      @if (pendingBills().length > 0) {
+        <div class="card bills">
+          <div class="card-header">
+            <h2>Pending Bills</h2>
+            <a routerLink="/my-payments" class="view-all-link">View All</a>
+          </div>
+          <div class="card-body">
+            @for (bill of pendingBills(); track bill.id) {
+              <div class="bill-item" [class.overdue]="isOverdue(bill.due_date)" [class.due-soon]="isDueSoon(bill.due_date)">
+                <div class="bill-info">
+                  <span class="bill-desc">{{ bill.description }}</span>
+                  <span class="bill-due">
+                    @if (isOverdue(bill.due_date)) {
+                      <span class="overdue-tag">Overdue</span>
+                    } @else if (isDueSoon(bill.due_date)) {
+                      <span class="due-soon-tag">Due soon</span>
+                    }
+                    Due {{ formatDate(bill.due_date) }}
+                  </span>
+                </div>
+                <div class="bill-amount">
+                  <span class="amount">{{ getBillRemaining(bill) | currency:'PHP':'symbol':'1.0-0' }}</span>
+                  @if (bill.paid_amount > 0) {
+                    <span class="partial-label">of {{ bill.amount | currency:'PHP':'symbol':'1.0-0' }}</span>
+                  }
+                </div>
+              </div>
+            }
+            <a routerLink="/my-payments" class="btn-pay">
+              Go to Payments
+            </a>
+          </div>
+        </div>
+      }
+
+      <!-- Room Rules Card -->
+      <div class="card rules">
+        <div class="card-header">
+          <h2>Dormitory Rules</h2>
+        </div>
+        <div class="card-body">
+          <ul class="rules-list">
+            <li>Quiet hours: 10:00 PM - 6:00 AM</li>
+            <li>No cooking appliances allowed in rooms</li>
+            <li>Visitors allowed until 8:00 PM only</li>
+            <li>Keep room clean and orderly at all times</li>
+            <li>Report any maintenance issues promptly</li>
+            <li>No tampering with room fixtures or furniture</li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div class="action-buttons">
-    <button class="btn-secondary" disabled>
-      🔧 Request Maintenance
-    </button>
-    <button class="btn-secondary" disabled>
-      🔄 Request Room Change
-    </button>
-  </div>
+  }
 </div>

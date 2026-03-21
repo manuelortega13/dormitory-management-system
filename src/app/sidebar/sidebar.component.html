@@ -1,11 +1,13 @@
 <aside class="sidebar" [class.collapsed]="isCollapsed()">
   <div class="sidebar-header">
     <div class="logo">
-      @if (!isCollapsed()) {
-        <span class="logo-icon">🏠</span>
-        <span class="logo-text">PAC DMS</span>
+      @if (settingsService.systemLogo()) {
+        <img class="logo-img" [src]="settingsService.systemLogo()" alt="PAC DMS" />
       } @else {
         <span class="logo-icon">🏠</span>
+      }
+      @if (!isCollapsed()) {
+        <span class="logo-text">{{ settingsService.systemName() }}</span>
       }
     </div>
     <button class="toggle-btn" (click)="toggleSidebar()">

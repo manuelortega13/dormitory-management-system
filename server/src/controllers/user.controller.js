@@ -138,8 +138,15 @@ exports.getUserRoom = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Users can only view their own room unless admin
+    if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     const [assignments] = await pool.execute(
-      `SELECT ra.*, r.room_number, r.floor, r.room_type, r.amenities
+      `SELECT ra.id as assignment_id, ra.user_id, ra.room_id, ra.start_date, ra.end_date, ra.status as assignment_status,
+              r.room_number, r.floor, r.room_type, r.capacity, r.status as room_status,
+              r.price_per_month, r.amenities
        FROM room_assignments ra
        JOIN rooms r ON ra.room_id = r.id
        WHERE ra.user_id = ? AND ra.status = 'active'`,
@@ -150,7 +157,57 @@ exports.getUserRoom = async (req, res) => {
       return res.status(404).json({ error: 'No active room assignment found' });
     }
 
-    res.json(assignments[0]);
+    const room = assignments[0];
+
+    // Get roommates (other occupants in the same room, excluding the requesting user)
+    const [roommates] = await pool.execute(
+      `SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.photo_url,
+              u.course, u.year_level, u.gender,
+              ra.start_date
+       FROM room_assignments ra
+       JOIN users u ON ra.user_id = u.id
+       WHERE ra.room_id = ? AND ra.status = 'active' AND ra.user_id != ?
+       ORDER BY ra.start_date`,
+      [room.room_id, id]
+    );
+
+    // Get current occupant count
+    const [occupantCount] = await pool.execute(
+      `SELECT COUNT(*) as count FROM room_assignments WHERE room_id = ? AND status = 'active'`,
+      [room.room_id]
+    );
+
+    // Get pending bills for this resident (rent-related)
+    const [bills] = await pool.execute(
+      `SELECT b.id, b.type, b.description, b.amount, b.due_date, b.status,
+              COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.bill_id = b.id AND p.status IN ('verified', 'pending')), 0) as paid_amount
+       FROM bills b
+       WHERE b.resident_id = ? AND b.status IN ('unpaid', 'partial', 'overdue')
+       ORDER BY b.due_date ASC
+       LIMIT 5`,
+      [id]
+    );
+
+    res.json({
+      room: {
+        id: room.room_id,
+        room_number: room.room_number,
+        floor: room.floor,
+        room_type: room.room_type,
+        capacity: room.capacity,
+        current_occupants: occupantCount[0].count,
+        status: room.room_status,
+        price_per_month: room.price_per_month,
+        amenities: room.amenities
+      },
+      assignment: {
+        id: room.assignment_id,
+        start_date: room.start_date,
+        end_date: room.end_date
+      },
+      roommates,
+      pending_bills: bills
+    });
   } catch (error) {
     console.error('Get user room error:', error);
     res.status(500).json({ error: 'Failed to fetch user room' });

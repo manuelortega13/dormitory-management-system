@@ -76,7 +76,14 @@
       </div>
 
       <div class="detail-section">
-        <h4>Room Assignment</h4>
+        <div class="section-header">
+          <h4>Room Assignment</h4>
+          @if (resident.room_number) {
+            <button class="btn-sm-outline" (click)="onChangeRoom()">🔄 Change Room</button>
+          } @else {
+            <button class="btn-sm-primary" (click)="onAssignRoom()">🛏️ Assign Room</button>
+          }
+        </div>
         <div class="detail-grid">
           <div class="detail-item">
             <span class="label">Room Number</span>

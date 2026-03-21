@@ -5,8 +5,12 @@
       <span class="hamburger-icon">☰</span>
     </button>
     <div class="mobile-logo">
-      <span class="logo-icon">🛡️</span>
-      <span class="logo-text">PAC DMS Security</span>
+      @if (settingsService.systemLogo()) {
+        <img class="logo-img" [src]="settingsService.systemLogo()" alt="PAC DMS" />
+      } @else {
+        <span class="logo-icon">🛡️</span>
+      }
+      <span class="logo-text">{{ settingsService.systemName() }} Security</span>
     </div>
     <div class="header-right">
       <app-notification-dropdown />
@@ -19,8 +23,12 @@
   <aside class="security-sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <span class="logo-icon">🛡️</span>
-        <span class="logo-text">PAC DMS Security</span>
+        @if (settingsService.systemLogo()) {
+          <img class="logo-img" [src]="settingsService.systemLogo()" alt="PAC DMS" />
+        } @else {
+          <span class="logo-icon">🛡️</span>
+        }
+        <span class="logo-text">{{ settingsService.systemName() }} Security</span>
       </div>
       <button class="close-sidebar" (click)="closeSidebar()">✕</button>
     </div>

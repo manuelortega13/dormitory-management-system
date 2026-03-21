@@ -1,9 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -12,22 +14,34 @@ import { NotificationService } from '../../services/notification.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notificationService = inject(NotificationService);
+  private http = inject(HttpClient);
 
   email = signal('');
   password = signal('');
   isLoading = signal(false);
   errorMessage = signal('');
   showPassword = signal(false);
+  logoUrl = signal<string | null>(null);
+  systemName = signal('PAC DMS');
 
   constructor() {
     // If already logged in, redirect
     if (this.authService.isLoggedIn()) {
       this.authService.redirectBasedOnRole();
     }
+  }
+
+  ngOnInit() {
+    this.http.get<{ logo: string; name: string }>(`${environment.apiUrl}/settings/public/branding`).subscribe({
+      next: (res) => {
+        if (res.logo) this.logoUrl.set(res.logo);
+        if (res.name) this.systemName.set(res.name);
+      }
+    });
   }
 
   async onSubmit() {

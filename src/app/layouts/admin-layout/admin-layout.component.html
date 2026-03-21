@@ -9,7 +9,14 @@
     <button class="menu-toggle" (click)="toggleMobileSidebar()">
       <span>☰</span>
     </button>
-    <span class="mobile-logo">🏠 PAC DMS</span>
+    <span class="mobile-logo">
+      @if (settingsService.systemLogo()) {
+        <img class="logo-img" [src]="settingsService.systemLogo()" [alt]="settingsService.systemName()" />
+      } @else {
+        🏠
+      }
+      {{ settingsService.systemName() }}
+    </span>
     <div class="header-right">
       <app-notification-dropdown />
       <button class="mobile-logout-btn" (click)="logout()" title="Logout">

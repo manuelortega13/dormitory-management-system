@@ -3,6 +3,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../auth/auth.service';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-security-layout',
@@ -13,6 +14,7 @@ import { NotificationDropdownComponent } from '../../shared/notification-dropdow
 })
 export class SecurityLayoutComponent {
   private readonly authService = inject(AuthService);
+  protected readonly settingsService = inject(SettingsService);
   protected readonly isSidebarOpen = signal(false);
 
   toggleSidebar() {

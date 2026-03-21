@@ -16,6 +16,8 @@ export class ResidentDetailModalComponent {
   @Output() delete = new EventEmitter<Resident>();
   @Output() suspend = new EventEmitter<Resident>();
   @Output() reactivate = new EventEmitter<Resident>();
+  @Output() assignRoom = new EventEmitter<Resident>();
+  @Output() changeRoom = new EventEmitter<Resident>();
 
   getFullName(): string {
     return `${this.resident.first_name} ${this.resident.last_name}`;
@@ -63,5 +65,13 @@ export class ResidentDetailModalComponent {
 
   onReactivate(): void {
     this.reactivate.emit(this.resident);
+  }
+
+  onAssignRoom(): void {
+    this.assignRoom.emit(this.resident);
+  }
+
+  onChangeRoom(): void {
+    this.changeRoom.emit(this.resident);
   }
 }

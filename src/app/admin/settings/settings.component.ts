@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { SettingsService, SystemSetting, SettingUpdate } from '../../services/settings.service';
 
+
 interface SettingSection {
   id: string;
   title: string;
@@ -147,6 +148,11 @@ export class SettingsComponent implements OnInit {
         await this.settingsService.updateSettings(updates);
         this.initializeEditedValues();
         this.successMessage.set('Settings saved successfully!');
+
+        // If branding was changed, refresh logo/name everywhere
+        if (updates.some(u => u.key === 'system_logo' || u.key === 'dorm_name')) {
+          this.settingsService.loadBranding();
+        }
       } else {
         this.successMessage.set('No changes to save');
       }
@@ -169,5 +175,60 @@ export class SettingsComponent implements OnInit {
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  }
+
+  isDragging = signal(false);
+
+  onImageSelected(event: Event, category: string, key: string) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    this.processImageFile(input.files[0], category, key);
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onDrop(event: DragEvent, category: string, key: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.processImageFile(file, category, key);
+    }
+  }
+
+  private processImageFile(file: File, category: string, key: string) {
+    if (file.size > 2 * 1024 * 1024) {
+      this.errorMessage.set('Image must be less than 2MB');
+      setTimeout(() => this.errorMessage.set(''), 3000);
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.errorMessage.set('Please select a valid image file');
+      setTimeout(() => this.errorMessage.set(''), 3000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.updateSettingValue(category, key, reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeImage(category: string, key: string) {
+    this.updateSettingValue(category, key, '');
   }
 }

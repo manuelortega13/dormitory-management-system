@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, User } from '../../auth/auth.service';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
+import { SettingsService } from '../../services/settings.service';
 import { environment } from '../../../environments/environment';
 import { filter } from 'rxjs/operators';
 
@@ -18,10 +19,18 @@ export class UserLayoutComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private http = inject(HttpClient);
+  protected settingsService = inject(SettingsService);
 
   protected readonly userName = signal('User');
   protected readonly userInitials = signal('U');
   protected readonly userPhotoUrl = signal<string | null>(null);
+  protected readonly showMore = signal(false);
+  protected readonly showMobileMore = signal(false);
+  protected readonly currentUrl = signal('');
+  protected readonly isMoreActive = computed(() => {
+    const url = this.currentUrl();
+    return url.startsWith('/my-room') || url.startsWith('/announcements') || url.startsWith('/profile');
+  });
 
   ngOnInit() {
     const user = this.authService.getCurrentUser();
@@ -31,10 +40,14 @@ export class UserLayoutComponent implements OnInit {
       this.loadUserPhoto(user.id);
     }
 
+    this.currentUrl.set(this.router.url);
+
     // Refresh photo on navigation (in case profile was updated)
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
+    ).subscribe((event) => {
+      this.currentUrl.set((event as NavigationEnd).urlAfterRedirects);
+      this.showMobileMore.set(false);
       const u = this.authService.getCurrentUser();
       if (u) this.loadUserPhoto(u.id);
     });

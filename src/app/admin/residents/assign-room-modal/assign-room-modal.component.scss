@@ -104,6 +104,59 @@
   }
 }
 
+// Current room info (change mode)
+.current-room-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+
+  .current-label,
+  .new-room-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6c757d;
+  }
+
+  .current-room-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .current-room-badge {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    background: linear-gradient(135deg, #4361ee, #7c3aed);
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .current-room-meta {
+    font-size: 0.85rem;
+    color: #495057;
+  }
+
+  .arrow-icon {
+    font-size: 1.25rem;
+    color: #4a90d9;
+    font-weight: 700;
+  }
+
+  .new-room-label {
+    color: #4a90d9;
+  }
+}
+
 .form-group {
   margin-bottom: 1.25rem;
 

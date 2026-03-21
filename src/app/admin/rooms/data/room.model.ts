@@ -1,5 +1,5 @@
 export type RoomStatus = 'occupied' | 'available' | 'maintenance' | 'reserved';
-export type RoomType = 'single' | 'double' | 'triple' | 'suite';
+export type RoomType = 'single' | 'double' | 'triple' | 'quad' | 'suite';
 
 export interface Occupant {
   id: number;

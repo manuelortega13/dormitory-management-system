@@ -671,9 +671,9 @@ exports.verifyQRCode = async (req, res) => {
     const { qrCode } = req.params;
 
     const [requests] = await pool.execute(
-      `SELECT lr.*, 
+      `SELECT lr.*,
               CONCAT(u.first_name, ' ', u.last_name) as user_name,
-              u.email, u.photo_url,
+              u.email, u.photo_url, u.parent_id,
               r.room_number, r.floor
        FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id

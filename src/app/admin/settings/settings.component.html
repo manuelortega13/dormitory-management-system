@@ -56,49 +56,86 @@
 
           <div class="settings-list">
             @for (setting of getActiveSettings(); track setting.key) {
-              <div class="setting-item">
-                <div class="setting-info">
-                  <label>{{ getSettingLabel(setting.key) }}</label>
-                  <p>{{ setting.description }}</p>
-                </div>
-                <div class="setting-control">
-                  @switch (setting.type) {
-                    @case ('toggle') {
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          [checked]="getSettingValue(activeSection(), setting.key)"
-                          (change)="updateSettingValue(activeSection(), setting.key, $any($event.target).checked)" 
-                        />
-                        <span class="toggle-slider"></span>
+              @if (setting.type === 'image') {
+                <div
+                  class="logo-upload-card"
+                  [class.dragging]="isDragging()"
+                  (dragover)="onDragOver($event)"
+                  (dragleave)="onDragLeave($event)"
+                  (drop)="onDrop($event, activeSection(), setting.key)"
+                >
+                  <div class="logo-card-header">
+                    <label>{{ getSettingLabel(setting.key) }}</label>
+                    <p>{{ setting.description }}</p>
+                  </div>
+                  <div class="logo-card-body">
+                    <div class="logo-preview-area">
+                      @if (getSettingValue(activeSection(), setting.key)) {
+                        <img class="logo-preview-img" [src]="getSettingValue(activeSection(), setting.key)" alt="Logo preview" />
+                      } @else {
+                        <div class="logo-placeholder">
+                          <span>🖼️</span>
+                          <span>No logo</span>
+                        </div>
+                      }
+                    </div>
+                    <div class="logo-actions">
+                      <label class="btn-upload">
+                        📁 {{ getSettingValue(activeSection(), setting.key) ? 'Change Logo' : 'Upload Logo' }}
+                        <input type="file" accept="image/*" (change)="onImageSelected($event, activeSection(), setting.key)" hidden />
                       </label>
-                    }
-                    @case ('text') {
-                      <input 
-                        type="text" 
-                        [value]="getSettingValue(activeSection(), setting.key)"
-                        (input)="updateSettingValue(activeSection(), setting.key, $any($event.target).value)" 
-                      />
-                    }
-                    @case ('number') {
-                      <input 
-                        type="number" 
-                        [value]="getSettingValue(activeSection(), setting.key)"
-                        (input)="updateSettingValue(activeSection(), setting.key, +$any($event.target).value)" 
-                      />
-                    }
-                    @case ('select') {
-                      <select 
-                        [value]="getSettingValue(activeSection(), setting.key)"
-                        (change)="updateSettingValue(activeSection(), setting.key, $any($event.target).value)">
-                        @for (option of setting.options; track option) {
-                          <option [value]="option" [selected]="option === getSettingValue(activeSection(), setting.key)">{{ option }}</option>
-                        }
-                      </select>
-                    }
-                  }
+                      @if (getSettingValue(activeSection(), setting.key)) {
+                        <button type="button" class="btn-remove" (click)="removeImage(activeSection(), setting.key)">Remove</button>
+                      }
+                      <p class="logo-hint">Drag & drop an image here, or click upload.<br>Recommended: 512x512px PNG. Max 2MB.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              } @else {
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <label>{{ getSettingLabel(setting.key) }}</label>
+                    <p>{{ setting.description }}</p>
+                  </div>
+                  <div class="setting-control">
+                    @switch (setting.type) {
+                      @case ('toggle') {
+                        <label class="toggle-switch">
+                          <input
+                            type="checkbox"
+                            [checked]="getSettingValue(activeSection(), setting.key)"
+                            (change)="updateSettingValue(activeSection(), setting.key, $any($event.target).checked)"
+                          />
+                          <span class="toggle-slider"></span>
+                        </label>
+                      }
+                      @case ('text') {
+                        <input
+                          type="text"
+                          [value]="getSettingValue(activeSection(), setting.key)"
+                          (input)="updateSettingValue(activeSection(), setting.key, $any($event.target).value)"
+                        />
+                      }
+                      @case ('number') {
+                        <input
+                          type="number"
+                          [value]="getSettingValue(activeSection(), setting.key)"
+                          (input)="updateSettingValue(activeSection(), setting.key, +$any($event.target).value)"
+                        />
+                      }
+                      @case ('select') {
+                        <select
+                          [value]="getSettingValue(activeSection(), setting.key)"
+                          (change)="updateSettingValue(activeSection(), setting.key, $any($event.target).value)">
+                          @for (option of setting.options; track option) {
+                            <option [value]="option" [selected]="option === getSettingValue(activeSection(), setting.key)">{{ option }}</option>
+                          }
+                        </select>
+                      }
+                    }
+                  </div>
+                </div>
+              }
             }
           </div>
         }

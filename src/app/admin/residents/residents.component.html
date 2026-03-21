@@ -148,6 +148,8 @@
             <button class="btn-icon" title="Edit" (click)="editResident(resident)">✏️</button>
             @if (!resident.room_number) {
               <button class="btn-icon assign" title="Assign Room" (click)="assignRoom(resident)">🛏️</button>
+            } @else {
+              <button class="btn-icon assign" title="Change Room" (click)="changeRoom(resident)">🔄</button>
             }
             @if (resident.status !== 'suspended') {
               <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(resident)">🚫</button>
@@ -222,6 +224,8 @@
             <button class="btn-secondary" (click)="viewResident(resident)">View Details</button>
             @if (!resident.room_number) {
               <button class="btn-primary" (click)="assignRoom(resident)">Assign Room</button>
+            } @else {
+              <button class="btn-outline" (click)="changeRoom(resident)">Change Room</button>
             }
             @if (resident.status !== 'suspended') {
               <button class="btn-suspend" (click)="openSuspendModal(resident)">Suspend</button>
@@ -249,6 +253,8 @@
       (delete)="deleteResident($event)"
       (suspend)="openSuspendModal($event)"
       (reactivate)="reactivateResident($event)"
+      (assignRoom)="assignRoom($event)"
+      (changeRoom)="changeRoom($event)"
     />
   }
 
@@ -292,6 +298,7 @@
   @if (showAssignRoomModal()) {
     <app-assign-room-modal
       [resident]="assigningResident()"
+      [mode]="assignRoomMode()"
       [errorMessage]="assignRoomError()"
       [isSaving]="assignRoomSaving()"
       (close)="closeAssignRoomModal()"

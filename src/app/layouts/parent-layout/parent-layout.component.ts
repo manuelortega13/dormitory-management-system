@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
 import { AuthService } from '../../auth/auth.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-parent-layout',
@@ -13,6 +14,7 @@ import { AuthService } from '../../auth/auth.service';
 })
 export class ParentLayoutComponent implements OnInit {
   private authService = inject(AuthService);
+  protected settingsService = inject(SettingsService);
   private platformId = inject(PLATFORM_ID);
   
   parentName = 'Parent User';

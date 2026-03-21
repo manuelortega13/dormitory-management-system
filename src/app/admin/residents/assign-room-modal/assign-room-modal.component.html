@@ -1,10 +1,12 @@
 <div class="modal-overlay" (click)="close.emit()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <button class="modal-close" (click)="close.emit()">✕</button>
-    
+
     <div class="modal-header">
-      <h2>Assign Room</h2>
-      <p class="modal-subtitle">Assign a room to {{ getFullName() }}</p>
+      <h2>{{ isChangeMode() ? 'Change Room' : 'Assign Room' }}</h2>
+      <p class="modal-subtitle">
+        {{ isChangeMode() ? 'Transfer' : 'Assign a room to' }} {{ getFullName() }}
+      </p>
     </div>
 
     @if (getDisplayError()) {
@@ -15,6 +17,24 @@
     }
 
     <div class="modal-body">
+      <!-- Current room info when changing -->
+      @if (isChangeMode() && resident?.room_number) {
+        <div class="current-room-info">
+          <span class="current-label">Current Room</span>
+          <div class="current-room-detail">
+            <span class="current-room-badge">{{ resident!.room_number }}</span>
+            <span class="current-room-meta">
+              Floor {{ resident!.floor ?? '—' }}
+              @if (resident!.room_type; as roomType) {
+                · {{ getRoomTypeLabel(roomType) }}
+              }
+            </span>
+          </div>
+          <span class="arrow-icon">→</span>
+          <span class="new-room-label">New Room</span>
+        </div>
+      }
+
       @if (isLoading()) {
         <div class="loading">
           <span class="spinner"></span>
@@ -23,15 +43,15 @@
       } @else {
         <div class="form-group">
           <label for="roomSelect">Select Room *</label>
-          <select 
-            id="roomSelect" 
+          <select
+            id="roomSelect"
             [value]="selectedRoomId() ?? ''"
             (change)="selectedRoomId.set(+$any($event.target).value || null)"
           >
             <option value="">-- Select a room --</option>
             @for (room of availableRooms(); track room.id) {
               <option [value]="room.id">
-                Room {{ room.roomNumber }} - Floor {{ room.floor }} - {{ getRoomTypeLabel(room.type) }} ({{ room.capacity }} capacity) - ₱{{ room.monthlyRent }}/mo
+                Room {{ room.roomNumber }} - Floor {{ room.floor }} - {{ getRoomTypeLabel(room.type) }} ({{ room.capacity }} capacity)@if (room.monthlyRent) { - ₱{{ room.monthlyRent }}/mo}
               </option>
             }
           </select>
@@ -42,19 +62,19 @@
 
         <div class="date-grid">
           <div class="form-group">
-            <label for="startDate">Start Date *</label>
-            <input 
-              type="date" 
-              id="startDate" 
+            <label for="startDate">{{ isChangeMode() ? 'Transfer Date' : 'Start Date' }} *</label>
+            <input
+              type="date"
+              id="startDate"
               [value]="startDate()"
               (input)="startDate.set($any($event.target).value)"
             />
           </div>
           <div class="form-group">
             <label for="endDate">End Date (Optional)</label>
-            <input 
-              type="date" 
-              id="endDate" 
+            <input
+              type="date"
+              id="endDate"
               [value]="endDate()"
               [min]="startDate()"
               (input)="endDate.set($any($event.target).value)"
@@ -66,15 +86,15 @@
 
     <div class="modal-footer">
       <button class="btn-secondary" (click)="close.emit()">Cancel</button>
-      <button 
-        class="btn-primary" 
-        (click)="onConfirm()" 
+      <button
+        class="btn-primary"
+        (click)="onConfirm()"
         [disabled]="!selectedRoomId() || !startDate() || isSaving || isLoading()"
       >
         @if (isSaving) {
-          Assigning...
+          {{ isChangeMode() ? 'Transferring...' : 'Assigning...' }}
         } @else {
-          Assign Room
+          {{ isChangeMode() ? 'Transfer Room' : 'Assign Room' }}
         }
       </button>
     </div>

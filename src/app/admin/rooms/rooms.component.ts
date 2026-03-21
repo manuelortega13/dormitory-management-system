@@ -144,6 +144,7 @@ export class RoomsComponent implements OnInit {
       single: 'Single Room',
       double: 'Double Room',
       triple: 'Triple Room',
+      quad: 'Quad Room',
       suite: 'Suite'
     };
     return labels[type];

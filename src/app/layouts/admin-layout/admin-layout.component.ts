@@ -4,6 +4,7 @@ import { SidebarComponent } from '../../sidebar/sidebar.component';
 import { CommonModule } from '@angular/common';
 import { NotificationDropdownComponent } from '../../shared/notification-dropdown/notification-dropdown.component';
 import { AuthService } from '../../auth/auth.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -14,6 +15,7 @@ import { AuthService } from '../../auth/auth.service';
 })
 export class AdminLayoutComponent {
   private readonly authService = inject(AuthService);
+  protected readonly settingsService = inject(SettingsService);
   protected readonly isMobileSidebarOpen = signal(false);
 
   toggleMobileSidebar(): void {

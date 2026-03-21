@@ -40,6 +40,7 @@ export class ResidentsComponent implements OnInit {
   protected readonly assigningResident = signal<Resident | null>(null);
   protected readonly assignRoomSaving = signal(false);
   protected readonly assignRoomError = signal('');
+  protected readonly assignRoomMode = signal<'assign' | 'change'>('assign');
 
   protected readonly residents = signal<Resident[]>([]);
   protected readonly parents = signal<Parent[]>([]);
@@ -252,6 +253,15 @@ export class ResidentsComponent implements OnInit {
 
   assignRoom(resident: Resident): void {
     this.assigningResident.set(resident);
+    this.assignRoomMode.set('assign');
+    this.assignRoomError.set('');
+    this.assignRoomSaving.set(false);
+    this.showAssignRoomModal.set(true);
+  }
+
+  changeRoom(resident: Resident): void {
+    this.assigningResident.set(resident);
+    this.assignRoomMode.set('change');
     this.assignRoomError.set('');
     this.assignRoomSaving.set(false);
     this.showAssignRoomModal.set(true);
@@ -270,21 +280,67 @@ export class ResidentsComponent implements OnInit {
     this.assignRoomSaving.set(true);
     this.assignRoomError.set('');
 
-    this.roomsService.assignResident(data.roomId, {
-      userId: resident.id,
-      startDate: data.startDate,
-      endDate: data.endDate
-    }).subscribe({
-      next: () => {
-        this.assignRoomSaving.set(false);
-        this.closeAssignRoomModal();
-        this.loadResidents();
-      },
-      error: (err) => {
-        this.assignRoomError.set(err.error?.error || 'Failed to assign room');
-        this.assignRoomSaving.set(false);
-      }
-    });
+    if (this.assignRoomMode() === 'change' && resident.room_number) {
+      // First find the current room ID, then unassign, then assign new
+      this.roomsService.getAll().subscribe({
+        next: (rooms) => {
+          const currentRoom = rooms.find(r => r.roomNumber === resident.room_number);
+          if (!currentRoom) {
+            this.assignRoomError.set('Could not find current room to unassign');
+            this.assignRoomSaving.set(false);
+            return;
+          }
+
+          // Unassign from old room
+          this.roomsService.unassignResident(currentRoom.id, resident.id).subscribe({
+            next: () => {
+              // Assign to new room
+              this.roomsService.assignResident(data.roomId, {
+                userId: resident.id,
+                startDate: data.startDate,
+                endDate: data.endDate
+              }).subscribe({
+                next: () => {
+                  this.assignRoomSaving.set(false);
+                  this.closeAssignRoomModal();
+                  this.closeResidentDetail();
+                  this.loadResidents();
+                },
+                error: (err) => {
+                  this.assignRoomError.set(err.error?.error || 'Failed to assign new room');
+                  this.assignRoomSaving.set(false);
+                }
+              });
+            },
+            error: (err) => {
+              this.assignRoomError.set(err.error?.error || 'Failed to unassign from current room');
+              this.assignRoomSaving.set(false);
+            }
+          });
+        },
+        error: () => {
+          this.assignRoomError.set('Failed to load rooms');
+          this.assignRoomSaving.set(false);
+        }
+      });
+    } else {
+      // Simple assignment
+      this.roomsService.assignResident(data.roomId, {
+        userId: resident.id,
+        startDate: data.startDate,
+        endDate: data.endDate
+      }).subscribe({
+        next: () => {
+          this.assignRoomSaving.set(false);
+          this.closeAssignRoomModal();
+          this.loadResidents();
+        },
+        error: (err) => {
+          this.assignRoomError.set(err.error?.error || 'Failed to assign room');
+          this.assignRoomSaving.set(false);
+        }
+      });
+    }
   }
 
   openSuspendModal(resident: Resident): void {
