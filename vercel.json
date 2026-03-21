@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://dormitory-management-system-server.onrender.com/api/$1" },
+    { "source": "/api/:path*", "destination": "https://dormitory-management-system-server.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
