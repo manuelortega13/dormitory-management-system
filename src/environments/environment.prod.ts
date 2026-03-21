@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://node-server-production-e00e.up.railway.app/api',
-  socketUrl: 'https://node-server-production-e00e.up.railway.app'
+  apiUrl: 'https://dormitory-management-system-server.onrender.com/api',
+  socketUrl: 'https://dormitory-management-system-server.onrender.com/'
 };
