@@ -209,6 +209,39 @@ exports.getPublicBranding = async (req, res) => {
   }
 };
 
+// Serve system logo as an actual image (for apple-touch-icon / PWA)
+exports.getPublicLogoImage = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT setting_value FROM system_settings WHERE category = 'general' AND setting_key = 'system_logo'`
+    );
+
+    const dataUrl = rows[0]?.setting_value;
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      return res.status(404).send('No logo configured');
+    }
+
+    // Parse data URL: "data:image/png;base64,iVBOR..."
+    const matches = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) {
+      return res.status(404).send('Invalid logo format');
+    }
+
+    const mimeType = `image/${matches[1]}`;
+    const buffer = Buffer.from(matches[2], 'base64');
+
+    res.set({
+      'Content-Type': mimeType,
+      'Content-Length': buffer.length,
+      'Cache-Control': 'public, max-age=3600',
+    });
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error serving logo image:', error);
+    res.status(500).send('Failed to serve logo');
+  }
+};
+
 // Get a single setting value
 exports.getSetting = async (req, res) => {
   try {

@@ -128,21 +128,23 @@ export class SettingsService {
   }
 
   private applyPwaIcon(logoDataUrl: string, name?: string) {
-    // Update apple-touch-icon
+    const logoServerUrl = `${this.apiUrl}/public/logo.png`;
+
+    // Update apple-touch-icon to server URL (iOS reads this for home screen icon)
     const appleTouchIcon = document.querySelector(
       'link[rel="apple-touch-icon"]'
     ) as HTMLLinkElement;
     if (appleTouchIcon) {
-      appleTouchIcon.href = logoDataUrl;
+      appleTouchIcon.href = logoServerUrl;
     }
 
-    // Update favicon
+    // Update favicon with data URL (works for in-browser tab)
     const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
     if (favicon) {
       favicon.href = logoDataUrl;
     }
 
-    // Update manifest dynamically with the custom logo
+    // Update manifest dynamically with server-served logo URL
     const existingManifestLink = document.querySelector(
       'link[rel="manifest"]'
     ) as HTMLLinkElement;
@@ -157,9 +159,9 @@ export class SettingsService {
         scope: '/',
         start_url: '/',
         icons: [
-          { src: logoDataUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: logoDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: logoDataUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: logoServerUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: logoServerUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: logoServerUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       };
       const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
