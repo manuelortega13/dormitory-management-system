@@ -218,7 +218,16 @@ exports.getPublicLogoImage = async (req, res) => {
 
     const dataUrl = rows[0]?.setting_value;
     if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-      return res.status(404).send('No logo configured');
+      // Serve a default fallback icon (1x1 transparent PNG) so PWA manifest stays valid
+      const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="64" fill="#4a90d9"/>
+        <text x="256" y="320" font-family="Arial,sans-serif" font-size="280" font-weight="bold" fill="white" text-anchor="middle">P</text>
+      </svg>`;
+      res.set({
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=300',
+      });
+      return res.send(fallbackSvg);
     }
 
     // Parse data URL: "data:image/png;base64,iVBOR..."
