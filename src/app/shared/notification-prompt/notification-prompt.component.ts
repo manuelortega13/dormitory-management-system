@@ -186,17 +186,21 @@ export class NotificationPromptComponent implements OnInit {
   }
 
   async enableNotifications(): Promise<void> {
-    const permission = await this.notificationService.requestBrowserNotificationPermission();
-    
-    if (permission === 'granted') {
-      // Show a test notification
-      new Notification('Notifications Enabled!', {
-        body: 'You will now receive notifications for important updates.',
-        icon: '/icons/icon.svg'
-      });
+    try {
+      const permission = await this.notificationService.requestBrowserNotificationPermission();
+
+      if (permission === 'granted') {
+        new Notification('Notifications Enabled!', {
+          body: 'You will now receive notifications for important updates.',
+          icon: '/icons/icon.svg'
+        });
+      }
+    } catch {
+      // Permission request failed or was blocked — hide prompt regardless
     }
-    
+
     this.showPrompt.set(false);
+    localStorage.setItem('notification_prompt_dismissed', new Date().toISOString());
   }
 
   dismiss(): void {
