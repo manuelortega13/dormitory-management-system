@@ -200,7 +200,6 @@ export class NotificationPromptComponent implements OnInit {
     }
 
     this.showPrompt.set(false);
-    localStorage.setItem('notification_prompt_dismissed', new Date().toISOString());
   }
 
   dismiss(): void {
