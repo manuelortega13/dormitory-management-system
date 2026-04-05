@@ -1,5 +1,6 @@
 const { pool } = require('../config/database');
 const { sendNotificationToUser } = require('../services/socket.service');
+const { sendPushToUser } = require('../services/push.service');
 
 // Get all notifications for the current user
 exports.getAll = async (req, res) => {
@@ -125,6 +126,9 @@ exports.createNotification = async (userId, type, title, message, referenceId = 
 
     // Send real-time notification via Socket.IO
     sendNotificationToUser(userId, notification);
+
+    // Also send web push notification (fire-and-forget)
+    sendPushToUser(userId, notification).catch(() => {});
 
     return notification;
   } catch (error) {

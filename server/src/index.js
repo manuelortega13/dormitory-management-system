@@ -23,6 +23,7 @@ const announcementRoutes = require('./routes/announcement.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
+const pushRoutes = require('./routes/push.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -56,6 +57,7 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/push', pushRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

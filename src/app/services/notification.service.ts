@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
+import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
@@ -14,7 +15,9 @@ export class NotificationService implements OnDestroy {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private toastService = inject(ToastService);
+  private swPush = inject(SwPush);
   private apiUrl = `${environment.apiUrl}/notifications`;
+  private pushApiUrl = `${environment.apiUrl}/push`;
   private socket: Socket | null = null;
 
   notifications = signal<AppNotification[]>([]);
@@ -220,6 +223,10 @@ export class NotificationService implements OnDestroy {
       // Fetch initial data
       this.fetchUnreadCount();
       this.fetchNotifications();
+      // Auto-subscribe to push if permission already granted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        this.subscribeToPush();
+      }
     });
 
     this.socket.on('disconnect', () => {
@@ -499,6 +506,58 @@ export class NotificationService implements OnDestroy {
         return 'bi-credit-card';
       default:
         return 'bi-bell';
+    }
+  }
+
+  /**
+   * Subscribe to web push notifications.
+   * Fetches VAPID key from server, subscribes via SwPush, and sends subscription to backend.
+   */
+  async subscribeToPush(): Promise<void> {
+    if (!this.isBrowser || !this.swPush.isEnabled) return;
+
+    try {
+      // Fetch VAPID public key from server
+      const { key } = await firstValueFrom(
+        this.http.get<{ key: string }>(`${this.pushApiUrl}/vapid-public-key`)
+      );
+
+      if (!key) return;
+
+      // Subscribe via Angular's SwPush
+      const subscription = await this.swPush.requestSubscription({
+        serverPublicKey: key,
+      });
+
+      // Send subscription to backend
+      await firstValueFrom(
+        this.http.post(`${this.pushApiUrl}/subscribe`, { subscription })
+      );
+
+      console.log('Push notification subscription saved');
+    } catch (err) {
+      console.warn('Push subscription failed:', err);
+    }
+  }
+
+  /**
+   * Unsubscribe from web push notifications.
+   */
+  async unsubscribeFromPush(): Promise<void> {
+    if (!this.isBrowser || !this.swPush.isEnabled) return;
+
+    try {
+      const subscription = await this.swPush.subscription.pipe().toPromise();
+      if (subscription) {
+        await firstValueFrom(
+          this.http.delete(`${this.pushApiUrl}/unsubscribe`, {
+            body: { endpoint: subscription.endpoint },
+          })
+        );
+      }
+      await this.swPush.unsubscribe();
+    } catch (err) {
+      console.warn('Push unsubscribe failed:', err);
     }
   }
 

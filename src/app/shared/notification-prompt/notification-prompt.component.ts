@@ -194,6 +194,9 @@ export class NotificationPromptComponent implements OnInit {
           body: 'You will now receive notifications for important updates.',
           icon: '/icons/icon.svg'
         });
+
+        // Subscribe to web push for background notifications
+        this.notificationService.subscribeToPush();
       }
     } catch {
       // Permission request failed or was blocked — hide prompt regardless
