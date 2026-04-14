@@ -1,0 +1,43 @@
+---
+config:
+  theme: default
+  layout: elk
+  flowchart:
+    curve: linear
+    padding: 20
+---
+flowchart LR
+    Resident([👤 Resident])
+    Parent([👨‍👩‍👧 Parent])
+    HomeDean([🏛️ Home Dean])
+    VPSAS([🎓 VPSAS])
+    Admin([⚙️ Admin])
+    SecurityGuard([🛡️ Security Guard])
+
+    DMS[["🏠 PAC Dormitory<br/>Management System"]]
+
+    Resident -->|Submit leave requests<br/>View room & payments<br/>Receive notifications| DMS
+    DMS -->|QR pass, approval status<br/>Push notifications| Resident
+
+    Parent -->|Approve/decline requests<br/>Face verification| DMS
+    DMS -->|Child activity alerts<br/>Push notifications| Parent
+
+    HomeDean -->|Review & approve<br/>leave requests| DMS
+    DMS -->|Pending requests<br/>Notifications| HomeDean
+
+    VPSAS -->|Final approval<br/>of leave requests| DMS
+    DMS -->|Pending requests<br/>Notifications| VPSAS
+
+    Admin -->|Manage rooms, residents<br/>payments, announcements| DMS
+    DMS -->|Reports, dashboards<br/>Notifications| Admin
+
+    SecurityGuard -->|Scan QR codes<br/>Record exit/return| DMS
+    DMS -->|Pass verification<br/>Activity logs| SecurityGuard
+
+    style DMS fill:#4361ee,stroke:#2d3fbe,stroke-width:3px,color:#fff,font-size:16px
+    style Resident fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
+    style Parent fill:#fce7f3,stroke:#ec4899,stroke-width:2px,color:#831843
+    style HomeDean fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
+    style VPSAS fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
+    style Admin fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    style SecurityGuard fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#064e3b

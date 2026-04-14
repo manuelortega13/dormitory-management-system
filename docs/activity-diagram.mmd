@@ -1,0 +1,99 @@
+---
+config:
+  theme: default
+  layout: elk
+  flowchart:
+    curve: linear
+    padding: 20
+---
+flowchart TD
+    subgraph LR["🔖 Leave Request Workflow"]
+        direction TB
+        A1([Resident Creates Leave Request]) --> A2{Home Dean Review}
+        A2 -->|Approved| A3{Has Parent?}
+        A2 -->|Declined| A_END1([Request Declined])
+        A3 -->|Yes| A4{Parent Approval}
+        A3 -->|No - parent_status: not_required| A5{VPSAS Review}
+        A4 -->|Approved with Face Verification| A5
+        A4 -->|Declined| A_END1
+        A5 -->|Approved| A6[QR Code Generated]
+        A5 -->|Declined| A_END1
+        A6 --> A7([Status: Approved - Ready for Exit])
+    end
+
+    subgraph CIO["🚪 Check In/Out Workflow"]
+        direction TB
+        B1([Security Guard Scans QR]) --> B2{QR Valid?}
+        B2 -->|Invalid / Expired| B_ERR([Error: Invalid Pass])
+        B2 -->|Valid - Status: Approved| B3{No Parent on Record?}
+        B3 -->|Yes| B3a[Show Warning: Request Oral Approval]
+        B3 -->|No| B4
+        B3a --> B4[Confirm EXIT]
+        B4 --> B5([Status: Active - Student Left Campus])
+        B5 --> B6([Security Scans QR on Return])
+        B6 --> B7[Confirm RETURN]
+        B7 --> B8([Status: Completed])
+    end
+
+    subgraph RA["🛏️ Room Assignment Workflow"]
+        direction TB
+        C1([Admin Opens Residents Page]) --> C2{Resident Has Room?}
+        C2 -->|No| C3[Select Available Room]
+        C2 -->|Yes| C4[Change Room]
+        C4 --> C5[Unassign from Current Room]
+        C5 --> C3
+        C3 --> C6[Set Start Date]
+        C6 --> C7[Assign Resident to Room]
+        C7 --> C8{Room at Capacity?}
+        C8 -->|Yes| C9[Room Status: Occupied]
+        C8 -->|No| C10[Room Status: Available]
+        C9 --> C_END([Assignment Complete])
+        C10 --> C_END
+    end
+
+    subgraph REG["👤 Registration & Approval Workflow"]
+        direction TB
+        D1([Parent Registers Account]) --> D2[Status: Pending Approval]
+        D2 --> D3{Admin Reviews}
+        D3 -->|Approved| D4[Link Parent to Resident]
+        D3 -->|Declined| D5([Registration Declined])
+        D4 --> D6([Parent Account Active])
+        D7([Resident Registers]) --> D8[Auto-generate Student ID]
+        D8 --> D9([Resident Account Active])
+    end
+
+    subgraph NOTIF["🔔 Notification Flow"]
+        direction TB
+        E1([Event Triggered]) --> E2[Create Notification in DB]
+        E2 --> E3[Send via Socket.IO - Real-time]
+        E2 --> E4[Send Web Push - Background]
+        E3 --> E5[In-app Toast + Sound]
+        E3 --> E6[Browser Notification if Unfocused]
+        E4 --> E7[Push to All User Devices]
+        E7 --> E8([Notification in Phone Tray])
+    end
+
+    subgraph PAY["💰 Payment Workflow"]
+        direction TB
+        F1([Admin Creates Payment Record]) --> F2[Resident Views in My Payments]
+        F2 --> F3[Resident Submits Payment + e-Receipt]
+        F3 --> F4[Status: Pending Verification]
+        F4 --> F5{Admin Verifies}
+        F5 -->|Verified| F6[Balance Updated]
+        F5 -->|Rejected| F7([Resident Notified - Resubmit])
+        F6 --> F8([Payment Complete])
+    end
+
+    A7 -.->|QR Ready for Scan| B1
+    B5 -.->|Notify Parent: Child Left| E1
+    B8 -.->|Notify Parent: Child Returned| E1
+    A2 -.->|Notify Resident| E1
+    A4 -.->|Notify Parent| E1
+    A5 -.->|Notify Resident| E1
+
+    style LR fill:#f0f4ff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style CIO fill:#f0fdf4,stroke:#10b981,stroke-width:2px,color:#1e293b
+    style RA fill:#fefce8,stroke:#f59e0b,stroke-width:2px,color:#1e293b
+    style REG fill:#fdf2f8,stroke:#ec4899,stroke-width:2px,color:#1e293b
+    style NOTIF fill:#f5f3ff,stroke:#8b5cf6,stroke-width:2px,color:#1e293b
+    style PAY fill:#fff7ed,stroke:#f97316,stroke-width:2px,color:#1e293b

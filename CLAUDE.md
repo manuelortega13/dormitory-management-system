@@ -89,6 +89,9 @@ Configured in root `package.json`: `printWidth: 100`, `singleQuote: true`, Angul
 | `security_guard` | Security portal | `/security-guard` |
 
 ## Deployment
-- **Frontend**: Vercel — `vercel.json` rewrites `/api/*` to Railway backend
-- **Backend**: Railway — env vars configured in dashboard
-- **Database**: External MySQL instance
+- **Frontend**: Vercel — `vercel.json` rewrites `/api/*` to Render backend
+- **Backend**: Render — env vars configured in dashboard
+- **Database**: AWS RDS MySQL
+
+## Rules
+- **No co-author in commits**: Never include `Co-Authored-By` lines in git commit messages.

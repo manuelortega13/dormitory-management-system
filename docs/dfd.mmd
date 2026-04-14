@@ -1,0 +1,144 @@
+---
+config:
+  theme: default
+  layout: elk
+  flowchart:
+    curve: linear
+    padding: 20
+    nodeSpacing: 60
+    rankSpacing: 80
+---
+flowchart LR
+    %% External Entities (rounded boxes)
+    Resident([👤 Resident])
+    Parent([👨‍👩‍👧 Parent])
+    HomeDean([🏛️ Home Dean])
+    VPSAS([🎓 VPSAS])
+    Admin([⚙️ Admin])
+    SecurityGuard([🛡️ Security Guard])
+
+    %% Data Stores (double-lined)
+    DS_Users[(D1: users)]
+    DS_Rooms[(D2: rooms)]
+    DS_RoomAssign[(D3: room_assignments)]
+    DS_LeaveReq[(D4: leave_requests)]
+    DS_CheckLogs[(D5: check_logs)]
+    DS_Notifications[(D6: notifications)]
+    DS_Announcements[(D7: announcements)]
+    DS_Payments[(D8: payments)]
+    DS_PushSubs[(D9: push_subscriptions)]
+
+    %% Processes
+    P1[[1.0 User Authentication<br/>& Registration]]
+    P2[[2.0 Room<br/>Management]]
+    P3[[3.0 Leave Request<br/>Processing]]
+    P4[[4.0 Leave Request<br/>Approval Chain]]
+    P5[[5.0 QR Code<br/>Generation]]
+    P6[[6.0 Check In/Out<br/>Processing]]
+    P7[[7.0 Notification<br/>Delivery]]
+    P8[[8.0 Announcement<br/>Management]]
+    P9[[9.0 Payment<br/>Processing]]
+    P10[[10.0 Push Subscription<br/>Management]]
+
+    %% === Authentication & Registration ===
+    Resident -->|Login credentials| P1
+    Parent -->|Registration data| P1
+    P1 -->|Store user record| DS_Users
+    P1 -->|JWT token| Resident
+    P1 -->|JWT token| Parent
+    DS_Users -->|Validate credentials| P1
+
+    %% === Room Management ===
+    Admin -->|Assign / Change room| P2
+    P2 -->|Read available rooms| DS_Rooms
+    P2 -->|Create assignment| DS_RoomAssign
+    P2 -->|Update room status| DS_Rooms
+    DS_RoomAssign -->|Current assignment| Resident
+
+    %% === Leave Request Creation ===
+    Resident -->|Submit leave request| P3
+    P3 -->|Store request| DS_LeaveReq
+    P3 -->|Trigger notification| P7
+    DS_Users -->|Check parent_id| P3
+
+    %% === Approval Chain ===
+    DS_LeaveReq -->|Pending requests| P4
+    HomeDean -->|Approve / Decline| P4
+    Parent -->|Approve with face verification| P4
+    VPSAS -->|Final approval| P4
+    P4 -->|Update status| DS_LeaveReq
+    P4 -->|Trigger notification| P7
+    P4 -->|Approved request| P5
+
+    %% === QR Code Generation ===
+    P5 -->|Store QR code| DS_LeaveReq
+    P5 -->|QR code image| Resident
+
+    %% === Check In/Out ===
+    SecurityGuard -->|Scan QR code| P6
+    P6 -->|Verify QR| DS_LeaveReq
+    P6 -->|Record exit/return| DS_CheckLogs
+    P6 -->|Update request status| DS_LeaveReq
+    P6 -->|Trigger notification| P7
+    DS_CheckLogs -->|Today activity log| SecurityGuard
+
+    %% === Notifications ===
+    P7 -->|Store notification| DS_Notifications
+    P7 -->|Real-time via Socket.IO| Resident
+    P7 -->|Real-time via Socket.IO| Parent
+    P7 -->|Real-time via Socket.IO| Admin
+    P7 -->|Send web push| P10
+    DS_Notifications -->|Read notifications| Resident
+    DS_Notifications -->|Read notifications| Parent
+
+    %% === Push Subscriptions ===
+    Resident -->|Subscribe to push| P10
+    Parent -->|Subscribe to push| P10
+    P10 -->|Store subscription| DS_PushSubs
+    DS_PushSubs -->|Get subscriptions| P10
+    P10 -->|Push notification| Resident
+    P10 -->|Push notification| Parent
+
+    %% === Announcements ===
+    Admin -->|Create announcement| P8
+    P8 -->|Store announcement| DS_Announcements
+    P8 -->|Trigger notification| P7
+    DS_Announcements -->|View announcements| Resident
+    DS_Announcements -->|View announcements| Parent
+
+    %% === Payment Processing ===
+    Admin -->|Create payment record| P9
+    Resident -->|Submit payment + receipt| P9
+    P9 -->|Store payment| DS_Payments
+    Admin -->|Verify / Reject| P9
+    P9 -->|Trigger notification| P7
+    DS_Payments -->|Payment history| Resident
+
+    %% Styles
+    style Resident fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
+    style Parent fill:#fce7f3,stroke:#ec4899,stroke-width:2px,color:#831843
+    style HomeDean fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
+    style VPSAS fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
+    style Admin fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    style SecurityGuard fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#064e3b
+
+    style DS_Users fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_Rooms fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_RoomAssign fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_LeaveReq fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_CheckLogs fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_Notifications fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_Announcements fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_Payments fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style DS_PushSubs fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
+
+    style P1 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P2 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P3 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P4 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P5 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P6 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P7 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P8 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P9 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b
+    style P10 fill:#fff,stroke:#4361ee,stroke-width:2px,color:#1e293b

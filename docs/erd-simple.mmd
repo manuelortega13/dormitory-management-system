@@ -1,0 +1,131 @@
+---
+config:
+  theme: default
+  layout: elk
+  er:
+    useMaxWidth: false
+---
+erDiagram
+    users {
+        _ id PK
+        _ email UK
+        _ first_name
+        _ last_name
+        _ phone
+        _ gender
+        _ role
+        _ status
+        _ parent_id FK
+        _ student_resident_id UK
+        _ photo_url
+        _ face_image
+        _ registration_status
+        _ registration_reviewed_by FK
+    }
+
+    rooms {
+        _ id PK
+        _ room_number UK
+        _ floor
+        _ capacity
+        _ room_type
+        _ status
+        _ price_per_month
+        _ amenities
+    }
+
+    room_assignments {
+        _ id PK
+        _ user_id FK
+        _ room_id FK
+        _ start_date
+        _ end_date
+        _ status
+    }
+
+    leave_requests {
+        _ id PK
+        _ user_id FK
+        _ leave_type
+        _ start_date
+        _ end_date
+        _ reason
+        _ destination
+        _ spending_leave_with
+        _ emergency_contact
+        _ status
+        _ admin_status
+        _ admin_reviewed_by FK
+        _ parent_status
+        _ vpsas_status
+        _ vpsas_reviewed_by FK
+        _ qr_code UK
+        _ exit_time
+        _ exit_recorded_by FK
+        _ return_time
+        _ return_recorded_by FK
+    }
+
+    check_logs {
+        _ id PK
+        _ user_id FK
+        _ leave_request_id FK
+        _ type
+        _ timestamp
+        _ method
+        _ recorded_by FK
+    }
+
+    notifications {
+        _ id PK
+        _ user_id FK
+        _ type
+        _ title
+        _ message
+        _ reference_id
+        _ reference_type
+        _ is_read
+    }
+
+    announcements {
+        _ id PK
+        _ title
+        _ content
+        _ priority
+        _ status
+        _ audience
+        _ created_by FK
+        _ expires_at
+    }
+
+    payments {
+        _ id PK
+        _ bill_id FK
+        _ resident_id FK
+        _ paid_by FK
+        _ amount
+        _ payment_method
+        _ receipt_image
+        _ status
+        _ verified_by FK
+    }
+
+    push_subscriptions {
+        _ id PK
+        _ user_id FK
+        _ endpoint
+        _ p256dh
+        _ auth
+    }
+
+    users ||--o{ users : "parent_id"
+    users ||--o{ room_assignments : "resident"
+    rooms ||--o{ room_assignments : "room"
+    users ||--o{ leave_requests : "resident"
+    users ||--o{ leave_requests : "reviewers"
+    users ||--o{ check_logs : "resident"
+    leave_requests ||--o{ check_logs : "leave_request"
+    users ||--o{ notifications : "recipient"
+    users ||--o{ announcements : "creator"
+    users ||--o{ payments : "payer"
+    users ||--o{ push_subscriptions : "subscriber"

@@ -1,0 +1,134 @@
+---
+config:
+  theme: default
+  layout: elk
+  elk:
+    mergeEdges: true
+    nodePlacementStrategy: NETWORK_SIMPLEX
+  er:
+    useMaxWidth: false
+---
+erDiagram
+    users {
+        INT id PK
+        VARCHAR email UK
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR phone
+        ENUM gender
+        ENUM role
+        ENUM status
+        INT parent_id FK
+        VARCHAR student_resident_id UK
+        LONGTEXT photo_url
+        LONGTEXT face_image
+        ENUM registration_status
+        INT registration_reviewed_by FK
+    }
+
+    rooms {
+        INT id PK
+        VARCHAR room_number UK
+        INT floor
+        INT capacity
+        ENUM room_type
+        ENUM status
+        DECIMAL price_per_month
+        JSON amenities
+    }
+
+    room_assignments {
+        INT id PK
+        INT user_id FK
+        INT room_id FK
+        DATE start_date
+        DATE end_date
+        ENUM status
+    }
+
+    leave_requests {
+        INT id PK
+        INT user_id FK
+        ENUM leave_type
+        DATETIME start_date
+        DATETIME end_date
+        TEXT reason
+        VARCHAR destination
+        VARCHAR spending_leave_with
+        VARCHAR emergency_contact
+        ENUM status
+        ENUM admin_status
+        INT admin_reviewed_by FK
+        ENUM parent_status
+        ENUM vpsas_status
+        INT vpsas_reviewed_by FK
+        VARCHAR qr_code UK
+        TIMESTAMP exit_time
+        INT exit_recorded_by FK
+        TIMESTAMP return_time
+        INT return_recorded_by FK
+    }
+
+    check_logs {
+        INT id PK
+        INT user_id FK
+        INT leave_request_id FK
+        ENUM type
+        TIMESTAMP timestamp
+        ENUM method
+        INT recorded_by FK
+    }
+
+    notifications {
+        INT id PK
+        INT user_id FK
+        ENUM type
+        VARCHAR title
+        TEXT message
+        INT reference_id
+        VARCHAR reference_type
+        BOOLEAN is_read
+    }
+
+    announcements {
+        INT id PK
+        VARCHAR title
+        TEXT content
+        ENUM priority
+        ENUM status
+        ENUM audience
+        INT created_by FK
+        DATETIME expires_at
+    }
+
+    payments {
+        INT id PK
+        INT bill_id FK
+        INT resident_id FK
+        INT paid_by FK
+        DECIMAL amount
+        ENUM payment_method
+        LONGTEXT receipt_image
+        ENUM status
+        INT verified_by FK
+    }
+
+    push_subscriptions {
+        INT id PK
+        INT user_id FK
+        TEXT endpoint
+        VARCHAR p256dh
+        VARCHAR auth
+    }
+
+    users ||--o{ users : "parent_id"
+    users ||--o{ room_assignments : "resident"
+    rooms ||--o{ room_assignments : "room"
+    users ||--o{ leave_requests : "resident"
+    users ||--o{ leave_requests : "reviewers"
+    users ||--o{ check_logs : "resident"
+    leave_requests ||--o{ check_logs : "leave_request"
+    users ||--o{ notifications : "recipient"
+    users ||--o{ announcements : "creator"
+    users ||--o{ payments : "payer"
+    users ||--o{ push_subscriptions : "subscriber"
