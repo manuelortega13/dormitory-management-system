@@ -75,13 +75,21 @@ flowchart TD
 
     subgraph PAY["💰 Payment Workflow"]
         direction TB
-        F1([Admin Creates Payment Record]) --> F2[Resident Views in My Payments]
+        F1([BO Creates Bill]) --> F2[Resident Views in My Payments]
         F2 --> F3[Resident Submits Payment + e-Receipt]
         F3 --> F4[Status: Pending Verification]
-        F4 --> F5{Admin Verifies}
+        F4 --> F5{BO Verifies}
         F5 -->|Verified| F6[Balance Updated]
         F5 -->|Rejected| F7([Resident Notified - Resubmit])
         F6 --> F8([Payment Complete])
+    end
+
+    subgraph ANN["📢 Announcement Workflow"]
+        direction TB
+        G1([Home Dean Creates Announcement]) --> G2[Set Priority & Audience]
+        G2 --> G3[Publish Announcement]
+        G3 --> G4[Notify Residents & Parents]
+        G4 --> G5([Announcement Visible to All])
     end
 
     A7 -.->|QR Ready for Scan| B1
@@ -90,6 +98,7 @@ flowchart TD
     A2 -.->|Notify Resident| E1
     A4 -.->|Notify Parent| E1
     A5 -.->|Notify Resident| E1
+    G3 -.->|Trigger Notification| E1
 
     style LR fill:#f0f4ff,stroke:#4361ee,stroke-width:2px,color:#1e293b
     style CIO fill:#f0fdf4,stroke:#10b981,stroke-width:2px,color:#1e293b
@@ -97,3 +106,4 @@ flowchart TD
     style REG fill:#fdf2f8,stroke:#ec4899,stroke-width:2px,color:#1e293b
     style NOTIF fill:#f5f3ff,stroke:#8b5cf6,stroke-width:2px,color:#1e293b
     style PAY fill:#fff7ed,stroke:#f97316,stroke-width:2px,color:#1e293b
+    style ANN fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b

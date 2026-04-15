@@ -5,19 +5,23 @@ config:
   flowchart:
     curve: linear
     padding: 20
-    nodeSpacing: 60
-    rankSpacing: 80
+    nodeSpacing: 50
+    rankSpacing: 70
 ---
-flowchart LR
-    %% External Entities (rounded boxes)
-    Resident([👤 Resident])
-    Parent([👨‍👩‍👧 Parent])
-    HomeDean([🏛️ Home Dean])
-    VPSAS([🎓 VPSAS])
-    Admin([⚙️ Admin])
-    SecurityGuard([🛡️ Security Guard])
+flowchart TD
+    %% External Entities - lined up at top
+    subgraph ACTORS[" "]
+        direction LR
+        Resident([👤 Resident])
+        Parent([👨‍👩‍👧 Parent])
+        HomeDean([🏛️ Home Dean])
+        VPSAS([🎓 VPSAS])
+        Admin([⚙️ Admin])
+        BO([💼 Business Office])
+        SecurityGuard([🛡️ Security Guard])
+    end
 
-    %% Data Stores (double-lined)
+    %% Data Stores
     DS_Users[(D1: users)]
     DS_Rooms[(D2: rooms)]
     DS_RoomAssign[(D3: room_assignments)]
@@ -45,7 +49,6 @@ flowchart LR
     Parent -->|Registration data| P1
     P1 -->|Store user record| DS_Users
     P1 -->|JWT token| Resident
-    P1 -->|JWT token| Parent
     DS_Users -->|Validate credentials| P1
 
     %% === Room Management ===
@@ -86,7 +89,7 @@ flowchart LR
     P7 -->|Store notification| DS_Notifications
     P7 -->|Real-time via Socket.IO| Resident
     P7 -->|Real-time via Socket.IO| Parent
-    P7 -->|Real-time via Socket.IO| Admin
+    P7 -->|Real-time via Socket.IO| HomeDean
     P7 -->|Send web push| P10
     DS_Notifications -->|Read notifications| Resident
     DS_Notifications -->|Read notifications| Parent
@@ -107,19 +110,22 @@ flowchart LR
     DS_Announcements -->|View announcements| Parent
 
     %% === Payment Processing ===
-    Admin -->|Create payment record| P9
+    BO -->|Create bills| P9
     Resident -->|Submit payment + receipt| P9
     P9 -->|Store payment| DS_Payments
-    Admin -->|Verify / Reject| P9
+    BO -->|Verify / Reject| P9
     P9 -->|Trigger notification| P7
     DS_Payments -->|Payment history| Resident
+    DS_Payments -->|Payment reports| BO
 
     %% Styles
+    style ACTORS fill:none,stroke:none
     style Resident fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e3a5f
     style Parent fill:#fce7f3,stroke:#ec4899,stroke-width:2px,color:#831843
     style HomeDean fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
     style VPSAS fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
     style Admin fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
+    style BO fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#7f1d1d
     style SecurityGuard fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#064e3b
 
     style DS_Users fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1e293b
