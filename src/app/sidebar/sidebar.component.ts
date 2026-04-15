@@ -47,7 +47,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.loadPendingLeaveRequestsCount();
       }
     });
-    
+
     // Watch for new parent registration notifications
     effect(() => {
       const trigger = this.notificationService.newParentRegistrationTrigger();
@@ -97,20 +97,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
         { label: 'Parent Approvals', icon: '👨‍👩‍👦', route: '/manage/parent-registrations' }
       ]
     },
+    // {
+    //   title: 'Operations',
+    //   items: [
+    //     { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance' },
+    //     { label: 'Payments', icon: '💰', route: '/manage/payments' },
+    //     { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
+    //   ]
+    // },
     {
-      title: 'Operations',
+      // title: 'Reports & Settings',
+      title: 'Notifications',
       items: [
-        { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance' },
-        { label: 'Payments', icon: '💰', route: '/manage/payments' },
-        { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
-      ]
-    },
-    {
-      title: 'Reports & Settings',
-      items: [
-        { label: 'Reports', icon: '📈', route: '/manage/reports' },
+        // { label: 'Reports', icon: '📈', route: '/manage/reports' },
         { label: 'Announcements', icon: '📢', route: '/manage/announcements' },
-        { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
+        // { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
       ]
     }
   ]);
@@ -121,12 +122,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.currentUser.set(this.authService.getCurrentUser());
     this.loadPendingLeaveRequestsCount();
     this.loadPendingParentRegistrationsCount();
-    
+
     // Subscribe to leave request updates
     this.subscription = this.leaveRequestService.leaveRequestUpdated$.subscribe(() => {
       this.loadPendingLeaveRequestsCount();
     });
-    
+
     // Subscribe to parent registration updates (approved/declined)
     this.parentRegistrationSubscription = this.parentRegistrationService.registrationUpdated$.subscribe(() => {
       this.loadPendingParentRegistrationsCount();
@@ -149,11 +150,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private updateLeaveRequestsBadge(count: number): void {
-    this.menuSections.update(sections => 
+    this.menuSections.update(sections =>
       sections.map(section => ({
         ...section,
-        items: section.items.map(item => 
-          item.label === 'Leave Requests' 
+        items: section.items.map(item =>
+          item.label === 'Leave Requests'
             ? { ...item, badge: count > 0 ? count : undefined }
             : item
         )
@@ -174,11 +175,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private updateParentApprovalsBadge(count: number): void {
-    this.menuSections.update(sections => 
+    this.menuSections.update(sections =>
       sections.map(section => ({
         ...section,
-        items: section.items.map(item => 
-          item.label === 'Parent Approvals' 
+        items: section.items.map(item =>
+          item.label === 'Parent Approvals'
             ? { ...item, badge: count > 0 ? count : undefined }
             : item
         )
