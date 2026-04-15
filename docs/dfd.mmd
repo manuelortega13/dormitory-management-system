@@ -16,7 +16,6 @@ flowchart TD
         Parent([👨‍👩‍👧 Parent])
         HomeDean([🏛️ Home Dean])
         VPSAS([🎓 VPSAS])
-        Admin([⚙️ Admin])
         BO([💼 Business Office])
         SecurityGuard([🛡️ Security Guard])
     end
@@ -52,7 +51,7 @@ flowchart TD
     DS_Users -->|Validate credentials| P1
 
     %% === Room Management ===
-    Admin -->|Assign / Change room| P2
+    HomeDean -->|Assign / Change room| P2
     P2 -->|Read available rooms| DS_Rooms
     P2 -->|Create assignment| DS_RoomAssign
     P2 -->|Update room status| DS_Rooms
@@ -124,7 +123,6 @@ flowchart TD
     style Parent fill:#fce7f3,stroke:#ec4899,stroke-width:2px,color:#831843
     style HomeDean fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
     style VPSAS fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
-    style Admin fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
     style BO fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#7f1d1d
     style SecurityGuard fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#064e3b
 

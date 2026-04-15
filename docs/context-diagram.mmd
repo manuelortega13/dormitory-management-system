@@ -11,7 +11,6 @@ flowchart LR
     Parent([👨‍👩‍👧 Parent])
     HomeDean([🏛️ Home Dean])
     VPSAS([🎓 VPSAS])
-    Admin([⚙️ Admin])
     BO([💼 Business Office])
     SecurityGuard([🛡️ Security Guard])
 
@@ -23,14 +22,11 @@ flowchart LR
     Parent -->|Approve/decline requests<br/>Face verification| DMS
     DMS -->|Child activity alerts<br/>Push notifications| Parent
 
-    HomeDean -->|Review & approve<br/>leave requests<br/>Create announcements| DMS
-    DMS -->|Pending requests<br/>Notifications| HomeDean
+    HomeDean -->|Manage rooms, residents<br/>Review & approve leave requests<br/>Create announcements| DMS
+    DMS -->|Pending requests<br/>Reports, dashboards<br/>Notifications| HomeDean
 
     VPSAS -->|Final approval<br/>of leave requests| DMS
     DMS -->|Pending requests<br/>Notifications| VPSAS
-
-    Admin -->|Manage rooms, residents<br/>System settings| DMS
-    DMS -->|Reports, dashboards<br/>Notifications| Admin
 
     BO -->|Create bills<br/>Verify payments| DMS
     DMS -->|Payment reports<br/>Notifications| BO
@@ -43,6 +39,5 @@ flowchart LR
     style Parent fill:#fce7f3,stroke:#ec4899,stroke-width:2px,color:#831843
     style HomeDean fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
     style VPSAS fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81
-    style Admin fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#78350f
     style BO fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#7f1d1d
     style SecurityGuard fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#064e3b

@@ -37,7 +37,7 @@ flowchart TD
 
     subgraph RA["🛏️ Room Assignment Workflow"]
         direction TB
-        C1([Admin Opens Residents Page]) --> C2{Resident Has Room?}
+        C1([Home Dean Opens Residents Page]) --> C2{Resident Has Room?}
         C2 -->|No| C3[Select Available Room]
         C2 -->|Yes| C4[Change Room]
         C4 --> C5[Unassign from Current Room]
@@ -54,7 +54,7 @@ flowchart TD
     subgraph REG["👤 Registration & Approval Workflow"]
         direction TB
         D1([Parent Registers Account]) --> D2[Status: Pending Approval]
-        D2 --> D3{Admin Reviews}
+        D2 --> D3{Home Dean Reviews}
         D3 -->|Approved| D4[Link Parent to Resident]
         D3 -->|Declined| D5([Registration Declined])
         D4 --> D6([Parent Account Active])
@@ -106,4 +106,4 @@ flowchart TD
     style REG fill:#fdf2f8,stroke:#ec4899,stroke-width:2px,color:#1e293b
     style NOTIF fill:#f5f3ff,stroke:#8b5cf6,stroke-width:2px,color:#1e293b
     style PAY fill:#fff7ed,stroke:#f97316,stroke-width:2px,color:#1e293b
-    style ANN fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b
+    style ANN fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#1e293b

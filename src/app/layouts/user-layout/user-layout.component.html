@@ -22,9 +22,9 @@
         <a routerLink="/my-requests" routerLinkActive="active" class="nav-item">
           My Requests
         </a>
-        <a routerLink="/my-payments" routerLinkActive="active" class="nav-item">
-          Payments
-        </a>
+<!--        <a routerLink="/my-payments" routerLinkActive="active" class="nav-item">-->
+<!--          Payments-->
+<!--        </a>-->
         <div class="nav-more" (mouseenter)="showMore.set(true)" (mouseleave)="showMore.set(false)">
           <button class="nav-item nav-more-btn" [class.active]="isMoreActive()">
             More <span class="more-arrow">&#9662;</span>
@@ -83,10 +83,10 @@
       </span>
       <span class="tab-label">Leave</span>
     </a>
-    <a routerLink="/my-payments" routerLinkActive="active" class="tab-item">
-      <span class="tab-icon">💰</span>
-      <span class="tab-label">Payments</span>
-    </a>
+<!--    <a routerLink="/my-payments" routerLinkActive="active" class="tab-item">-->
+<!--      <span class="tab-icon">💰</span>-->
+<!--      <span class="tab-label">Payments</span>-->
+<!--    </a>-->
     <button class="tab-item" [class.active]="showMobileMore()" (click)="showMobileMore.set(!showMobileMore())">
       <span class="tab-icon">☰</span>
       <span class="tab-label">More</span>
