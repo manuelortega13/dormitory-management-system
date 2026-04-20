@@ -107,11 +107,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // },
     {
       // title: 'Reports & Settings',
-      title: 'Notifications',
+      title: 'Notifications & Settings',
       items: [
         // { label: 'Reports', icon: '📈', route: '/manage/reports' },
         { label: 'Announcements', icon: '📢', route: '/manage/announcements' },
-        // { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
+        { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
       ]
     }
   ]);
