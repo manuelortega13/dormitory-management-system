@@ -1,11 +1,11 @@
 <main class="agents-page">
   <header class="page-header">
     <div class="header-content">
-      <h1>Agents Management</h1>
+      <h1>Staff Management</h1>
       <p class="subtitle">Manage administrators, security guards, and deans</p>
     </div>
     <button class="btn-primary" (click)="openAddModal()">
-      <span>➕</span> Add New Agent
+      <span>➕</span> Add New Staff
     </button>
   </header>
 
@@ -13,7 +13,7 @@
   <section class="stats-bar">
     <div class="stat-item">
       <span class="stat-value">{{ stats().total }}</span>
-      <span class="stat-label">Total Agents</span>
+      <span class="stat-label">Total Staff</span>
     </div>
     <div class="stat-item admin">
       <span class="stat-value">{{ stats().admins }}</span>
@@ -71,12 +71,12 @@
     @if (isLoading()) {
       <div class="loading-state">
         <span class="spinner">⏳</span>
-        <p>Loading agents...</p>
+        <p>Loading staff...</p>
       </div>
     } @else if (filteredAgents().length === 0) {
       <div class="empty-state">
         <span class="icon">👮</span>
-        <p>No agents found</p>
+        <p>No staff found</p>
       </div>
     } @else {
       <div class="table-header">
@@ -89,7 +89,7 @@
       </div>
       @for (agent of filteredAgents(); track agent.id) {
         <div class="table-row" [class]="getStatusClass(agent.status)">
-          <div class="col-name" data-label="Agent">
+          <div class="col-name" data-label="Staff">
             <div 
               class="agent-avatar" 
               [style.background]="getAvatarColor(agent.first_name)"
@@ -140,7 +140,7 @@
   <div class="modal-overlay" (click)="closeAddModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Add New Agent</h2>
+        <h2>Add New Staff</h2>
         <button class="btn-close" (click)="closeAddModal()">✕</button>
       </div>
       
@@ -247,7 +247,7 @@
           @if (modalSaving()) {
             <span class="spinner">⏳</span> Saving...
           } @else {
-            Add Agent
+            Add Staff
           }
         </button>
       </div>
@@ -269,7 +269,7 @@
   <div class="modal-overlay" (click)="closeSuspendModal()">
     <div class="modal-content suspend-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Suspend Agent</h2>
+        <h2>Suspend Staff</h2>
         <button class="btn-close" (click)="closeSuspendModal()">✕</button>
       </div>
       
@@ -303,7 +303,7 @@
           @if (suspendSaving()) {
             <span class="spinner">⏳</span> Suspending...
           } @else {
-            Suspend Agent
+            Suspend Staff
           }
         </button>
       </div>

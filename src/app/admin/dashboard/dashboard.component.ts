@@ -37,7 +37,7 @@ export class DashboardComponent implements OnInit {
     { label: 'Add Resident', icon: '👤', route: '/manage/residents' },
     { label: 'Room Assignment', icon: '🛏️', route: '/manage/rooms' },
     { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
-    { label: 'Manage Agents', icon: '👷', route: '/manage/agents' }
+    { label: 'Manage Staff', icon: '👷', route: '/manage/agents' }
   ];
 
   ngOnInit(): void {

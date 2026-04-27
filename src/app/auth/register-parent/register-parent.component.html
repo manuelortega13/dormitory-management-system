@@ -117,7 +117,7 @@
       </div>
 
       <div class="form-group" [class.has-error]="fieldErrors().studentResidentId">
-        <label for="studentResidentId">Student Resident ID *</label>
+        <label for="studentResidentId">Student Occupant ID *</label>
         <div class="input-wrapper">
           <span class="input-icon">🆔</span>
           <input 
@@ -130,7 +130,7 @@
             style="text-transform: uppercase;"
           />
         </div>
-        <p class="field-hint">Enter your child's Student Resident ID (provided upon their registration)</p>
+        <p class="field-hint">Enter your child's Student Occupant ID (provided upon their registration)</p>
         @if (fieldErrors().studentResidentId) {
           <span class="field-error">{{ fieldErrors().studentResidentId }}</span>
         }

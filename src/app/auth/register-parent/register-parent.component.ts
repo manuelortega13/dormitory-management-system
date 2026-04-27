@@ -429,10 +429,10 @@ export class RegisterParentComponent implements OnDestroy {
     }
 
     if (!this.form.studentResidentId.trim()) {
-      errors.studentResidentId = 'Student Resident ID is required';
+      errors.studentResidentId = 'Student Occupant ID is required';
       isValid = false;
     } else if (!/^PAC-[A-Z0-9]{6}$/.test(this.form.studentResidentId.trim().toUpperCase())) {
-      errors.studentResidentId = 'Please enter a valid Student Resident ID (e.g., PAC-ABC123)';
+      errors.studentResidentId = 'Please enter a valid Student Occupant ID (e.g., PAC-ABC123)';
       isValid = false;
     }
 

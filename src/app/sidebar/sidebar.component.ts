@@ -92,7 +92,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       items: [
         { label: 'Rooms', icon: '🛏️', route: '/manage/rooms' },
         { label: 'Residents', icon: '👥', route: '/manage/residents' },
-        { label: 'Agents', icon: '👮', route: '/manage/agents' },
+        { label: 'Staff', icon: '👮', route: '/manage/agents' },
         { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
         { label: 'Parent Approvals', icon: '👨‍👩‍👦', route: '/manage/parent-registrations' }
       ]
