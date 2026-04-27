@@ -3,7 +3,7 @@
     <button class="modal-close" (click)="close.emit()">✕</button>
     
     <div class="modal-header">
-      <h2>{{ mode === 'add' ? 'Add New Resident' : 'Edit Resident' }}</h2>
+      <h2>{{ mode === 'add' ? 'Add New Occupant' : 'Edit Occupant' }}</h2>
     </div>
 
     <div class="modal-body">
@@ -19,7 +19,7 @@
             id="email" 
             [value]="formData().email"
             (input)="updateField('email', $event)"
-            placeholder="resident@email.com"
+            placeholder="occupant@email.com"
           />
         </div>
 
@@ -166,7 +166,7 @@
         @if (isSaving) {
           Saving...
         } @else {
-          {{ mode === 'add' ? 'Add Resident' : 'Save Changes' }}
+          {{ mode === 'add' ? 'Add Occupant' : 'Save Changes' }}
         }
       </button>
     </div>

@@ -183,7 +183,7 @@ export class ResidentsComponent implements OnInit {
         this.loadResidents();
       },
       error: (err) => {
-        this.modalError.set(err.error?.error || 'Failed to create resident');
+        this.modalError.set(err.error?.error || 'Failed to create occupant');
         this.modalSaving.set(false);
       }
     });
@@ -233,7 +233,7 @@ export class ResidentsComponent implements OnInit {
         this.loadResidents();
       },
       error: (err) => {
-        this.modalError.set(err.error?.error || 'Failed to update resident');
+        this.modalError.set(err.error?.error || 'Failed to update occupant');
         this.modalSaving.set(false);
       }
     });
@@ -371,7 +371,7 @@ export class ResidentsComponent implements OnInit {
         this.loadResidents();
       },
       error: (err) => {
-        this.suspendError.set(err.error?.error || 'Failed to suspend resident');
+        this.suspendError.set(err.error?.error || 'Failed to suspend occupant');
         this.suspendSaving.set(false);
       }
     });

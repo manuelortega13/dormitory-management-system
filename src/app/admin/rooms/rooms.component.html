@@ -374,7 +374,7 @@
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeDetailsModal()">Close</button>
         @if (selectedRoom()!.occupants.length < selectedRoom()!.capacity) {
-          <button class="btn-primary" (click)="closeDetailsModal(); openAssignModal(selectedRoom()!)">Assign Resident</button>
+          <button class="btn-primary" (click)="closeDetailsModal(); openAssignModal(selectedRoom()!)">Assign Occupant</button>
         }
       </div>
     </div>
@@ -386,7 +386,7 @@
   <div class="modal-overlay" (click)="closeAssignModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Assign Resident to Room {{ assigningRoom()!.roomNumber }}</h2>
+        <h2>Assign Occupant to Room {{ assigningRoom()!.roomNumber }}</h2>
         <button class="close-btn" (click)="closeAssignModal()">×</button>
       </div>
       <div class="modal-body">
@@ -399,17 +399,17 @@
         </div>
 
         <div class="form-group">
-          <label for="residentSelect">Select Resident *</label>
+          <label for="residentSelect">Select Occupant *</label>
           <select
             id="residentSelect"
             [value]="selectedResidentId() ?? ''"
             (change)="selectedResidentId.set(+$any($event.target).value || null)"
           >
-            <option value="">-- Select a resident --</option>
+            <option value="">-- Select an occupant --</option>
             @for (resident of availableResidents(); track resident.id) {
               <option [value]="resident.id">{{ resident.first_name }} {{ resident.last_name }} ({{ resident.email }})</option>
             } @empty {
-              <option disabled>No available residents</option>
+              <option disabled>No available occupants</option>
             }
           </select>
         </div>
@@ -438,7 +438,7 @@
 
         @if (availableResidents().length === 0) {
           <div class="info-message">
-            <span>ℹ️</span> No residents without room assignments found. All active residents are already assigned to rooms.
+            <span>ℹ️</span> No occupants without room assignments found. All active occupants are already assigned to rooms.
           </div>
         }
       </div>
@@ -449,7 +449,7 @@
           (click)="assignResident()"
           [disabled]="assigning() || !selectedResidentId() || availableResidents().length === 0"
         >
-          {{ assigning() ? 'Assigning...' : 'Assign Resident' }}
+          {{ assigning() ? 'Assigning...' : 'Assign Occupant' }}
         </button>
       </div>
     </div>

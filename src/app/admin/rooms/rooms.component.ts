@@ -252,7 +252,7 @@ export class RoomsComponent implements OnInit {
     const startDate = this.assignStartDate();
 
     if (!room || !residentId || !startDate) {
-      alert('Please select a resident and start date');
+      alert('Please select an occupant and start date');
       return;
     }
 
@@ -270,7 +270,7 @@ export class RoomsComponent implements OnInit {
       error: (err) => {
         console.error('Failed to assign resident:', err);
         this.assigning.set(false);
-        alert('Failed to assign resident. Please try again.');
+        alert('Failed to assign occupant. Please try again.');
       }
     });
   }

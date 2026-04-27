@@ -1,11 +1,11 @@
 <main class="residents-page">
   <header class="page-header">
     <div class="header-content">
-      <h1>Residents Management</h1>
-      <p class="subtitle">Manage dormitory residents and their information</p>
+      <h1>Occupants Management</h1>
+      <p class="subtitle">Manage dormitory occupants and their information</p>
     </div>
     <button class="btn-primary" (click)="openAddModal()">
-      <span>➕</span> Add New Resident
+      <span>➕</span> Add New Occupant
     </button>
   </header>
 
@@ -13,7 +13,7 @@
   <section class="stats-bar">
     <div class="stat-item">
       <span class="stat-value">{{ stats().total }}</span>
-      <span class="stat-label">Total Residents</span>
+      <span class="stat-label">Total Occupants</span>
     </div>
     <div class="stat-item active">
       <span class="stat-value">{{ stats().active }}</span>
@@ -163,7 +163,7 @@
       @if (filteredResidents().length === 0) {
         <div class="no-results">
           <span class="icon">🔍</span>
-          <p>No residents found matching your criteria</p>
+          <p>No occupants found matching your criteria</p>
         </div>
       }
     </section>
@@ -238,7 +238,7 @@
       @if (filteredResidents().length === 0) {
         <div class="no-results">
           <span class="icon">🔍</span>
-          <p>No residents found matching your criteria</p>
+          <p>No occupants found matching your criteria</p>
         </div>
       }
     </section>

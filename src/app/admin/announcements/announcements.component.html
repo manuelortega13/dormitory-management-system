@@ -2,7 +2,7 @@
   <div class="page-header">
     <div class="header-content">
       <h1>📢 Announcements</h1>
-      <p class="subtitle">Manage and publish announcements for residents and staff</p>
+      <p class="subtitle">Manage and publish announcements for occupants and staff</p>
     </div>
     <button class="btn-primary" (click)="openCreateModal()">
       <span>➕</span> New Announcement
@@ -68,7 +68,7 @@
       <select [ngModel]="audienceFilter()" (ngModelChange)="audienceFilter.set($event); onFilterChange()">
         <option value="">All Audience</option>
         <option value="all">Everyone</option>
-        <option value="residents">Residents</option>
+        <option value="residents">Occupants</option>
         <option value="parents">Parents</option>
         <option value="staff">Staff</option>
       </select>
@@ -163,7 +163,7 @@
             <label>Audience</label>
             <select [ngModel]="formAudience()" (ngModelChange)="formAudience.set($event)">
               <option value="all">Everyone</option>
-              <option value="residents">Residents Only</option>
+              <option value="residents">Occupants Only</option>
               <option value="parents">Parents Only</option>
               <option value="staff">Staff Only</option>
             </select>

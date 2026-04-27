@@ -4,7 +4,7 @@
     
     <div class="modal-header">
       <div class="warning-icon">⚠️</div>
-      <h2>Suspend Resident</h2>
+      <h2>Suspend Occupant</h2>
     </div>
 
     <div class="modal-body">
@@ -16,7 +16,7 @@
         Are you sure you want to suspend <strong>{{ getFullName() }}</strong>?
       </p>
       <p class="info-text">
-        This action will deactivate the resident's account. They will not be able to access the system until reactivated.
+        This action will deactivate the occupant's account. They will not be able to access the system until reactivated.
       </p>
 
       <div class="form-group">
@@ -26,7 +26,7 @@
           rows="4"
           [value]="reason()"
           (input)="updateReason($event)"
-          placeholder="Please provide a detailed reason for suspending this resident..."
+          placeholder="Please provide a detailed reason for suspending this occupant..."
         ></textarea>
         <span class="helper-text">Minimum 10 characters required</span>
       </div>
@@ -38,7 +38,7 @@
         @if (isSaving) {
           Suspending...
         } @else {
-          Suspend Resident
+          Suspend Occupant
         }
       </button>
     </div>

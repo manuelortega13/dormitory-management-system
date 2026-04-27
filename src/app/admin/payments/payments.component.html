@@ -99,7 +99,7 @@
         <table>
           <thead>
             <tr>
-              <th>Resident</th>
+              <th>Occupant</th>
               <th>Room</th>
               <th>Type</th>
               <th>Description</th>
@@ -269,7 +269,7 @@
         <table>
           <thead>
             <tr>
-              <th>Resident</th>
+              <th>Occupant</th>
               <th>Paid By</th>
               <th>Bill</th>
               <th>Amount</th>
@@ -426,7 +426,7 @@
         </div>
         <div class="qr-upload-section">
           <label>GCash QR Code</label>
-          <p class="settings-description">Upload a QR code image so residents/parents can scan to pay.</p>
+          <p class="settings-description">Upload a QR code image so occupants/parents can scan to pay.</p>
           @if (settingsGcashQr()) {
             <div class="qr-preview">
               <img [src]="settingsGcashQr()" alt="GCash QR Code" />
@@ -466,7 +466,7 @@
         </div>
         <div class="qr-upload-section">
           <label>Maya QR Code</label>
-          <p class="settings-description">Upload a QR code image so residents/parents can scan to pay.</p>
+          <p class="settings-description">Upload a QR code image so occupants/parents can scan to pay.</p>
           @if (settingsMayaQr()) {
             <div class="qr-preview">
               <img [src]="settingsMayaQr()" alt="Maya QR Code" />
@@ -483,7 +483,7 @@
 
       <div class="settings-card">
         <h3>💵 Cash Payment Instructions</h3>
-        <p class="settings-description">Instructions shown to residents for making cash payments.</p>
+        <p class="settings-description">Instructions shown to occupants for making cash payments.</p>
         <div class="form-group">
           <label>Cash Instructions</label>
           <textarea 
@@ -497,7 +497,7 @@
 
       <div class="settings-card">
         <h3>📝 Additional Payment Notes</h3>
-        <p class="settings-description">Any additional notes or instructions to display to residents when making payments.</p>
+        <p class="settings-description">Any additional notes or instructions to display to occupants when making payments.</p>
         <div class="form-group">
           <label>Payment Notes</label>
           <textarea 
@@ -534,7 +534,7 @@
           </div>
         }
         <div class="form-group">
-          <label>Resident *</label>
+          <label>Occupant *</label>
           @if (isEditingBill()) {
             <input type="text" [value]="selectedResidentName()" disabled class="resident-display" />
           } @else {
@@ -552,13 +552,13 @@
                   (focus)="onResidentSearchFocus()"
                   (blur)="onResidentSearchBlur()"
                   (keydown)="onResidentSearchKeydown($event)"
-                  placeholder="Search resident by name or room..."
+                  placeholder="Search occupant by name or room..."
                   autocomplete="off"
                 />
                 @if (showResidentDropdown()) {
                   <div class="dropdown-list">
                     @if (filteredResidents.length === 0) {
-                      <div class="dropdown-empty">No residents found</div>
+                      <div class="dropdown-empty">No occupants found</div>
                     } @else {
                       @for (resident of filteredResidents; track resident.id; let i = $index) {
                         <div
@@ -647,7 +647,7 @@
       </div>
       <div class="modal-body">
         <div class="payment-details">
-          <p><strong>Resident:</strong> {{ verifyingPayment()?.resident_name }}</p>
+          <p><strong>Occupant:</strong> {{ verifyingPayment()?.resident_name }}</p>
           <p><strong>Paid By:</strong> {{ verifyingPayment()?.payer_name }}</p>
           <p><strong>Amount:</strong> {{ formatCurrency(verifyingPayment()?.amount || 0) }}</p>
           <p><strong>Method:</strong> {{ getPaymentMethodLabel(verifyingPayment()?.payment_method || '') }}</p>
@@ -686,7 +686,7 @@
       </div>
       <div class="modal-body">
         <div class="payment-details">
-          <p><strong>Resident:</strong> {{ viewingPayment()?.resident_name }}</p>
+          <p><strong>Occupant:</strong> {{ viewingPayment()?.resident_name }}</p>
           <p><strong>Paid By:</strong> {{ viewingPayment()?.payer_name }}</p>
           <p><strong>Bill Type:</strong> {{ viewingPayment()?.bill_type ? getTypeLabel(viewingPayment()!.bill_type!) : '-' }}</p>
           <p><strong>Description:</strong> {{ viewingPayment()?.bill_description || '-' }}</p>

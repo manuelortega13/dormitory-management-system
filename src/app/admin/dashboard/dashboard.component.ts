@@ -34,7 +34,7 @@ export class DashboardComponent implements OnInit {
   protected readonly recentActivities = signal<RecentActivity[]>([]);
 
   protected readonly quickActions = [
-    { label: 'Add Resident', icon: '👤', route: '/manage/residents' },
+    { label: 'Add Occupant', icon: '👤', route: '/manage/residents' },
     { label: 'Room Assignment', icon: '🛏️', route: '/manage/rooms' },
     { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
     { label: 'Manage Staff', icon: '👷', route: '/manage/agents' }

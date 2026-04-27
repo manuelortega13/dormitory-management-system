@@ -2,7 +2,7 @@
   <div class="page-header">
     <div class="header-content">
       <h1>Leave Requests</h1>
-      <p>Review and manage resident go-out requests</p>
+      <p>Review and manage occupant go-out requests</p>
     </div>
   </div>
 
@@ -63,7 +63,7 @@
       <table>
         <thead>
           <tr>
-            <th>Resident</th>
+            <th>Occupant</th>
             <th>Type</th>
             <th>Schedule</th>
             <th>Destination</th>
@@ -74,7 +74,7 @@
         <tbody>
           @for (request of filteredRequests(); track request.id) {
             <tr>
-              <td class="resident-cell" data-label="Resident">
+              <td class="resident-cell" data-label="Occupant">
                 <div class="resident-info">
                   <div class="avatar">{{ getInitials(request.user_name) }}</div>
                   <div class="info">
@@ -208,7 +208,7 @@
 
         <div class="modal-body">
           <div class="request-summary">
-            <p><strong>Resident:</strong> {{ selectedRequest()!.user_name }}</p>
+            <p><strong>Occupant:</strong> {{ selectedRequest()!.user_name }}</p>
             <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
             <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
             @if (selectedRequest()!.spending_leave_with) {

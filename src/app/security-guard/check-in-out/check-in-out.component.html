@@ -25,8 +25,8 @@
           <!-- Idle State - Show scan options -->
           <div class="idle-state">
             <div class="scan-icon">📷</div>
-            <h2>Scan Resident Pass</h2>
-            <p>Scan the QR code from the resident's approved go-out pass</p>
+            <h2>Scan Occupant Pass</h2>
+            <p>Scan the QR code from the occupant's approved go-out pass</p>
             
             @if (isIOSPWA()) {
               <!-- iOS PWA mode - use file capture instead of camera stream -->
@@ -166,7 +166,7 @@
                   <span class="warning-icon">⚠️</span>
                   <div class="warning-content">
                     <strong>No Parent/Guardian on Record</strong>
-                    <p>This resident does not have a registered parent/guardian. Please ask the student to call their parent/guardian so you can hear and receive <strong>oral approval</strong> before allowing exit.</p>
+                    <p>This occupant does not have a registered parent/guardian. Please ask the student to call their parent/guardian so you can hear and receive <strong>oral approval</strong> before allowing exit.</p>
                   </div>
                 </div>
               }
