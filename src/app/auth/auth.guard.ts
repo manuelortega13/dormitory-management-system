@@ -54,3 +54,11 @@ export const adminGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas
 export const residentGuard: CanActivateFn = roleGuard(['resident']);
 export const securityGuard: CanActivateFn = roleGuard(['security_guard']);
 export const parentGuard: CanActivateFn = roleGuard(['parent']);
+
+// Allows entry into the /manage layout. Business Officer is admitted here but is
+// restricted to the Payments and Settings children via per-route guards below.
+export const manageGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas', 'business_officer']);
+// Payments is limited to admin + business_officer (home_dean/vpsas are blocked).
+export const paymentsGuard: CanActivateFn = roleGuard(['admin', 'business_officer']);
+// Settings page is reachable by admins and business_officer (BO only sees Payment Settings).
+export const settingsGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas', 'business_officer']);

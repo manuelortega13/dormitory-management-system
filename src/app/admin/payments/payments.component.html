@@ -132,7 +132,9 @@
                 </td>
                 <td class="actions">
                   <button class="btn-icon" title="Edit" (click)="openEditBillModal(bill)">✏️</button>
-                  <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(bill)">🗑️</button>
+                  @if (bill.status !== 'paid') {
+                    <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(bill)">🗑️</button>
+                  }
                 </td>
               </tr>
             } @empty {
@@ -182,7 +184,9 @@
               </div>
               <div class="card-footer">
                 <button class="btn-icon" title="Edit" (click)="openEditBillModal(bill)">✏️ Edit</button>
-                <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(bill)">🗑️ Delete</button>
+                @if (bill.status !== 'paid') {
+                  <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(bill)">🗑️ Delete</button>
+                }
               </div>
             </div>
           } @empty {
@@ -597,7 +601,10 @@
         <div class="form-row">
           <div class="form-group">
             <label>Amount (₱) *</label>
-            <input type="number" [ngModel]="formAmount()" (ngModelChange)="formAmount.set($event)" min="0" step="0.01" />
+            <input type="number" [ngModel]="formAmount()" (ngModelChange)="formAmount.set($event)" min="0" step="0.01" [disabled]="editingBillPaid()" />
+            @if (editingBillPaid()) {
+              <span class="form-hint">Amount can't be changed once the bill has been paid.</span>
+            }
           </div>
           <div class="form-group">
             <label>Due Date *</label>

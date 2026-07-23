@@ -13,6 +13,7 @@ interface MenuItem {
   icon: string;
   route: string;
   badge?: number;
+  roles?: User['role'][];
 }
 
 interface MenuSection {
@@ -69,6 +70,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     switch (user.role) {
       case 'admin': return 'Administrator';
       case 'home_dean': return 'Home Dean';
+      case 'vpsas': return 'VPSAS';
+      case 'business_officer': return 'Business Officer';
       case 'security_guard': return 'Security Guard';
       default: return user.role;
     }
@@ -80,41 +83,55 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
   });
 
+  // Roles allowed to see standard admin-area items (excludes business_officer)
+  private readonly adminRoles: User['role'][] = ['admin', 'home_dean', 'vpsas'];
+
   protected readonly menuSections = signal<MenuSection[]>([
     {
       title: 'Main',
       items: [
-        { label: 'Dashboard', icon: '📊', route: '/manage/dashboard' }
+        { label: 'Dashboard', icon: '📊', route: '/manage/dashboard', roles: this.adminRoles }
       ]
     },
     {
       title: 'Management',
       items: [
-        { label: 'Rooms', icon: '🛏️', route: '/manage/rooms' },
-        { label: 'Occupants', icon: '👥', route: '/manage/residents' },
-        { label: 'Staff', icon: '👮', route: '/manage/agents' },
-        { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
-        { label: 'Parent Approvals', icon: '👨‍👩‍👦', route: '/manage/parent-registrations' }
+        { label: 'Rooms', icon: '🛏️', route: '/manage/rooms', roles: this.adminRoles },
+        { label: 'Occupants', icon: '👥', route: '/manage/residents', roles: this.adminRoles },
+        { label: 'Staff', icon: '👮', route: '/manage/agents', roles: this.adminRoles },
+        { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests', roles: this.adminRoles },
+        { label: 'Parent Approvals', icon: '👨‍👩‍👦', route: '/manage/parent-registrations', roles: this.adminRoles }
       ]
     },
-    // {
-    //   title: 'Operations',
-    //   items: [
-    //     { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance' },
-    //     { label: 'Payments', icon: '💰', route: '/manage/payments' },
-    //     { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
-    //   ]
-    // },
+    {
+      title: 'Operations',
+      items: [
+        // { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance' },
+        { label: 'Payments', icon: '💰', route: '/manage/payments', roles: ['admin', 'business_officer'] },
+        // { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
+      ]
+    },
     {
       // title: 'Reports & Settings',
       title: 'Notifications & Settings',
       items: [
         // { label: 'Reports', icon: '📈', route: '/manage/reports' },
-        { label: 'Announcements', icon: '📢', route: '/manage/announcements' },
-        { label: 'Settings', icon: '⚙️', route: '/manage/settings' }
+        { label: 'Announcements', icon: '📢', route: '/manage/announcements', roles: this.adminRoles },
+        { label: 'Settings', icon: '⚙️', route: '/manage/settings', roles: ['admin', 'home_dean', 'vpsas', 'business_officer'] }
       ]
     }
   ]);
+
+  // Menu filtered by the current user's role; empty sections are dropped.
+  protected readonly visibleSections = computed(() => {
+    const role = this.currentUser()?.role;
+    return this.menuSections()
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => !item.roles || (!!role && item.roles.includes(role)))
+      }))
+      .filter(section => section.items.length > 0);
+  });
 
   private parentRegistrationSubscription: Subscription | null = null;
 

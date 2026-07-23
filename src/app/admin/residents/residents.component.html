@@ -154,9 +154,9 @@
             @if (resident.status !== 'suspended') {
               <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(resident)">🚫</button>
             } @else {
-              <button class="btn-icon reactivate" title="Reactivate" (click)="reactivateResident(resident)">✅</button>
+              <button class="btn-icon reactivate" title="Reactivate" (click)="openReactivateModal(resident)">✅</button>
             }
-            <button class="btn-icon delete" title="Delete" (click)="deleteResident(resident)">🗑️</button>
+            <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(resident)">🗑️</button>
           </div>
         </div>
       }
@@ -230,7 +230,7 @@
             @if (resident.status !== 'suspended') {
               <button class="btn-suspend" (click)="openSuspendModal(resident)">Suspend</button>
             } @else {
-              <button class="btn-reactivate" (click)="reactivateResident(resident)">Reactivate</button>
+              <button class="btn-reactivate" (click)="openReactivateModal(resident)">Reactivate</button>
             }
           </div>
         </article>
@@ -250,9 +250,9 @@
       [resident]="selectedResident()!"
       (close)="closeResidentDetail()"
       (edit)="editResident($event)"
-      (delete)="deleteResident($event)"
+      (delete)="openDeleteModal($event)"
       (suspend)="openSuspendModal($event)"
-      (reactivate)="reactivateResident($event)"
+      (reactivate)="openReactivateModal($event)"
       (assignRoom)="assignRoom($event)"
       (changeRoom)="changeRoom($event)"
     />
@@ -291,6 +291,28 @@
       [isSaving]="suspendSaving()"
       (close)="closeSuspendModal()"
       (confirm)="onSuspendResident($event)"
+    />
+  }
+
+  <!-- Reactivate Resident Modal -->
+  @if (showReactivateModal()) {
+    <app-reactivate-modal
+      [resident]="reactivatingResident()"
+      [errorMessage]="reactivateError()"
+      [isSaving]="reactivateSaving()"
+      (close)="closeReactivateModal()"
+      (confirm)="onReactivateResident()"
+    />
+  }
+
+  <!-- Delete Resident Modal -->
+  @if (showDeleteModal()) {
+    <app-delete-modal
+      [resident]="deletingResident()"
+      [errorMessage]="deleteError()"
+      [isSaving]="deleteSaving()"
+      (close)="closeDeleteModal()"
+      (confirm)="onDeleteResident()"
     />
   }
 

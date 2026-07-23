@@ -156,6 +156,18 @@
   }
 }
 
+.suspension-section {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  background: rgba(231, 76, 60, 0.06);
+  border: 1px solid rgba(231, 76, 60, 0.15);
+
+  h4 {
+    color: #e74c3c;
+    border-bottom-color: #e74c3c;
+  }
+}
+
 .btn-sm-outline {
   padding: 0.35rem 0.75rem;
   font-size: 0.8rem;

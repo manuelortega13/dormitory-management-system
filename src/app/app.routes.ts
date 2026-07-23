@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, residentGuard, securityGuard, parentGuard } from './auth/auth.guard';
+import { adminGuard, residentGuard, securityGuard, parentGuard, manageGuard, paymentsGuard, settingsGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
   // Login route
@@ -70,7 +70,7 @@ export const routes: Routes = [
   {
     path: 'manage',
     loadComponent: () => import('./layouts/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
-    canActivate: [adminGuard],
+    canActivate: [manageGuard],
     children: [
       {
         path: '',
@@ -79,50 +79,62 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
       {
         path: 'rooms',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/rooms/rooms.component').then(m => m.RoomsComponent)
       },
       {
         path: 'residents',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/residents/residents.component').then(m => m.ResidentsComponent)
       },
       {
         path: 'leave-requests',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/leave-requests/leave-requests.component').then(m => m.LeaveRequestsComponent)
       },
       {
         path: 'parent-registrations',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/parent-registrations/parent-registrations.component').then(m => m.ParentRegistrationsComponent)
       },
       {
         path: 'agents',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/agents/agents.component').then(m => m.AgentsComponent)
       },
       {
         path: 'maintenance',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/maintenance/maintenance.component').then(m => m.MaintenanceComponent)
       },
       {
         path: 'payments',
+        canActivate: [paymentsGuard],
         loadComponent: () => import('./admin/payments/payments.component').then(m => m.PaymentsComponent)
       },
       {
         path: 'inventory',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/inventory/inventory.component').then(m => m.InventoryComponent)
       },
       {
         path: 'reports',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/reports/reports.component').then(m => m.ReportsComponent)
       },
       {
         path: 'announcements',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/announcements/announcements.component').then(m => m.AnnouncementsComponent)
       },
       {
         path: 'settings',
+        canActivate: [settingsGuard],
         loadComponent: () => import('./admin/settings/settings.component').then(m => m.SettingsComponent)
       }
     ]

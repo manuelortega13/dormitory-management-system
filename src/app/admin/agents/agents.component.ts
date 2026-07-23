@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AgentsService } from './data/agents.service';
 import { Agent, CreateAgentDto, UpdateAgentDto } from './data/agent.model';
 import { AgentEditModalComponent } from './agent-edit-modal/agent-edit-modal.component';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-agents',
@@ -14,9 +15,13 @@ import { AgentEditModalComponent } from './agent-edit-modal/agent-edit-modal.com
 })
 export class AgentsComponent implements OnInit {
   private readonly agentsService = inject(AgentsService);
+  private readonly authService = inject(AuthService);
+
+  // Only admins can deactivate (suspend/reactivate) or delete staff
+  protected readonly isAdmin = signal(this.authService.getCurrentUser()?.role === 'admin');
 
   protected readonly searchQuery = signal('');
-  protected readonly selectedRole = signal<'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'all'>('all');
+  protected readonly selectedRole = signal<'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all'>('all');
   protected readonly selectedStatus = signal<'active' | 'suspended' | 'all'>('all');
   protected readonly isLoading = signal(false);
   protected readonly showAddModal = signal(false);
@@ -31,6 +36,19 @@ export class AgentsComponent implements OnInit {
 
   protected readonly showEditModal = signal(false);
   protected readonly editingAgent = signal<Agent | null>(null);
+
+  protected readonly showViewModal = signal(false);
+  protected readonly viewingAgent = signal<Agent | null>(null);
+
+  protected readonly showReactivateModal = signal(false);
+  protected readonly reactivatingAgent = signal<Agent | null>(null);
+  protected readonly reactivateSaving = signal(false);
+  protected readonly reactivateError = signal('');
+
+  protected readonly showDeleteModal = signal(false);
+  protected readonly deletingAgent = signal<Agent | null>(null);
+  protected readonly deleteSaving = signal(false);
+  protected readonly deleteError = signal('');
 
   @ViewChild(AgentEditModalComponent) editModalComponent?: AgentEditModalComponent;
 
@@ -71,6 +89,7 @@ export class AgentsComponent implements OnInit {
       admins: all.filter(a => a.role === 'admin').length,
       securityGuards: all.filter(a => a.role === 'security_guard').length,
       homeDeans: all.filter(a => a.role === 'home_dean').length,
+      businessOfficers: all.filter(a => a.role === 'business_officer').length,
       active: all.filter(a => a.status === 'active').length,
       suspended: all.filter(a => a.status === 'suspended').length
     };
@@ -108,7 +127,7 @@ export class AgentsComponent implements OnInit {
 
   updateRole(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    this.selectedRole.set(select.value as 'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'all');
+    this.selectedRole.set(select.value as 'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all');
   }
 
   updateStatus(event: Event): void {
@@ -125,6 +144,7 @@ export class AgentsComponent implements OnInit {
         if (deanType === 'female') return 'Dean for Females';
         return 'Home Dean';
       case 'vpsas': return 'VPSAS';
+      case 'business_officer': return 'Business Officer';
       default: return role;
     }
   }
@@ -231,6 +251,17 @@ export class AgentsComponent implements OnInit {
     });
   }
 
+  // View agent methods
+  openViewModal(agent: Agent): void {
+    this.viewingAgent.set(agent);
+    this.showViewModal.set(true);
+  }
+
+  closeViewModal(): void {
+    this.showViewModal.set(false);
+    this.viewingAgent.set(null);
+  }
+
   // Edit agent methods
   openEditModal(agent: Agent): void {
     this.editingAgent.set(agent);
@@ -280,8 +311,8 @@ export class AgentsComponent implements OnInit {
     if (!agent) return;
 
     const reason = this.suspendReason().trim();
-    if (!reason) {
-      this.suspendError.set('Please provide a reason for suspension');
+    if (reason.length < 10) {
+      this.suspendError.set('Please provide a reason of at least 10 characters');
       return;
     }
 
@@ -302,34 +333,68 @@ export class AgentsComponent implements OnInit {
     });
   }
 
-  reactivateAgent(agent: Agent): void {
-    if (!confirm(`Are you sure you want to reactivate ${this.getFullName(agent)}?`)) {
-      return;
-    }
+  openReactivateModal(agent: Agent): void {
+    this.reactivatingAgent.set(agent);
+    this.reactivateError.set('');
+    this.showReactivateModal.set(true);
+  }
+
+  closeReactivateModal(): void {
+    this.showReactivateModal.set(false);
+    this.reactivatingAgent.set(null);
+    this.reactivateError.set('');
+  }
+
+  confirmReactivate(): void {
+    const agent = this.reactivatingAgent();
+    if (!agent) return;
+
+    this.reactivateSaving.set(true);
+    this.reactivateError.set('');
 
     this.agentsService.reactivateAgent(agent.id).subscribe({
       next: () => {
+        this.reactivateSaving.set(false);
+        this.showReactivateModal.set(false);
+        this.reactivatingAgent.set(null);
         this.loadAgents();
       },
       error: (err) => {
-        console.error('Failed to reactivate agent:', err);
-        alert('Failed to reactivate agent');
+        this.reactivateSaving.set(false);
+        this.reactivateError.set(err.error?.error || 'Failed to reactivate staff member');
       }
     });
   }
 
-  deleteAgent(agent: Agent): void {
-    if (!confirm(`Are you sure you want to delete ${this.getFullName(agent)}? This action cannot be undone.`)) {
-      return;
-    }
+  openDeleteModal(agent: Agent): void {
+    this.deletingAgent.set(agent);
+    this.deleteError.set('');
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.deletingAgent.set(null);
+    this.deleteError.set('');
+  }
+
+  confirmDelete(): void {
+    const agent = this.deletingAgent();
+    if (!agent) return;
+
+    this.deleteSaving.set(true);
+    this.deleteError.set('');
 
     this.agentsService.deleteAgent(agent.id).subscribe({
       next: () => {
+        this.deleteSaving.set(false);
+        this.showDeleteModal.set(false);
+        this.deletingAgent.set(null);
         this.loadAgents();
       },
       error: (err) => {
-        console.error('Failed to delete agent:', err);
-        alert('Failed to delete agent');
+        this.deleteSaving.set(false);
+        this.deleteError.set(err.error?.error || 'Failed to delete staff member');
       }
     });
   }

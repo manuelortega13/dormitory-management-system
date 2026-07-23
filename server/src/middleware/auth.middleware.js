@@ -24,8 +24,8 @@ const roleMiddleware = (...allowedRoles) => {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // Treat home_dean, home_dean_men, home_dean_women, and vpsas as admin for permission purposes
-    const adminEquivalentRoles = ['home_dean', 'home_dean_men', 'home_dean_women', 'vpsas'];
+    // Treat home_dean and vpsas as admin for permission purposes
+    const adminEquivalentRoles = ['home_dean', 'vpsas'];
     const effectiveRole = adminEquivalentRoles.includes(req.user.role) ? 'admin' : req.user.role;
 
     if (!allowedRoles.includes(req.user.role) && !allowedRoles.includes(effectiveRole)) {
@@ -36,4 +36,21 @@ const roleMiddleware = (...allowedRoles) => {
   };
 };
 
-module.exports = { authMiddleware, roleMiddleware };
+// Strict role check: matches req.user.role exactly, WITHOUT the admin-equivalent
+// expansion above. Use this to restrict access to specific roles (e.g. Payments is
+// limited to admin + business_officer and must exclude home_dean/vpsas).
+const exactRoleMiddleware = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+    }
+
+    next();
+  };
+};
+
+module.exports = { authMiddleware, roleMiddleware, exactRoleMiddleware };

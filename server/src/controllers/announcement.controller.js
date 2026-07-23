@@ -36,7 +36,7 @@ exports.getAll = async (req, res) => {
     }
 
     // Non-admin users only see published announcements for their audience
-    if (!['admin', 'home_dean_men', 'home_dean_women', 'vpsas'].includes(userRole)) {
+    if (!['admin', 'home_dean', 'vpsas'].includes(userRole)) {
       query += ` AND a.status = 'published' AND (a.audience = 'all' OR a.audience = ?)`;
       params.push(userRole === 'parent' ? 'parents' : 'residents');
       query += ` AND (a.expires_at IS NULL OR a.expires_at > NOW())`;
@@ -63,7 +63,7 @@ exports.getPublished = async (req, res) => {
       audienceFilter = 'parents';
     } else if (userRole === 'resident') {
       audienceFilter = 'residents';
-    } else if (['security_guard', 'admin', 'home_dean_men', 'home_dean_women', 'vpsas'].includes(userRole)) {
+    } else if (['security_guard', 'admin', 'home_dean', 'vpsas'].includes(userRole)) {
       audienceFilter = 'staff';
     }
 
@@ -157,13 +157,13 @@ exports.create = async (req, res) => {
       // Determine which users should receive notifications based on audience
       let userQuery = '';
       if (announcementAudience === 'all') {
-        userQuery = `SELECT id FROM users WHERE role IN ('resident', 'parent', 'security_guard', 'admin', 'home_dean_men', 'home_dean_women', 'vpsas')`;
+        userQuery = `SELECT id FROM users WHERE role IN ('resident', 'parent', 'security_guard', 'admin', 'home_dean', 'vpsas')`;
       } else if (announcementAudience === 'residents') {
         userQuery = `SELECT id FROM users WHERE role = 'resident'`;
       } else if (announcementAudience === 'parents') {
         userQuery = `SELECT id FROM users WHERE role = 'parent'`;
       } else if (announcementAudience === 'staff') {
-        userQuery = `SELECT id FROM users WHERE role IN ('security_guard', 'admin', 'home_dean_men', 'home_dean_women', 'vpsas')`;
+        userQuery = `SELECT id FROM users WHERE role IN ('security_guard', 'admin', 'home_dean', 'vpsas')`;
       }
 
       if (userQuery) {
@@ -320,13 +320,13 @@ exports.publish = async (req, res) => {
     const params = [];
 
     if (announcement.audience === 'all') {
-      userQuery = `SELECT id FROM users WHERE role IN ('resident', 'parent', 'security_guard', 'admin', 'home_dean_men', 'home_dean_women', 'vpsas')`;
+      userQuery = `SELECT id FROM users WHERE role IN ('resident', 'parent', 'security_guard', 'admin', 'home_dean', 'vpsas')`;
     } else if (announcement.audience === 'residents') {
       userQuery = `SELECT id FROM users WHERE role = 'resident'`;
     } else if (announcement.audience === 'parents') {
       userQuery = `SELECT id FROM users WHERE role = 'parent'`;
     } else if (announcement.audience === 'staff') {
-      userQuery = `SELECT id FROM users WHERE role IN ('security_guard', 'admin', 'home_dean_men', 'home_dean_women', 'vpsas')`;
+      userQuery = `SELECT id FROM users WHERE role IN ('security_guard', 'admin', 'home_dean', 'vpsas')`;
     }
 
     if (userQuery) {

@@ -167,25 +167,49 @@ export class PaymentService {
 
   // Admin: Update a bill
   async updateBill(id: number, updates: Partial<CreateBillRequest & { status: string }>): Promise<void> {
-    const response = await firstValueFrom(
-      this.http.put<ApiResponse<Bill>>(`${this.apiUrl}/bills/${id}`, updates)
-    );
-    if (response.success && response.data) {
-      this.bills.update(bills => bills.map(b => b.id === id ? response.data! : b));
-    } else {
-      throw new Error(response.message || 'Failed to update bill');
+    try {
+      const response = await firstValueFrom(
+        this.http.put<ApiResponse<Bill>>(`${this.apiUrl}/bills/${id}`, updates)
+      );
+      if (response.success && response.data) {
+        this.bills.update(bills => bills.map(b => b.id === id ? response.data! : b));
+      } else {
+        throw new Error(response.message || 'Failed to update bill');
+      }
+    } catch (error: any) {
+      // Surface backend guard messages (e.g. 409 when editing a paid bill's amount)
+      const backendMessage = error?.error?.message || error?.error?.error;
+      if (backendMessage) {
+        throw new Error(backendMessage);
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to update bill');
     }
   }
 
   // Admin: Delete a bill
   async deleteBill(id: number): Promise<void> {
-    const response = await firstValueFrom(
-      this.http.delete<ApiResponse<void>>(`${this.apiUrl}/bills/${id}`)
-    );
-    if (response.success) {
-      this.bills.update(bills => bills.filter(b => b.id !== id));
-    } else {
-      throw new Error(response.message || 'Failed to delete bill');
+    try {
+      const response = await firstValueFrom(
+        this.http.delete<ApiResponse<void>>(`${this.apiUrl}/bills/${id}`)
+      );
+      if (response.success) {
+        this.bills.update(bills => bills.filter(b => b.id !== id));
+      } else {
+        throw new Error(response.message || 'Failed to delete bill');
+      }
+    } catch (error: any) {
+      // Surface backend guard messages (e.g. 409 when the bill has payments)
+      const backendMessage = error?.error?.message || error?.error?.error;
+      if (backendMessage) {
+        throw new Error(backendMessage);
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to delete bill');
     }
   }
 

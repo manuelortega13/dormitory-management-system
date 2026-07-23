@@ -5,13 +5,15 @@ import { ResidentsService, Resident, ResidentStatus, CreateResidentDto, UpdateRe
 import { ResidentFormModalComponent } from './resident-form-modal/resident-form-modal.component';
 import { ResidentDetailModalComponent } from './resident-detail-modal/resident-detail-modal.component';
 import { SuspendModalComponent } from './suspend-modal/suspend-modal.component';
+import { ReactivateModalComponent } from './reactivate-modal/reactivate-modal.component';
+import { DeleteModalComponent } from './delete-modal/delete-modal.component';
 import { AssignRoomModalComponent, AssignRoomData } from './assign-room-modal/assign-room-modal.component';
 import { RoomsService } from '../rooms/data/rooms.service';
 
 @Component({
   selector: 'app-residents',
   standalone: true,
-  imports: [CommonModule, FormsModule, ResidentFormModalComponent, ResidentDetailModalComponent, SuspendModalComponent, AssignRoomModalComponent],
+  imports: [CommonModule, FormsModule, ResidentFormModalComponent, ResidentDetailModalComponent, SuspendModalComponent, ReactivateModalComponent, DeleteModalComponent, AssignRoomModalComponent],
   templateUrl: './residents.component.html',
   styleUrl: './residents.component.scss'
 })
@@ -34,6 +36,14 @@ export class ResidentsComponent implements OnInit {
   protected readonly suspendingResident = signal<Resident | null>(null);
   protected readonly suspendError = signal('');
   protected readonly suspendSaving = signal(false);
+  protected readonly showReactivateModal = signal(false);
+  protected readonly reactivatingResident = signal<Resident | null>(null);
+  protected readonly reactivateError = signal('');
+  protected readonly reactivateSaving = signal(false);
+  protected readonly showDeleteModal = signal(false);
+  protected readonly deletingResident = signal<Resident | null>(null);
+  protected readonly deleteError = signal('');
+  protected readonly deleteSaving = signal(false);
 
   // Assign Room Modal state
   protected readonly showAssignRoomModal = signal(false);
@@ -239,16 +249,38 @@ export class ResidentsComponent implements OnInit {
     });
   }
 
-  deleteResident(resident: Resident): void {
-    if (confirm(`Are you sure you want to delete ${this.getFullName(resident)}?`)) {
-      this.residentsService.deleteResident(resident.id).subscribe({
-        next: () => {
-          this.residents.update(residents => residents.filter(r => r.id !== resident.id));
-          this.closeResidentDetail();
-        },
-        error: (err) => console.error('Failed to delete resident:', err)
-      });
-    }
+  openDeleteModal(resident: Resident): void {
+    this.deleteError.set('');
+    this.deleteSaving.set(false);
+    this.deletingResident.set(resident);
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.deletingResident.set(null);
+    this.deleteError.set('');
+  }
+
+  onDeleteResident(): void {
+    const resident = this.deletingResident();
+    if (!resident) return;
+
+    this.deleteSaving.set(true);
+    this.deleteError.set('');
+
+    this.residentsService.deleteResident(resident.id).subscribe({
+      next: () => {
+        this.deleteSaving.set(false);
+        this.residents.update(residents => residents.filter(r => r.id !== resident.id));
+        this.closeDeleteModal();
+        this.closeResidentDetail();
+      },
+      error: (err) => {
+        this.deleteSaving.set(false);
+        this.deleteError.set(err.error?.error || 'Failed to delete occupant');
+      }
+    });
   }
 
   assignRoom(resident: Resident): void {
@@ -377,15 +409,37 @@ export class ResidentsComponent implements OnInit {
     });
   }
 
-  reactivateResident(resident: Resident): void {
-    if (confirm(`Are you sure you want to reactivate ${this.getFullName(resident)}?`)) {
-      this.residentsService.reactivateResident(resident.id).subscribe({
-        next: () => {
-          this.closeResidentDetail();
-          this.loadResidents();
-        },
-        error: (err) => console.error('Failed to reactivate resident:', err)
-      });
-    }
+  openReactivateModal(resident: Resident): void {
+    this.reactivateError.set('');
+    this.reactivateSaving.set(false);
+    this.reactivatingResident.set(resident);
+    this.showReactivateModal.set(true);
+  }
+
+  closeReactivateModal(): void {
+    this.showReactivateModal.set(false);
+    this.reactivatingResident.set(null);
+    this.reactivateError.set('');
+  }
+
+  onReactivateResident(): void {
+    const resident = this.reactivatingResident();
+    if (!resident) return;
+
+    this.reactivateSaving.set(true);
+    this.reactivateError.set('');
+
+    this.residentsService.reactivateResident(resident.id).subscribe({
+      next: () => {
+        this.reactivateSaving.set(false);
+        this.closeReactivateModal();
+        this.closeResidentDetail();
+        this.loadResidents();
+      },
+      error: (err) => {
+        this.reactivateSaving.set(false);
+        this.reactivateError.set(err.error?.error || 'Failed to reactivate occupant');
+      }
+    });
   }
 }

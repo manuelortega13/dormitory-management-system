@@ -20,7 +20,7 @@
   </div>
 
   <nav class="sidebar-nav">
-    @for (section of menuSections(); track section.title) {
+    @for (section of visibleSections(); track section.title) {
       <div class="menu-section">
         @if (!isCollapsed()) {
           <span class="section-title">{{ section.title }}</span>

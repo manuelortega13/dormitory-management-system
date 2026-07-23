@@ -1,0 +1,35 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="close.emit()">✕</button>
+
+    <div class="modal-header">
+      <div class="warning-icon">🗑️</div>
+      <h2>Delete Occupant</h2>
+    </div>
+
+    <div class="modal-body">
+      @if (errorMessage) {
+        <div class="alert alert-error">{{ errorMessage }}</div>
+      }
+
+      <p class="confirm-message">
+        Are you sure you want to delete <strong>{{ getFullName() }}</strong
+        >?
+      </p>
+      <p class="info-text">
+        This will permanently remove the occupant's account. This action cannot be undone.
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close.emit()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-danger" (click)="confirm.emit()" [disabled]="isSaving">
+        @if (isSaving) {
+          Deleting...
+        } @else {
+          Delete Occupant
+        }
+      </button>
+    </div>
+  </div>
+</div>

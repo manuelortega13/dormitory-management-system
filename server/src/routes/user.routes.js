@@ -36,4 +36,10 @@ router.post('/agents', authMiddleware, roleMiddleware('admin'), userController.c
 // PUT /api/users/agents/:id - Update agent (admin only)
 router.put('/agents/:id', authMiddleware, roleMiddleware('admin'), userController.updateAgent);
 
+// PATCH /api/users/agents/:id/suspend - Suspend a staff member (admin only)
+router.patch('/agents/:id/suspend', authMiddleware, roleMiddleware('admin'), userController.suspendAgent);
+
+// PATCH /api/users/agents/:id/reactivate - Reactivate a suspended staff member (admin only)
+router.patch('/agents/:id/reactivate', authMiddleware, roleMiddleware('admin'), userController.reactivateAgent);
+
 module.exports = router;

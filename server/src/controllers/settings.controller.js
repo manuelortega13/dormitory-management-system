@@ -4,14 +4,20 @@ const { pool } = require('../config/database');
 exports.getAllSettings = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id, category, setting_key, setting_value, setting_type, description, options 
-       FROM system_settings 
+      `SELECT id, category, setting_key, setting_value, setting_type, description, options
+       FROM system_settings
        ORDER BY category, id`
     );
+
+    // Business officers are scoped to payment settings only
+    const restrictToPayments = req.user.role === 'business_officer';
 
     // Group settings by category
     const grouped = {};
     for (const row of rows) {
+      if (restrictToPayments && row.category !== 'payments') {
+        continue;
+      }
       if (!grouped[row.category]) {
         grouped[row.category] = [];
       }
@@ -60,7 +66,12 @@ exports.getAllSettings = async (req, res) => {
 exports.getSettingsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    
+
+    // Business officers are scoped to payment settings only
+    if (req.user.role === 'business_officer' && category !== 'payments') {
+      return res.status(403).json({ message: 'Business officers can only access payment settings' });
+    }
+
     const [rows] = await pool.query(
       `SELECT id, category, setting_key, setting_value, setting_type, description, options 
        FROM system_settings 
@@ -118,6 +129,11 @@ exports.updateSettings = async (req, res) => {
       return res.status(400).json({ message: 'Settings array is required' });
     }
 
+    // Business officers may only modify Payment Settings
+    if (req.user.role === 'business_officer' && settings.some(s => s.category !== 'payments')) {
+      return res.status(403).json({ message: 'Business officers can only update payment settings' });
+    }
+
     const connection = await pool.getConnection();
     
     try {
@@ -163,6 +179,11 @@ exports.updateSetting = async (req, res) => {
     const { category, key } = req.params;
     const { value } = req.body;
     const userId = req.user.id;
+
+    // Business officers may only modify Payment Settings
+    if (req.user.role === 'business_officer' && category !== 'payments') {
+      return res.status(403).json({ message: 'Business officers can only update payment settings' });
+    }
 
     // Convert value to string for storage
     let stringValue = value;
@@ -256,8 +277,13 @@ exports.getSetting = async (req, res) => {
   try {
     const { category, key } = req.params;
 
+    // Business officers are scoped to payment settings only
+    if (req.user.role === 'business_officer' && category !== 'payments') {
+      return res.status(403).json({ message: 'Business officers can only access payment settings' });
+    }
+
     const [rows] = await pool.query(
-      `SELECT setting_value, setting_type FROM system_settings 
+      `SELECT setting_value, setting_type FROM system_settings
        WHERE category = ? AND setting_key = ?`,
       [category, key]
     );

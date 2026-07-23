@@ -2,7 +2,7 @@ const { pool } = require('../config/database');
 
 // Helper to check if user has admin-level access
 const isAdmin = (role) =>
-  ['admin', 'home_dean', 'home_dean_men', 'home_dean_women', 'vpsas'].includes(role);
+  ['admin', 'home_dean', 'vpsas'].includes(role);
 
 // Tool definitions for OpenAI function calling
 const toolDefinitions = [

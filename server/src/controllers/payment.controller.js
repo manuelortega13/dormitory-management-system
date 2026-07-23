@@ -215,13 +215,24 @@ exports.updateBill = async (req, res) => {
       return res.status(404).json({ error: 'Bill not found' });
     }
 
+    // Guard: the amount of a paid bill is locked and cannot be changed.
+    const isPaid = existing[0].status === 'paid';
+    if (isPaid && amount !== undefined && Number(amount) !== Number(existing[0].amount)) {
+      return res.status(409).json({
+        success: false,
+        error: 'Bill already paid',
+        message: 'Cannot change the amount of a bill that has already been paid.'
+      });
+    }
+    const effectiveAmount = isPaid ? existing[0].amount : (amount || existing[0].amount);
+
     await pool.execute(
       `UPDATE bills SET type = ?, description = ?, amount = ?, due_date = ?, status = ?
        WHERE id = ?`,
       [
         type || existing[0].type,
         description || existing[0].description,
-        amount || existing[0].amount,
+        effectiveAmount,
         due_date || existing[0].due_date,
         status || existing[0].status,
         id
@@ -231,7 +242,7 @@ exports.updateBill = async (req, res) => {
     res.json({ 
       success: true,
       message: 'Bill updated successfully',
-      data: { ...existing[0], type, description, amount, due_date, status }
+      data: { ...existing[0], type, description, amount: effectiveAmount, due_date, status }
     });
   } catch (error) {
     console.error('Update bill error:', error);
@@ -244,13 +255,52 @@ exports.deleteBill = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Ensure the bill exists (clean 404 before any guard checks)
+    const [[bill]] = await pool.execute('SELECT id, status FROM bills WHERE id = ?', [id]);
+    if (!bill) {
+      return res.status(404).json({ error: 'Bill not found' });
+    }
+
+    // Guard: a bill that has already been paid must not be deleted.
+    if (bill.status === 'paid') {
+      return res.status(409).json({
+        success: false,
+        error: 'Bill already paid',
+        message: 'Cannot delete a bill that has already been paid.'
+      });
+    }
+
+    // Guard: the payments table references bills with ON DELETE CASCADE, so deleting a
+    // bill that has payments would silently wipe out its payment history (including
+    // verified payments). Refuse instead of destroying payment records.
+    const [[counts]] = await pool.execute(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(status = 'verified') AS verified,
+         SUM(status = 'pending') AS pending
+       FROM payments WHERE bill_id = ?`,
+      [id]
+    );
+
+    if (counts.total > 0) {
+      const parts = [];
+      if (Number(counts.verified) > 0) parts.push(`${counts.verified} verified`);
+      if (Number(counts.pending) > 0) parts.push(`${counts.pending} pending`);
+      const detail = parts.length ? ` (${parts.join(', ')})` : '';
+      return res.status(409).json({
+        success: false,
+        error: 'Bill has payments',
+        message: `Cannot delete this bill because it has ${counts.total} payment(s) recorded against it${detail}. Reject or remove those payments first.`
+      });
+    }
+
     const [result] = await pool.execute('DELETE FROM bills WHERE id = ?', [id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Bill not found' });
     }
 
-    res.json({ message: 'Bill deleted successfully' });
+    res.json({ success: true, message: 'Bill deleted successfully' });
   } catch (error) {
     console.error('Delete bill error:', error);
     res.status(500).json({ error: 'Failed to delete bill' });
@@ -488,7 +538,7 @@ exports.makePayment = async (req, res) => {
 
     // Notify admins about new payment
     const [admins] = await pool.execute(
-      `SELECT id FROM users WHERE role IN ('admin', 'home_dean_men', 'home_dean_women')`
+      `SELECT id FROM users WHERE role IN ('admin', 'home_dean')`
     );
 
     const [payer] = await pool.execute(

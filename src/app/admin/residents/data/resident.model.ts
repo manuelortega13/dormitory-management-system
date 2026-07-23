@@ -15,6 +15,8 @@ export interface Resident {
   phone: string;
   photo_url: string | null;
   status: ResidentStatus;
+  suspension_reason: string | null;
+  suspended_at: string | null;
   created_at: string;
   student_resident_id: string | null;
   gender: Gender | null;

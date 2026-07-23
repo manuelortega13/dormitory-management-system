@@ -55,6 +55,24 @@
         </div>
       </div>
 
+      @if (resident.status === 'suspended') {
+        <div class="detail-section suspension-section">
+          <h4>Suspension Details</h4>
+          <div class="detail-grid">
+            @if (resident.suspended_at) {
+              <div class="detail-item">
+                <span class="label">Suspended On</span>
+                <span class="value">{{ resident.suspended_at | date:'medium' }}</span>
+              </div>
+            }
+            <div class="detail-item full-width">
+              <span class="label">Reason</span>
+              <span class="value">{{ resident.suspension_reason || 'No reason recorded' }}</span>
+            </div>
+          </div>
+        </div>
+      }
+
       <div class="detail-section">
         <h4>Academic Information</h4>
         <div class="detail-grid">

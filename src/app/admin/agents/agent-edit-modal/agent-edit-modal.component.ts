@@ -93,6 +93,7 @@ export class AgentEditModalComponent implements OnInit {
       case 'security_guard': return 'Security Guard';
       case 'home_dean': return 'Home Dean';
       case 'vpsas': return 'VPSAS';
+      case 'business_officer': return 'Business Officer';
       default: return role;
     }
   }

@@ -49,14 +49,14 @@ export class AgentsService {
 
   suspendAgent(id: number, reason: string): Observable<{ message: string }> {
     return this.http.patch<{ message: string }>(
-      `${this.apiUrl}/${id}/suspend`,
+      `${this.apiUrl}/agents/${id}/suspend`,
       { reason }
     );
   }
 
   reactivateAgent(id: number): Observable<{ message: string }> {
     return this.http.patch<{ message: string }>(
-      `${this.apiUrl}/${id}/reactivate`,
+      `${this.apiUrl}/agents/${id}/reactivate`,
       {}
     );
   }

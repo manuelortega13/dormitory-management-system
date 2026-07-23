@@ -2,6 +2,7 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { SettingsService, SystemSetting, SettingUpdate } from '../../services/settings.service';
+import { AuthService, User } from '../../auth/auth.service';
 
 
 interface SettingSection {
@@ -9,6 +10,7 @@ interface SettingSection {
   title: string;
   icon: string;
   description: string;
+  roles: User['role'][];
 }
 
 @Component({
@@ -20,35 +22,48 @@ interface SettingSection {
 })
 export class SettingsComponent implements OnInit {
   private settingsService = inject(SettingsService);
+  private authService = inject(AuthService);
 
-  sections: SettingSection[] = [
+  private readonly adminRoles: User['role'][] = ['admin', 'home_dean', 'vpsas'];
+
+  private allSections: SettingSection[] = [
     {
       id: 'general',
       title: 'General Settings',
       icon: '⚙️',
-      description: 'Basic system configuration'
+      description: 'Basic system configuration',
+      roles: this.adminRoles
     },
     {
       id: 'notifications',
       title: 'Notification Settings',
       icon: '🔔',
-      description: 'Configure system notifications'
+      description: 'Configure system notifications',
+      roles: this.adminRoles
     },
     {
       id: 'security',
       title: 'Security Settings',
       icon: '🔒',
-      description: 'Security and access control'
+      description: 'Security and access control',
+      roles: this.adminRoles
     },
     {
       id: 'payments',
       title: 'Payment Settings',
       icon: '💳',
-      description: 'Configure payment options'
+      description: 'Configure payment options',
+      roles: ['admin', 'business_officer']
     }
   ];
 
-  activeSection = signal('general');
+  // Sections the current user is allowed to see
+  sections: SettingSection[] = this.allSections.filter(section => {
+    const role = this.authService.getCurrentUser()?.role;
+    return !!role && section.roles.includes(role);
+  });
+
+  activeSection = signal(this.sections[0]?.id ?? 'general');
   isLoading = signal(true);
   isSaving = signal(false);
   hasChanges = signal(false);

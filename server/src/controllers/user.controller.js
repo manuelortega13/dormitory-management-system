@@ -125,6 +125,19 @@ exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Deleting a staff member (agent role) requires a true admin.
+    // roleMiddleware treats vpsas/home_dean as admin, so enforce it explicitly here.
+    const [target] = await pool.execute('SELECT role FROM users WHERE id = ?', [id]);
+
+    if (target.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const agentRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
+    if (agentRoles.includes(target[0].role) && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only administrators can delete staff members' });
+    }
+
     await pool.execute('DELETE FROM users WHERE id = ?', [id]);
 
     res.json({ message: 'User deleted successfully' });
@@ -222,7 +235,7 @@ exports.getResidents = async (req, res) => {
 
     let query = `
       SELECT 
-        u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url, u.status, u.created_at,
+        u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url, u.status, u.suspension_reason, u.suspended_at, u.created_at,
         u.gender, u.address, u.course, u.year_level, u.student_resident_id,
         r.room_number, r.floor, r.room_type,
         ra.start_date, ra.end_date,
@@ -295,14 +308,11 @@ exports.suspendResident = async (req, res) => {
       return res.status(400).json({ error: 'Resident is already suspended' });
     }
 
-    // Update user status to suspended
+    // Update user status to suspended and persist the reason
     await pool.execute(
-      'UPDATE users SET status = ? WHERE id = ?',
-      ['suspended', id]
+      'UPDATE users SET status = ?, suspension_reason = ?, suspended_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['suspended', reason.trim(), id]
     );
-
-    // Log the suspension reason (could be stored in a separate audit table if needed)
-    console.log(`Resident ${id} suspended by admin ${req.user.id}. Reason: ${reason.trim()}`);
 
     res.json({ message: 'Resident suspended successfully' });
   } catch (error) {
@@ -333,9 +343,9 @@ exports.reactivateResident = async (req, res) => {
       return res.status(400).json({ error: 'Resident is not suspended' });
     }
 
-    // Update user status to active
+    // Update user status to active and clear suspension details
     await pool.execute(
-      'UPDATE users SET status = ? WHERE id = ?',
+      'UPDATE users SET status = ?, suspension_reason = NULL, suspended_at = NULL WHERE id = ?',
       ['active', id]
     );
 
@@ -352,9 +362,9 @@ exports.createAgent = async (req, res) => {
     const { email, password, firstName, lastName, role, phone, deanType } = req.body;
 
     // Validate role - only allow agent roles
-    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas'];
+    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, home_dean, vpsas' });
+      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, home_dean, vpsas, business_officer' });
     }
 
     // Validate required fields
@@ -411,8 +421,8 @@ exports.getAgents = async (req, res) => {
   try {
     const { role, status, search } = req.query;
 
-    let query = `SELECT id, email, first_name, last_name, role, dean_type, phone, photo_url, status, created_at 
-                 FROM users WHERE role IN ('admin', 'security_guard', 'home_dean', 'vpsas')`;
+    let query = `SELECT id, email, first_name, last_name, role, dean_type, phone, photo_url, status, suspension_reason, suspended_at, created_at
+                 FROM users WHERE role IN ('admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer')`;
     const params = [];
 
     if (role) {
@@ -449,9 +459,9 @@ exports.updateAgent = async (req, res) => {
     const { firstName, lastName, email, role, phone, deanType } = req.body;
 
     // Validate role - only allow agent roles
-    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas'];
+    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, home_dean, vpsas' });
+      return res.status(400).json({ error: 'Invalid role. Allowed roles: admin, security_guard, home_dean, vpsas, business_officer' });
     }
 
     // Validate required fields
@@ -507,5 +517,92 @@ exports.updateAgent = async (req, res) => {
   } catch (error) {
     console.error('Update agent error:', error);
     res.status(500).json({ error: 'Failed to update agent' });
+  }
+};
+
+// Suspend agent (admin, security_guard, home_dean, vpsas) - admin only
+exports.suspendAgent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
+
+    // Only true admins may deactivate staff (roleMiddleware treats vpsas/home_dean as admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only administrators can suspend staff members' });
+    }
+
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({ error: 'Please provide a valid reason (at least 10 characters)' });
+    }
+
+    // Check if user exists and is an agent
+    const [users] = await pool.execute(
+      'SELECT id, role, status FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    if (!allowedRoles.includes(users[0].role)) {
+      return res.status(400).json({ error: 'Only staff members can be suspended with this endpoint' });
+    }
+
+    if (users[0].status === 'suspended') {
+      return res.status(400).json({ error: 'Staff member is already suspended' });
+    }
+
+    await pool.execute(
+      'UPDATE users SET status = ?, suspension_reason = ?, suspended_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['suspended', reason.trim(), id]
+    );
+
+    res.json({ message: 'Staff member suspended successfully' });
+  } catch (error) {
+    console.error('Suspend agent error:', error);
+    res.status(500).json({ error: 'Failed to suspend staff member' });
+  }
+};
+
+// Reactivate agent (admin, security_guard, home_dean, vpsas) - admin only
+exports.reactivateAgent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
+
+    // Only true admins may reactivate staff (roleMiddleware treats vpsas/home_dean as admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only administrators can reactivate staff members' });
+    }
+
+    // Check if user exists and is an agent
+    const [users] = await pool.execute(
+      'SELECT id, role, status FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    if (!allowedRoles.includes(users[0].role)) {
+      return res.status(400).json({ error: 'Only staff members can be reactivated with this endpoint' });
+    }
+
+    if (users[0].status !== 'suspended') {
+      return res.status(400).json({ error: 'Staff member is not suspended' });
+    }
+
+    await pool.execute(
+      'UPDATE users SET status = ?, suspension_reason = NULL, suspended_at = NULL WHERE id = ?',
+      ['active', id]
+    );
+
+    res.json({ message: 'Staff member reactivated successfully' });
+  } catch (error) {
+    console.error('Reactivate agent error:', error);
+    res.status(500).json({ error: 'Failed to reactivate staff member' });
   }
 };

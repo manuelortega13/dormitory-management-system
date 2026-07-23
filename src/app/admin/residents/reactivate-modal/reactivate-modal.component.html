@@ -1,0 +1,33 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="close.emit()">✕</button>
+
+    <div class="modal-header">
+      <div class="success-icon">✅</div>
+      <h2>Reactivate Occupant</h2>
+    </div>
+
+    <div class="modal-body">
+      @if (errorMessage) {
+        <div class="alert alert-error">{{ errorMessage }}</div>
+      }
+
+      <p class="confirm-message">
+        Are you sure you want to reactivate <strong>{{ getFullName() }}</strong
+        >?
+      </p>
+      <p class="info-text">This will restore the occupant's access to the system.</p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close.emit()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-success" (click)="confirm.emit()" [disabled]="isSaving">
+        @if (isSaving) {
+          Reactivating...
+        } @else {
+          Reactivate Occupant
+        }
+      </button>
+    </div>
+  </div>
+</div>

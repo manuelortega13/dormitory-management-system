@@ -27,6 +27,10 @@
       <span class="stat-value">{{ stats().homeDeans }}</span>
       <span class="stat-label">Home Deans</span>
     </div>
+    <div class="stat-item business-officer">
+      <span class="stat-value">{{ stats().businessOfficers }}</span>
+      <span class="stat-label">Business Officers</span>
+    </div>
     <div class="stat-item active">
       <span class="stat-value">{{ stats().active }}</span>
       <span class="stat-label">Active</span>
@@ -56,6 +60,7 @@
         <option value="security_guard">Security Guard</option>
         <option value="home_dean">Home Dean</option>
         <option value="vpsas">VPSAS</option>
+        <option value="business_officer">Business Officer</option>
       </select>
 
       <select (change)="updateStatus($event)">
@@ -121,13 +126,16 @@
             <span class="date">{{ agent.created_at | date:'mediumDate' }}</span>
           </div>
           <div class="col-actions" data-label="Actions">
+            <button class="btn-icon view" title="View" (click)="openViewModal(agent)">👁️</button>
             <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
-            @if (agent.status !== 'suspended') {
-              <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">🚫</button>
-            } @else {
-              <button class="btn-icon reactivate" title="Reactivate" (click)="reactivateAgent(agent)">✅</button>
+            @if (isAdmin()) {
+              @if (agent.status !== 'suspended') {
+                <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">🚫</button>
+              } @else {
+                <button class="btn-icon reactivate" title="Reactivate" (click)="openReactivateModal(agent)">✅</button>
+              }
+              <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(agent)">🗑️</button>
             }
-            <button class="btn-icon delete" title="Delete" (click)="deleteAgent(agent)">🗑️</button>
           </div>
         </div>
       }
@@ -209,6 +217,7 @@
             <option value="admin">Admin</option>
             <option value="home_dean">Home Dean</option>
             <option value="vpsas">VPSAS</option>
+            <option value="business_officer">Business Officer</option>
           </select>
         </div>
 
@@ -264,6 +273,73 @@
   />
 }
 
+<!-- View Staff Modal -->
+@if (showViewModal() && viewingAgent(); as viewing) {
+  <div class="modal-overlay" (click)="closeViewModal()">
+    <div class="modal-content view-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Staff Details</h2>
+        <button class="btn-close" (click)="closeViewModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="view-header">
+          <div class="agent-avatar" [style.background]="getAvatarColor(viewing.first_name)">
+            {{ getInitials(viewing) }}
+          </div>
+          <div class="view-header-info">
+            <span class="name">{{ getFullName(viewing) }}</span>
+            <span class="role-badge" [class]="getRoleClass(viewing.role)">
+              {{ getRoleLabel(viewing.role, viewing.dean_type) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="view-field">
+          <span class="view-label">Staff ID</span>
+          <span class="view-value">{{ viewing.id }}</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Email</span>
+          <span class="view-value">{{ viewing.email }}</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Phone</span>
+          <span class="view-value">{{ viewing.phone || '—' }}</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Status</span>
+          <span class="status-badge" [class]="viewing.status">{{ viewing.status | titlecase }}</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Created</span>
+          <span class="view-value">{{ viewing.created_at | date:'medium' }}</span>
+        </div>
+
+        @if (viewing.status === 'suspended') {
+          <div class="suspension-details">
+            <h3>Suspension Details</h3>
+            @if (viewing.suspended_at) {
+              <div class="view-field">
+                <span class="view-label">Suspended On</span>
+                <span class="view-value">{{ viewing.suspended_at | date:'medium' }}</span>
+              </div>
+            }
+            <div class="view-field">
+              <span class="view-label">Reason</span>
+              <span class="view-value">{{ viewing.suspension_reason || 'No reason recorded' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeViewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- Suspend Modal -->
 @if (showSuspendModal()) {
   <div class="modal-overlay" (click)="closeSuspendModal()">
@@ -304,6 +380,78 @@
             <span class="spinner">⏳</span> Suspending...
           } @else {
             Suspend Staff
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reactivate Modal -->
+@if (showReactivateModal() && reactivatingAgent(); as reactivating) {
+  <div class="modal-overlay" (click)="closeReactivateModal()">
+    <div class="modal-content reactivate-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Reactivate Staff</h2>
+        <button class="btn-close" (click)="closeReactivateModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        @if (reactivateError()) {
+          <div class="error-message">{{ reactivateError() }}</div>
+        }
+
+        <p class="reactivate-message">
+          You are about to reactivate <strong>{{ getFullName(reactivating) }}</strong>.
+          This will restore their access to the system.
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeReactivateModal()" [disabled]="reactivateSaving()">
+          Cancel
+        </button>
+        <button class="btn-primary" (click)="confirmReactivate()" [disabled]="reactivateSaving()">
+          @if (reactivateSaving()) {
+            <span class="spinner">⏳</span> Reactivating...
+          } @else {
+            Reactivate Staff
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Modal -->
+@if (showDeleteModal() && deletingAgent(); as deleting) {
+  <div class="modal-overlay" (click)="closeDeleteModal()">
+    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Delete Staff</h2>
+        <button class="btn-close" (click)="closeDeleteModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        @if (deleteError()) {
+          <div class="error-message">{{ deleteError() }}</div>
+        }
+
+        <p class="delete-warning">
+          You are about to permanently delete <strong>{{ getFullName(deleting) }}</strong>.
+          This action cannot be undone.
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeDeleteModal()" [disabled]="deleteSaving()">
+          Cancel
+        </button>
+        <button class="btn-danger" (click)="confirmDelete()" [disabled]="deleteSaving()">
+          @if (deleteSaving()) {
+            <span class="spinner">⏳</span> Deleting...
+          } @else {
+            Delete Staff
           }
         </button>
       </div>

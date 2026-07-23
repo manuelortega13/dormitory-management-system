@@ -2,6 +2,7 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PaymentService, Bill, Payment, PaymentStats, Resident, CreateBillRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-payments',
@@ -12,6 +13,7 @@ import { PaymentService, Bill, Payment, PaymentStats, Resident, CreateBillReques
 })
 export class PaymentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
+  private toastService = inject(ToastService);
 
   // Tab management
   activeTab = signal<'bills' | 'payments' | 'settings'>('bills');
@@ -51,6 +53,7 @@ export class PaymentsComponent implements OnInit {
   showBillModal = signal(false);
   isEditingBill = signal(false);
   editingBillId = signal<number | null>(null);
+  editingBillPaid = signal(false);
   isSavingBill = signal(false);
   billModalError = signal('');
 
@@ -282,6 +285,7 @@ export class PaymentsComponent implements OnInit {
   openEditBillModal(bill: Bill) {
     this.isEditingBill.set(true);
     this.editingBillId.set(bill.id);
+    this.editingBillPaid.set(bill.status === 'paid');
     this.formResidentId.set(bill.resident_id);
     this.selectedResidentName.set(
       `${bill.resident_name}${bill.room_number ? ' (' + bill.room_number + ')' : ''}`
@@ -299,6 +303,7 @@ export class PaymentsComponent implements OnInit {
   }
 
   resetBillForm() {
+    this.editingBillPaid.set(false);
     this.formResidentId.set(null);
     this.formBillType.set('rent');
     this.formDescription.set('');
@@ -450,8 +455,9 @@ export class PaymentsComponent implements OnInit {
       this.closeDeleteModal();
       await this.loadBills();
       await this.loadStats();
+      this.toastService.success('Bill deleted', 'The bill was deleted successfully.');
     } catch (error: any) {
-      alert(error.message || 'Failed to delete bill');
+      this.toastService.error('Delete failed', error.message || 'Failed to delete bill');
     } finally {
       this.isDeleting.set(false);
     }

@@ -135,6 +135,10 @@
     color: #9b59b6;
   }
 
+  &.business-officer .stat-value {
+    color: #16a085;
+  }
+
   &.active .stat-value {
     color: #27ae60;
   }
@@ -313,6 +317,11 @@
       background: rgba(230, 126, 34, 0.15);
       color: #e67e22;
     }
+
+    &.role-business-officer {
+      background: rgba(22, 160, 133, 0.15);
+      color: #16a085;
+    }
   }
 }
 
@@ -359,6 +368,10 @@
 
     &:hover {
       transform: scale(1.1);
+    }
+
+    &.view:hover {
+      background: #eef2ff;
     }
 
     &.edit:hover {
@@ -536,13 +549,86 @@
   font-size: 0.9rem;
 }
 
-.suspend-warning {
+.suspend-warning,
+.reactivate-message,
+.delete-warning {
   color: #495057;
   margin: 0 0 1.25rem;
   line-height: 1.6;
 
   strong {
     color: #1a1a2e;
+  }
+}
+
+// View Staff Modal
+.view-modal {
+  .view-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+
+    .agent-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .view-header-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      .name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #1a1a2e;
+      }
+    }
+  }
+
+  .view-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+
+    .view-label {
+      color: #6c757d;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .view-value {
+      color: #1a1a2e;
+      font-size: 0.9rem;
+      text-align: right;
+      word-break: break-word;
+    }
+  }
+
+  .suspension-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(231, 76, 60, 0.06);
+    border: 1px solid rgba(231, 76, 60, 0.15);
+
+    h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.95rem;
+      color: #e74c3c;
+    }
   }
 }
 

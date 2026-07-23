@@ -10,7 +10,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'security_guard' | 'resident' | 'parent' | 'home_dean' | 'vpsas';
+  role: 'admin' | 'security_guard' | 'resident' | 'parent' | 'home_dean' | 'vpsas' | 'business_officer';
   deanType?: 'male' | 'female' | null;
 }
 
@@ -107,6 +107,8 @@ export class AuthService {
       case 'home_dean':
       case 'vpsas':
         return '/manage';
+      case 'business_officer':
+        return '/manage/payments';
       case 'security_guard':
         return '/security-guard/check-in-out';
       case 'parent':
