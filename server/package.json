@@ -8,6 +8,7 @@
     "start:no-init": "node src/index.js",
     "dev": "nodemon src/index.js",
     "migrate": "node src/migrate.js",
+    "seed": "node src/seed.js",
     "migrate:status": "node src/migrate.js status",
     "migrate:reset": "node src/migrate.js reset",
     "postinstall": "node -e \"const fs=require('fs');const src='node_modules/@vladmandic/face-api/model';const dst='models';if(fs.existsSync(src)){fs.cpSync(src,dst,{recursive:true});console.log('Face API models copied to '+dst);}else{console.warn('Face API model folder not found, skipping');}\""
