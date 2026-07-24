@@ -14,15 +14,33 @@ const pool = mysql.createPool({
   timezone: 'Z'
 });
 
-// Test database connection
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Test database connection with retry/backoff.
+// Railway's private network (mysql.railway.internal) can take a few seconds to become
+// available at container startup, so we retry instead of exiting on the first failure.
+// Only after exhausting all attempts do we exit (so a genuinely misconfigured DB still
+// fails the deploy rather than hanging forever).
 const testConnection = async () => {
-  try {
-    const connection = await pool.getConnection();
-    console.log('✅ MySQL Database connected successfully');
-    connection.release();
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    process.exit(1);
+  const maxAttempts = parseInt(process.env.DB_CONNECT_RETRIES, 10) || 10;
+  const retryDelayMs = parseInt(process.env.DB_CONNECT_RETRY_DELAY_MS, 10) || 3000;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const connection = await pool.getConnection();
+      console.log('✅ MySQL Database connected successfully');
+      connection.release();
+      return;
+    } catch (error) {
+      console.error(
+        `❌ Database connection failed (attempt ${attempt}/${maxAttempts}): ${error.message}`
+      );
+      if (attempt === maxAttempts) {
+        console.error('❌ Exhausted all database connection attempts. Exiting.');
+        process.exit(1);
+      }
+      await sleep(retryDelayMs);
+    }
   }
 };
 
