@@ -4,6 +4,7 @@ import { ToastContainerComponent } from './shared/toast-container/toast-containe
 import { NotificationPromptComponent } from './shared/notification-prompt/notification-prompt.component';
 import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.component';
 import { SettingsService } from './services/settings.service';
+import { AppUpdateService } from './services/app-update.service';
 
 @Component({
   selector: 'app-root',
@@ -13,9 +14,11 @@ import { SettingsService } from './services/settings.service';
 })
 export class App implements OnInit {
   private settingsService = inject(SettingsService);
+  private appUpdateService = inject(AppUpdateService);
   protected readonly title = signal('PAC DMS');
 
   ngOnInit() {
     this.settingsService.loadBranding();
+    this.appUpdateService.init();
   }
 }
