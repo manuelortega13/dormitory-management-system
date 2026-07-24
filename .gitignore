@@ -12,6 +12,11 @@ node_modules
 npm-debug.log
 yarn-error.log
 
+# Environment variables (keep .env.example committed as a template)
+.env
+.env.*
+!.env.example
+
 # Face recognition models (copied from node_modules during postinstall)
 /server/models
 
