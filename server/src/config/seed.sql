@@ -83,6 +83,19 @@ VALUES (
     'active'
 ) ON DUPLICATE KEY UPDATE id=id;
 
+-- Default Business Officer user
+-- Username: business_officer
+-- Password: pass123
+INSERT INTO users (email, password, first_name, last_name, role, status)
+VALUES (
+    'business_officer',
+    '$2a$10$jq7c6A/6IojAK4jSbMsHBOK6JsGRn6.5uleeNxHhMySeLICjOaMCm',
+    'Business',
+    'Officer',
+    'business_officer',
+    'active'
+) ON DUPLICATE KEY UPDATE id=id;
+
 -- Default female resident user (linked to parent)
 -- Username: resident_f
 -- Password: pass123
