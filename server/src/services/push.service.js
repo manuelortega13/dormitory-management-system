@@ -17,6 +17,17 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 exports.saveSubscription = async (userId, subscription) => {
   const { endpoint, keys } = subscription;
 
+  // A push endpoint identifies a single browser/device, not a user. Reassign it to
+  // the current user by removing any rows for the same endpoint owned by OTHER users
+  // (left behind when a different account previously logged in on this browser without
+  // unsubscribing). Otherwise this browser would receive push notifications intended
+  // for those other users — e.g. a dean getting duplicate pushes because admin/vpsas
+  // subscriptions still point at the same device.
+  await pool.execute(
+    'DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id != ?',
+    [endpoint, userId]
+  );
+
   // Check if this endpoint already exists for this user
   const [existing] = await pool.execute(
     'SELECT id FROM push_subscriptions WHERE user_id = ? AND endpoint = ?',
