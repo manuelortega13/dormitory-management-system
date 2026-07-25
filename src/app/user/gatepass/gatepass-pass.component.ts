@@ -200,17 +200,53 @@ export class GatepassPassComponent implements OnInit, OnDestroy {
     this.showExtend.set(false);
   }
 
-  onImage(event: Event): void {
+  async onImage(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 3 * 1024 * 1024) {
-      this.extError.set('Image must be under 3MB');
+    if (!file.type.startsWith('image/')) {
+      this.extError.set('Please select an image file');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => this.extImage.set(reader.result as string);
-    reader.readAsDataURL(file);
+    this.extError.set('');
+    try {
+      // Compress (downscale + re-encode) so large phone photos don't get rejected
+      this.extImage.set(await this.compressImage(file));
+    } catch {
+      this.extError.set('Could not process that image. Please try another.');
+    }
+  }
+
+  /** Downscale to a max dimension and re-encode as JPEG to keep the upload small. */
+  private compressImage(file: File, maxDim = 1280, quality = 0.7): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('read failed'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('decode failed'));
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            const scale = Math.min(maxDim / width, maxDim / height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(reader.result as string); // fallback: original data URL
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   async submitExtend(): Promise<void> {
