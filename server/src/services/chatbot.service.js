@@ -187,6 +187,30 @@ const toolDefinitions = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_occupants',
+      description:
+        'Get the full list of dormitory occupants (residents). Admins, VPSAS, and business officers see all occupants; home deans see only occupants of their assigned gender. Optionally filter by status or gender.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['active', 'inactive', 'suspended'],
+            description: 'Filter by occupant status (defaults to active).',
+          },
+          gender: {
+            type: 'string',
+            enum: ['male', 'female'],
+            description:
+              'Filter by gender (ignored for home deans, who are already scoped to their assigned gender).',
+          },
+        },
+      },
+    },
+  },
 ];
 
 // Get tools available for a given role
@@ -211,6 +235,11 @@ function getToolsForRole(role) {
       'get_room_info',
       'get_payment_info',
     ];
+    return toolDefinitions.filter((t) => allowed.includes(t.function.name));
+  }
+
+  if (role === 'business_officer') {
+    const allowed = ['list_occupants', 'get_announcements'];
     return toolDefinitions.filter((t) => allowed.includes(t.function.name));
   }
 
@@ -644,6 +673,46 @@ async function searchResidents(params, user) {
   return { count: residents.length, residents };
 }
 
+async function listOccupants(params, user) {
+  const allowed = ['admin', 'home_dean', 'vpsas', 'business_officer'];
+  if (!allowed.includes(user.role)) {
+    return { error: 'You do not have access to the occupant list.' };
+  }
+
+  const { status, gender } = params || {};
+
+  let query = `
+    SELECT CONCAT(u.first_name, ' ', u.last_name) as name, u.student_resident_id,
+           u.gender, u.course, u.year_level, u.status, r.room_number
+    FROM users u
+    LEFT JOIN room_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
+    LEFT JOIN rooms r ON ra.room_id = r.id
+    WHERE u.role = 'resident'
+  `;
+  const queryParams = [];
+
+  // Home deans only see occupants of their assigned gender.
+  if (user.role === 'home_dean' && user.deanType) {
+    query += ` AND u.gender = ?`;
+    queryParams.push(user.deanType);
+  } else if (gender) {
+    query += ` AND u.gender = ?`;
+    queryParams.push(gender);
+  }
+
+  if (status) {
+    query += ` AND u.status = ?`;
+    queryParams.push(status);
+  } else {
+    query += ` AND u.status = 'active'`;
+  }
+
+  query += ` ORDER BY u.last_name, u.first_name LIMIT 200`;
+
+  const [occupants] = await pool.execute(query, queryParams);
+  return { count: occupants.length, occupants };
+}
+
 // Helper: find residents with role-based filtering
 async function findResidents(searchTerm, user) {
   const term = `%${searchTerm}%`;
@@ -683,6 +752,7 @@ const toolHandlers = {
   get_campus_stats: getCampusStats,
   get_visitors: getVisitors,
   search_residents: searchResidents,
+  list_occupants: listOccupants,
 };
 
 async function executeTool(toolName, params, user) {
