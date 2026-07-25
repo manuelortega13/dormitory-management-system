@@ -65,10 +65,34 @@ exports.getById = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
+    const targetId = parseInt(id);
     const { firstName, lastName, phone, password, parentId, gender, address, course, yearLevel, photoUrl } = req.body;
 
-    // Users can only update their own profile unless admin
-    if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
+    // Load the target so we can authorize by role/gender (mirrors who can VIEW occupants)
+    const [targets] = await pool.execute('SELECT role, gender FROM users WHERE id = ?', [targetId]);
+    if (targets.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const target = targets[0];
+
+    const editorRole = req.user.role;
+    const isSelf = req.user.id === targetId;
+    const isStaff = ['admin', 'home_dean', 'vpsas'].includes(editorRole);
+
+    // Authorization:
+    //  - anyone may edit their own profile
+    //  - admin may edit anyone
+    //  - vpsas may edit any resident
+    //  - home_dean may edit residents of their assigned gender
+    let allowed = isSelf || editorRole === 'admin';
+    if (!allowed && target.role === 'resident') {
+      if (editorRole === 'vpsas') {
+        allowed = true;
+      } else if (editorRole === 'home_dean') {
+        allowed = !req.user.deanType || target.gender === req.user.deanType;
+      }
+    }
+    if (!allowed) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -81,8 +105,8 @@ exports.update = async (req, res) => {
       params.push(hashedPassword);
     }
 
-    // Only admin can update parent_id
-    if (req.user.role === 'admin' && parentId !== undefined) {
+    // Staff (admin/home_dean/vpsas) who passed the check above may update parent_id
+    if (isStaff && !isSelf && parentId !== undefined) {
       query += ', parent_id = ?';
       params.push(parentId === '' ? null : parentId);
     }
