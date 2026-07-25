@@ -98,7 +98,32 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+
+    // A stale/expired token (common in an installed PWA that persists storage across
+    // sessions) must count as logged-out — otherwise guards and the login/register
+    // pages think you're authenticated, redirect you, and the next API call 401s you
+    // straight back to /login.
+    if (this.isTokenExpired(token)) {
+      if (this.isBrowser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+      return false;
+    }
+    return true;
+  }
+
+  /** Decode a JWT and check its `exp` claim. Malformed tokens are treated as expired. */
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp) return false; // no expiry claim -> non-expiring token
+      return payload.exp * 1000 <= Date.now();
+    } catch {
+      return true;
+    }
   }
 
   getRedirectUrl(role: string): string {
