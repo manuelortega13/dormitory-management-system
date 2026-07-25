@@ -94,6 +94,10 @@ interface RoomInfo {
                 <span class="link-icon">📤</span>
                 <span>Request Leave</span>
               </a>
+              <a routerLink="/gatepass" class="quick-link">
+                <span class="link-icon">🎫</span>
+                <span>Gatepass</span>
+              </a>
               <a routerLink="/my-requests" class="quick-link">
                 <span class="link-icon">📋</span>
                 <span>My Requests</span>

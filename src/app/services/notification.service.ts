@@ -51,6 +51,10 @@ export class NotificationService implements OnDestroy {
   // Increments when payment notification is detected
   paymentStatusUpdateTrigger = signal<number>(0);
 
+  // Signal to refresh gatepass views (occupant/parent/dean/vpsas) when a gatepass
+  // is created, approved, declined, extended, etc. Increments on any gatepass_* notification.
+  gatepassUpdatedTrigger = signal<number>(0);
+
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private lastNotificationIds = new Set<number>();
 
@@ -317,6 +321,9 @@ export class NotificationService implements OnDestroy {
     if (notification.type === 'payment') {
       this.paymentStatusUpdateTrigger.update(v => v + 1);
     }
+    if (notification.type?.startsWith('gatepass')) {
+      this.gatepassUpdatedTrigger.update(v => v + 1);
+    }
   }
 
   /**
@@ -349,7 +356,8 @@ export class NotificationService implements OnDestroy {
       let hasParentApprovalNeeded = false;
       let hasVpsasApprovalNeeded = false;
       let hasPaymentUpdate = false;
-      
+      let hasGatepassUpdate = false;
+
       for (const notif of newNotifications) {
         if (!isInitialLoad && !this.lastNotificationIds.has(notif.id)) {
           // New leave request or cancelled notification (for admin)
@@ -377,6 +385,10 @@ export class NotificationService implements OnDestroy {
           if (notif.type === 'payment') {
             hasPaymentUpdate = true;
           }
+          // Any gatepass update (for occupant/parent/dean/vpsas)
+          if (notif.type?.startsWith('gatepass')) {
+            hasGatepassUpdate = true;
+          }
         }
         this.lastNotificationIds.add(notif.id);
       }
@@ -394,7 +406,10 @@ export class NotificationService implements OnDestroy {
       if (hasPaymentUpdate) {
         this.paymentStatusUpdateTrigger.update(v => v + 1);
       }
-      
+      if (hasGatepassUpdate) {
+        this.gatepassUpdatedTrigger.update(v => v + 1);
+      }
+
       this.notifications.set(newNotifications);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -504,6 +519,24 @@ export class NotificationService implements OnDestroy {
         return 'bi-door-open';
       case 'payment':
         return 'bi-credit-card';
+      case 'gatepass_new':
+      case 'gatepass_parent_approved':
+      case 'gatepass_dean_approved':
+        return 'bi-ticket-perforated';
+      case 'gatepass_approved':
+        return 'bi-check-circle';
+      case 'gatepass_declined':
+      case 'gatepass_cancelled':
+        return 'bi-x-circle';
+      case 'gatepass_exit':
+      case 'gatepass_returned':
+        return 'bi-door-open';
+      case 'gatepass_overdue':
+        return 'bi-clock-history';
+      case 'gatepass_extended':
+        return 'bi-hourglass-split';
+      case 'gatepass_task_assigned':
+        return 'bi-list-task';
       default:
         return 'bi-bell';
     }

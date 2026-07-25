@@ -2,7 +2,9 @@ import { Component, signal, ElementRef, ViewChild, OnDestroy, OnInit, inject } f
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityService, CheckLog } from '../data/security.service';
+import { SecurityGatepassService } from '../data/security-gatepass.service';
 import { LeaveRequest } from '../../models/leave-request.model';
+import { Gatepass } from '../../models/gatepass.model';
 import jsQR from 'jsqr';
 
 type ScanStatus = 'idle' | 'scanning' | 'verifying' | 'success' | 'error';
@@ -10,7 +12,9 @@ type ScanStatus = 'idle' | 'scanning' | 'verifying' | 'success' | 'error';
 interface VerificationResult {
   valid: boolean;
   message: string;
+  kind?: 'leave' | 'gatepass';
   leaveRequest?: LeaveRequest;
+  gatepass?: Gatepass;
   action?: 'exit' | 'return';
 }
 
@@ -36,6 +40,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   
   private securityService = inject(SecurityService);
+  private gatepassService = inject(SecurityGatepassService);
 
   protected readonly scanStatus = signal<ScanStatus>('idle');
   protected readonly verificationResult = signal<VerificationResult | null>(null);
@@ -402,26 +407,41 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
     try {
       const result = await this.securityService.verifyQRCode(qrCode);
-      
+
       if (result.valid && result.leave_request) {
         // Determine if this is an exit or return based on current status
         const action: 'exit' | 'return' = result.leave_request.status === 'approved' ? 'exit' : 'return';
-        
+
         this.verificationResult.set({
           valid: true,
+          kind: 'leave',
           message: result.message,
           leaveRequest: result.leave_request,
           action
         });
         this.scanStatus.set('success');
-      } else {
-        this.verificationResult.set({
-          valid: false,
-          message: result.message
-        });
-        this.scanStatus.set('error');
-        this.errorMessage.set(result.message);
+        return;
       }
+
+      // Not a valid leave pass — try a gatepass (combined scanner)
+      const gp = await this.gatepassService.verify(qrCode);
+      if (gp.valid && gp.gatepass) {
+        this.verificationResult.set({
+          valid: true,
+          kind: 'gatepass',
+          message: gp.message,
+          gatepass: gp.gatepass,
+          action: gp.action
+        });
+        this.scanStatus.set('success');
+        return;
+      }
+
+      // Neither matched — surface whichever message is more specific
+      const message = gp.message && gp.message !== 'Invalid QR code' ? gp.message : result.message;
+      this.verificationResult.set({ valid: false, message });
+      this.scanStatus.set('error');
+      this.errorMessage.set(message);
     } catch (error: any) {
       this.scanStatus.set('error');
       this.errorMessage.set(error.message || 'Failed to verify QR code');
@@ -430,15 +450,25 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
   async confirmAction() {
     const result = this.verificationResult();
-    if (!result?.valid || !result.leaveRequest) return;
+    if (!result?.valid) return;
 
     this.isProcessing.set(true);
 
     try {
-      if (result.action === 'exit') {
-        await this.securityService.recordExit(result.leaveRequest.id);
+      if (result.kind === 'gatepass' && result.gatepass) {
+        if (result.action === 'exit') {
+          await this.gatepassService.recordExit(result.gatepass.id);
+        } else {
+          await this.gatepassService.recordReturn(result.gatepass.id);
+        }
+      } else if (result.leaveRequest) {
+        if (result.action === 'exit') {
+          await this.securityService.recordExit(result.leaveRequest.id);
+        } else {
+          await this.securityService.recordReturn(result.leaveRequest.id);
+        }
       } else {
-        await this.securityService.recordReturn(result.leaveRequest.id);
+        return;
       }
 
       // Reload today's logs from backend

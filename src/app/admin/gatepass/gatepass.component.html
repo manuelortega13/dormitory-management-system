@@ -1,0 +1,148 @@
+<div class="gp-admin">
+  <header>
+    <h1>🎫 Gatepass Management</h1>
+    <p class="subtitle">Review approvals, extensions, and disciplinary tasks</p>
+  </header>
+
+  <div class="tabs">
+    <button [class.active]="activeTab() === 'approvals'" (click)="activeTab.set('approvals')">Approvals</button>
+    @if (isDean()) {
+      <button [class.active]="activeTab() === 'reviews'" (click)="activeTab.set('reviews')">
+        Extension Reviews @if (reviews().length) { <span class="pill">{{ reviews().length }}</span> }
+      </button>
+    }
+    <button [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Tasks</button>
+  </div>
+
+  @if (loading()) {
+    <div class="state">Loading…</div>
+  } @else {
+    <!-- APPROVALS -->
+    @if (activeTab() === 'approvals') {
+      @if (isDean()) {
+        <h3 class="section">Awaiting Home Dean</h3>
+        @if (deanQueue().length === 0) {
+          <div class="state empty">Nothing awaiting dean approval.</div>
+        } @else {
+          @for (g of deanQueue(); track g.id) {
+            <div class="row">
+              <div class="row-main">
+                <span class="name">{{ g.occupant_name }}</span>
+                <span class="meta">📍 {{ g.destination }} · {{ g.reason }}</span>
+                <span class="date">{{ g.created_at | date: 'medium' }}</span>
+              </div>
+              <div class="row-actions">
+                <button class="approve" (click)="approve(g)">Approve</button>
+                <button class="decline" (click)="openDecline(g)">Decline</button>
+              </div>
+            </div>
+          }
+        }
+      }
+      @if (isVpsas()) {
+        <h3 class="section">Awaiting VPSAS</h3>
+        @if (vpsasQueue().length === 0) {
+          <div class="state empty">Nothing awaiting VPSAS approval.</div>
+        } @else {
+          @for (g of vpsasQueue(); track g.id) {
+            <div class="row">
+              <div class="row-main">
+                <span class="name">{{ g.occupant_name }}</span>
+                <span class="meta">📍 {{ g.destination }} · {{ g.reason }}</span>
+                <span class="date">{{ g.created_at | date: 'medium' }}</span>
+              </div>
+              <div class="row-actions">
+                <button class="approve" (click)="approve(g)">Approve</button>
+                <button class="decline" (click)="openDecline(g)">Decline</button>
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+
+    <!-- EXTENSION REVIEWS -->
+    @if (activeTab() === 'reviews' && isDean()) {
+      @if (reviews().length === 0) {
+        <div class="state empty">No extensions awaiting review.</div>
+      } @else {
+        @for (e of reviews(); track e.id) {
+          <div class="review">
+            <div class="review-main">
+              <span class="name">{{ e.occupant_name }}</span>
+              <span class="meta">Extension reason: {{ e.reason }}</span>
+              @if (e.image) { <img class="ext-img" [src]="e.image" alt="supporting image" /> }
+              <span class="date">Requested {{ e.created_at | date: 'medium' }}</span>
+            </div>
+            <div class="row-actions">
+              <button class="task" (click)="openAssign(e)">Assign Task</button>
+              <button class="waive" (click)="waive(e)">Waive</button>
+            </div>
+          </div>
+        }
+      }
+    }
+
+    <!-- TASKS -->
+    @if (activeTab() === 'tasks') {
+      @if (tasks().length === 0) {
+        <div class="state empty">No tasks.</div>
+      } @else {
+        @for (t of tasks(); track t.id) {
+          <div class="row" [class.done]="t.status === 'completed'">
+            <div class="row-main">
+              <span class="name">{{ t.title }}</span>
+              <span class="meta">{{ t.occupant_name }}@if (t.description) { · {{ t.description }} }</span>
+              <span class="date">
+                @if (t.due_date) { Due {{ t.due_date | date: 'mediumDate' }} · }
+                Assigned {{ t.created_at | date: 'mediumDate' }}
+              </span>
+            </div>
+            <div class="row-actions">
+              @if (t.status === 'pending') {
+                <button class="approve" (click)="completeTask(t)">Mark Complete</button>
+              } @else {
+                <span class="badge done">Completed</span>
+              }
+            </div>
+          </div>
+        }
+      }
+    }
+  }
+</div>
+
+<!-- Decline modal -->
+@if (declineTarget()) {
+  <div class="modal-overlay" (click)="declineTarget.set(null)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Decline Gatepass</h2>
+      <label>Reason (optional)</label>
+      <textarea rows="3" [(ngModel)]="declineNotes"></textarea>
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="declineTarget.set(null)" [disabled]="saving()">Cancel</button>
+        <button class="decline" (click)="confirmDecline()" [disabled]="saving()">Decline</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Assign task modal -->
+@if (taskTarget()) {
+  <div class="modal-overlay" (click)="closeAssign()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Assign Disciplinary Task</h2>
+      <p class="sub">For {{ taskTarget()!.occupant_name }}'s extension.</p>
+      <label>Title <span class="req">*</span></label>
+      <input type="text" [(ngModel)]="taskTitle" placeholder="e.g. Write a reflection essay" />
+      <label>Description</label>
+      <textarea rows="3" [(ngModel)]="taskDesc"></textarea>
+      <label>Due date</label>
+      <input type="date" [(ngModel)]="taskDue" />
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeAssign()" [disabled]="saving()">Cancel</button>
+        <button class="task" (click)="confirmAssign()" [disabled]="saving()">Assign Task</button>
+      </div>
+    </div>
+  </div>
+}

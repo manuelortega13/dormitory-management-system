@@ -61,6 +61,18 @@ export const routes: Routes = [
         loadComponent: () => import('./user/announcements/user-announcements.component').then(m => m.UserAnnouncementsComponent)
       },
       {
+        path: 'gatepass',
+        loadComponent: () => import('./user/gatepass/gatepass-list.component').then(m => m.GatepassListComponent)
+      },
+      {
+        path: 'gatepass/:id',
+        loadComponent: () => import('./user/gatepass/gatepass-pass.component').then(m => m.GatepassPassComponent)
+      },
+      {
+        path: 'my-tasks',
+        loadComponent: () => import('./user/tasks/my-tasks.component').then(m => m.MyTasksComponent)
+      },
+      {
         path: 'profile',
         loadComponent: () => import('./user/profile/profile.component').then(m => m.ProfileComponent)
       }
@@ -96,6 +108,11 @@ export const routes: Routes = [
         path: 'leave-requests',
         canActivate: [adminGuard],
         loadComponent: () => import('./admin/leave-requests/leave-requests.component').then(m => m.LeaveRequestsComponent)
+      },
+      {
+        path: 'gatepass',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./admin/gatepass/gatepass.component').then(m => m.AdminGatepassComponent)
       },
       {
         path: 'parent-registrations',
@@ -181,6 +198,10 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./parent/dashboard/parent-dashboard.component').then(m => m.ParentDashboardComponent)
+      },
+      {
+        path: 'gatepass',
+        loadComponent: () => import('./parent/gatepass/parent-gatepass.component').then(m => m.ParentGatepassComponent)
       },
       {
         path: 'history',

@@ -206,6 +206,44 @@
                 </div>
               </div>
             }
+
+            @if (verificationResult()?.gatepass; as gp) {
+              <div class="resident-card">
+                <div class="resident-avatar">{{ getInitials(gp.occupant_name || 'U') }}</div>
+                <div class="resident-info">
+                  <h3>{{ gp.occupant_name }}</h3>
+                  <p class="room">🎫 Gatepass@if (gp.room_number) { · Room {{ gp.room_number }} }</p>
+                </div>
+              </div>
+
+              <div class="pass-details">
+                <div class="detail-row"><span class="label">Type:</span><span class="value">Gatepass</span></div>
+                <div class="detail-row"><span class="label">Destination:</span><span class="value">{{ gp.destination }}</span></div>
+                <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ gp.reason }}</span></div>
+              </div>
+
+              <div class="action-section">
+                @if (verificationResult()?.action === 'exit') {
+                  <div class="action-info exit"><span class="action-icon">🚪</span><span class="action-text">Recording EXIT (starts 1-hour timer)</span></div>
+                } @else {
+                  <div class="action-info return"><span class="action-icon">🏠</span><span class="action-text">Recording RETURN</span></div>
+                }
+                <div class="action-buttons">
+                  <button class="btn-cancel-action" (click)="resetScan()">Cancel</button>
+                  <button
+                    class="btn-confirm"
+                    [class.exit]="verificationResult()?.action === 'exit'"
+                    [class.return]="verificationResult()?.action === 'return'"
+                    [disabled]="isProcessing()"
+                    (click)="confirmAction()"
+                  >
+                    @if (isProcessing()) { Processing... }
+                    @else if (verificationResult()?.action === 'exit') { Confirm Exit }
+                    @else { Confirm Return }
+                  </button>
+                </div>
+              </div>
+            }
           </div>
         } @else if (scanStatus() === 'error') {
           <!-- Error State -->

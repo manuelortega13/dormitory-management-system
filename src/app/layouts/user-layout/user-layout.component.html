@@ -19,6 +19,9 @@
         <a routerLink="/my-leave-request" routerLinkActive="active" class="nav-item primary">
           Request Leave
         </a>
+        <a routerLink="/gatepass" routerLinkActive="active" class="nav-item">
+          Gatepass
+        </a>
         <a routerLink="/my-requests" routerLinkActive="active" class="nav-item">
           My Requests
         </a>
@@ -31,6 +34,10 @@
           </button>
           @if (showMore()) {
             <div class="more-dropdown">
+              <a routerLink="/my-tasks" routerLinkActive="active" class="dropdown-item" (click)="showMore.set(false)">
+                <span class="dropdown-icon">📋</span>
+                My Tasks
+              </a>
               <a routerLink="/my-room" routerLinkActive="active" class="dropdown-item" (click)="showMore.set(false)">
                 <span class="dropdown-icon">🛏️</span>
                 My Room
@@ -98,6 +105,14 @@
     <div class="mobile-more-overlay" (click)="showMobileMore.set(false)"></div>
     <div class="mobile-more-sheet">
       <div class="sheet-handle"></div>
+      <a routerLink="/gatepass" routerLinkActive="active" class="sheet-item" (click)="showMobileMore.set(false)">
+        <span class="sheet-icon">🎫</span>
+        <span class="sheet-label">Gatepass</span>
+      </a>
+      <a routerLink="/my-tasks" routerLinkActive="active" class="sheet-item" (click)="showMobileMore.set(false)">
+        <span class="sheet-icon">📋</span>
+        <span class="sheet-label">My Tasks</span>
+      </a>
       <a routerLink="/my-room" routerLinkActive="active" class="sheet-item" (click)="showMobileMore.set(false)">
         <span class="sheet-icon">🛏️</span>
         <span class="sheet-label">My Room</span>

@@ -100,6 +100,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         { label: 'Occupants', icon: '👥', route: '/manage/residents', roles: this.adminRoles },
         { label: 'Staff', icon: '👮', route: '/manage/agents', roles: this.adminRoles },
         { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests', roles: this.adminRoles },
+        { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: this.adminRoles },
         { label: 'Parent Approvals', icon: '👨‍👩‍👦', route: '/manage/parent-registrations', roles: this.adminRoles }
       ]
     },
