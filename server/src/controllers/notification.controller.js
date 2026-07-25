@@ -394,3 +394,215 @@ exports.notifyAdminsRequestCancelled = async (residentName, leaveRequestId, resi
     console.error('Notify admins request cancelled error:', error);
   }
 };
+
+// ==================== GATEPASS NOTIFICATIONS ====================
+
+// Notify a parent that their child's gatepass needs approval (first approver)
+exports.notifyParentGatepassNeeded = async (parentId, childName, gatepassId) => {
+  try {
+    await exports.createNotification(
+      parentId,
+      'gatepass_new',
+      'Gatepass Approval Required',
+      `${childName}'s gatepass request needs your approval`,
+      gatepassId,
+      'gatepass'
+    );
+  } catch (error) {
+    console.error('Notify parent gatepass needed error:', error);
+  }
+};
+
+// Notify home deans (gender-scoped) that a gatepass needs their approval (second approver)
+exports.notifyDeanGatepassNeeded = async (childName, gatepassId, residentGender = null) => {
+  try {
+    let query = "SELECT id FROM users WHERE role = 'home_dean' AND status = 'active'";
+    const params = [];
+    if (residentGender) {
+      query += ' AND (dean_type = ? OR dean_type IS NULL)';
+      params.push(residentGender);
+    }
+    const [deans] = await pool.execute(query, params);
+    for (const dean of deans) {
+      await exports.createNotification(
+        dean.id,
+        'gatepass_parent_approved',
+        'Gatepass Approval Required',
+        `${childName}'s gatepass needs your approval`,
+        gatepassId,
+        'gatepass'
+      );
+    }
+  } catch (error) {
+    console.error('Notify dean gatepass needed error:', error);
+  }
+};
+
+// Notify VPSAS that a gatepass needs final approval (third approver)
+exports.notifyVpsasGatepassNeeded = async (childName, gatepassId) => {
+  try {
+    const [vpsasUsers] = await pool.execute(
+      "SELECT id FROM users WHERE role = 'vpsas' AND status = 'active'"
+    );
+    for (const vpsas of vpsasUsers) {
+      await exports.createNotification(
+        vpsas.id,
+        'gatepass_dean_approved',
+        'Gatepass Approval Required',
+        `${childName}'s gatepass needs your final approval`,
+        gatepassId,
+        'gatepass'
+      );
+    }
+  } catch (error) {
+    console.error('Notify vpsas gatepass needed error:', error);
+  }
+};
+
+// Notify the occupant of an intermediate approval step
+exports.notifyOccupantGatepassProgress = async (occupantId, type, message, gatepassId) => {
+  try {
+    await exports.createNotification(occupantId, type, 'Gatepass Update', message, gatepassId, 'gatepass');
+  } catch (error) {
+    console.error('Notify occupant gatepass progress error:', error);
+  }
+};
+
+// Notify the occupant that their gatepass is fully approved and the QR is ready
+exports.notifyOccupantGatepassApproved = async (occupantId, gatepassId) => {
+  try {
+    await exports.createNotification(
+      occupantId,
+      'gatepass_approved',
+      'Gatepass Approved - QR Ready',
+      'Your gatepass has been fully approved. Your QR code is now available!',
+      gatepassId,
+      'gatepass'
+    );
+  } catch (error) {
+    console.error('Notify occupant gatepass approved error:', error);
+  }
+};
+
+// Notify the occupant that their gatepass was declined
+exports.notifyOccupantGatepassDeclined = async (occupantId, byRole, gatepassId) => {
+  try {
+    await exports.createNotification(
+      occupantId,
+      'gatepass_declined',
+      'Gatepass Declined',
+      `Your gatepass has been declined by ${byRole}`,
+      gatepassId,
+      'gatepass'
+    );
+  } catch (error) {
+    console.error('Notify occupant gatepass declined error:', error);
+  }
+};
+
+// Internal: active security guard user ids
+async function getActiveGuardIds() {
+  const [guards] = await pool.execute(
+    "SELECT id FROM users WHERE role = 'security_guard' AND status = 'active'"
+  );
+  return guards.map((g) => g.id);
+}
+
+// Internal: active home dean ids, optionally gender-scoped
+async function getDeanIds(residentGender = null) {
+  let query = "SELECT id FROM users WHERE role = 'home_dean' AND status = 'active'";
+  const params = [];
+  if (residentGender) {
+    query += ' AND (dean_type = ? OR dean_type IS NULL)';
+    params.push(residentGender);
+  }
+  const [deans] = await pool.execute(query, params);
+  return deans.map((d) => d.id);
+}
+
+// Notify a parent when their child leaves/returns on a gatepass
+exports.notifyParentGatepassMovement = async (parentId, childName, action, gatepassId) => {
+  try {
+    const leaving = action === 'exit';
+    await exports.createNotification(
+      parentId,
+      leaving ? 'gatepass_exit' : 'gatepass_returned',
+      leaving ? 'Child Left Campus (Gatepass)' : 'Child Returned (Gatepass)',
+      leaving
+        ? `${childName} has left the campus on a gatepass`
+        : `${childName} has returned from a gatepass`,
+      gatepassId,
+      'gatepass'
+    );
+  } catch (error) {
+    console.error('Notify parent gatepass movement error:', error);
+  }
+};
+
+// Notify parent + dean + vpsas + guards that a gatepass was extended (no approval needed)
+exports.notifyGatepassExtended = async (gatepassId, childName, residentGender, parentId) => {
+  try {
+    const recipients = new Set();
+    if (parentId) recipients.add(parentId);
+    (await getDeanIds(residentGender)).forEach((id) => recipients.add(id));
+    const [vpsasUsers] = await pool.execute("SELECT id FROM users WHERE role = 'vpsas' AND status = 'active'");
+    vpsasUsers.forEach((v) => recipients.add(v.id));
+    (await getActiveGuardIds()).forEach((id) => recipients.add(id));
+
+    for (const uid of recipients) {
+      await exports.createNotification(
+        uid,
+        'gatepass_extended',
+        'Gatepass Extended',
+        `${childName} has extended their gatepass by another hour`,
+        gatepassId,
+        'gatepass'
+      );
+    }
+  } catch (error) {
+    console.error('Notify gatepass extended error:', error);
+  }
+};
+
+// Notify parent + dean + guards + the occupant that a gatepass is overdue
+exports.notifyGatepassOverdue = async (gatepassId, childName, residentGender, parentId, occupantId) => {
+  try {
+    const recipients = new Set();
+    if (parentId) recipients.add(parentId);
+    (await getDeanIds(residentGender)).forEach((id) => recipients.add(id));
+    (await getActiveGuardIds()).forEach((id) => recipients.add(id));
+    if (occupantId) recipients.add(occupantId);
+
+    for (const uid of recipients) {
+      const isOccupant = uid === occupantId;
+      await exports.createNotification(
+        uid,
+        'gatepass_overdue',
+        'Gatepass Overdue',
+        isOccupant
+          ? 'Your gatepass is overdue. Please return to campus or extend your gatepass.'
+          : `${childName} has not returned and their gatepass is overdue`,
+        gatepassId,
+        'gatepass'
+      );
+    }
+  } catch (error) {
+    console.error('Notify gatepass overdue error:', error);
+  }
+};
+
+// Notify the occupant that a disciplinary task was assigned
+exports.notifyOccupantTaskAssigned = async (occupantId, gatepassId, taskTitle) => {
+  try {
+    await exports.createNotification(
+      occupantId,
+      'gatepass_task_assigned',
+      'Disciplinary Task Assigned',
+      `A task has been assigned to you: "${taskTitle}"`,
+      gatepassId,
+      'gatepass'
+    );
+  } catch (error) {
+    console.error('Notify occupant task assigned error:', error);
+  }
+};

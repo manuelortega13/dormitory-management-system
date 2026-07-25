@@ -14,6 +14,8 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const roomRoutes = require('./routes/room.routes');
 const leaveRequestRoutes = require('./routes/leave-request.routes');
+const gatepassRoutes = require('./routes/gatepass.routes');
+const taskRoutes = require('./routes/task.routes');
 const checkLogRoutes = require('./routes/check-log.routes');
 const visitorRoutes = require('./routes/visitor.routes');
 const incidentRoutes = require('./routes/incident.routes');
@@ -48,6 +50,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/leave-requests', leaveRequestRoutes);
+app.use('/api/gatepasses', gatepassRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api/check-logs', checkLogRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/incidents', incidentRoutes);
@@ -156,6 +160,9 @@ const startServer = async () => {
     console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
     console.log(`🔌 Socket.IO ready for real-time notifications`);
   });
+
+  // Periodically flag overdue gatepasses and notify parent/dean/guard/occupant
+  require('./services/gatepass-scheduler.service').startOverdueChecker();
 };
 
 startServer();
