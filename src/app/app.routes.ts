@@ -197,11 +197,12 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./parent/dashboard/parent-dashboard.component').then(m => m.ParentDashboardComponent)
+        loadComponent: () => import('./parent/requests/parent-requests.component').then(m => m.ParentRequestsComponent)
       },
       {
         path: 'gatepass',
-        loadComponent: () => import('./parent/gatepass/parent-gatepass.component').then(m => m.ParentGatepassComponent)
+        redirectTo: '',
+        pathMatch: 'full'
       },
       {
         path: 'history',

@@ -20,6 +20,12 @@ export class ParentGatepassService {
     return res.data ?? [];
   }
 
+  /** All gatepasses for this parent's children (any status) — backend scopes by parent_id. */
+  async getAll(): Promise<Gatepass[]> {
+    const res = await firstValueFrom(this.http.get<ApiResponse<Gatepass[]>>(this.apiUrl));
+    return res.data ?? [];
+  }
+
   async approve(id: number, notes: string | undefined, faceImage: string): Promise<void> {
     await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/parent-approve`, { notes, faceImage }));
   }

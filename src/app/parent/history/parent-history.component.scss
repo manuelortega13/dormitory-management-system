@@ -108,6 +108,24 @@
       display: flex;
       align-items: center;
       gap: 1rem;
+      flex-wrap: wrap;
+
+      .kind-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.55rem;
+        border-radius: 12px;
+
+        &.leave {
+          background: #e7f5ff;
+          color: #1971c2;
+        }
+
+        &.gatepass {
+          background: #fff4e6;
+          color: #e8590c;
+        }
+      }
 
       .child-name {
         font-weight: 600;

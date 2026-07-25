@@ -1,7 +1,7 @@
 <div class="parent-history">
   <div class="page-header">
     <h1>Request History</h1>
-    <p>Past leave requests from your child</p>
+    <p>Past leave and gatepass requests from your child</p>
   </div>
 
   @if (errorMessage()) {
@@ -16,7 +16,7 @@
       <div class="spinner"></div>
       <p>Loading history...</p>
     </div>
-  } @else if (requests().length === 0) {
+  } @else if (items().length === 0) {
     <div class="empty-state">
       <span class="empty-icon">📜</span>
       <h3>No History Yet</h3>
@@ -24,36 +24,39 @@
     </div>
   } @else {
     <div class="history-list">
-      @for (request of requests(); track request.id) {
+      @for (item of items(); track item.kind + '-' + item.id) {
         <div class="history-item">
           <div class="item-header">
             <div class="type-info">
-              <span class="child-name">{{ request.user_name }}</span>
-              <span class="type-label">{{ getLeaveTypeLabel(request.leave_type) }}</span>
-              <span class="date">{{ formatDate(request.created_at) }}</span>
+              <span class="kind-badge" [class]="item.kind">{{ item.kind === 'leave' ? 'Leave' : 'Gatepass' }}</span>
+              <span class="child-name">{{ item.childName }}</span>
+              <span class="type-label">{{ item.typeLabel }}</span>
+              <span class="date">{{ formatDate(item.created_at) }}</span>
             </div>
-            <span class="status-badge" [class]="getStatusClass(request.status)">
-              {{ getStatusLabel(request.status) }}
+            <span class="status-badge" [class]="getStatusClass(item.status)">
+              {{ getStatusLabel(item.status) }}
             </span>
           </div>
           <div class="item-body">
-            <p><strong>Destination:</strong> {{ request.destination }}</p>
-            @if (request.spending_leave_with) {
-              <p><strong>Spending Leave With:</strong> {{ request.spending_leave_with }}</p>
+            <p><strong>Destination:</strong> {{ item.destination }}</p>
+            @if (item.spendingWith) {
+              <p><strong>Spending Leave With:</strong> {{ item.spendingWith }}</p>
             }
-            <p><strong>Schedule:</strong> {{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</p>
-            <p><strong>Reason:</strong> {{ request.reason }}</p>
-            @if (request.room_number) {
-              <p><strong>Room:</strong> {{ request.room_number }}</p>
+            @if (item.kind === 'leave' && item.startDate) {
+              <p><strong>Schedule:</strong> {{ formatDate(item.startDate) }} - {{ formatDate(item.endDate!) }}</p>
             }
-            @if (request.parent_notes) {
-              <p><strong>Your Note:</strong> {{ request.parent_notes }}</p>
+            <p><strong>Reason:</strong> {{ item.reason }}</p>
+            @if (item.room) {
+              <p><strong>Room:</strong> {{ item.room }}</p>
             }
-            @if (request.admin_notes) {
-              <p><strong>Home Dean Note:</strong> {{ request.admin_notes }}</p>
+            @if (item.parentNotes) {
+              <p><strong>Your Note:</strong> {{ item.parentNotes }}</p>
             }
-            @if (request.vpsas_notes) {
-              <p><strong>VPSAS Note:</strong> {{ request.vpsas_notes }}</p>
+            @if (item.deanNotes) {
+              <p><strong>Home Dean Note:</strong> {{ item.deanNotes }}</p>
+            }
+            @if (item.vpsasNotes) {
+              <p><strong>VPSAS Note:</strong> {{ item.vpsasNotes }}</p>
             }
           </div>
         </div>
