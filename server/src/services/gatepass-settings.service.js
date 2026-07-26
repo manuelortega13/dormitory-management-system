@@ -5,6 +5,7 @@ const DEFAULTS = {
   passDurationMinutes: 60,
   extensionDurationMinutes: 60,
   maxExtensions: 3,
+  lateGraceMinutes: 5,
 };
 
 /**
@@ -28,6 +29,7 @@ async function getGatepassSettings() {
       passDurationMinutes: num(map.pass_duration_minutes, DEFAULTS.passDurationMinutes),
       extensionDurationMinutes: num(map.extension_duration_minutes, DEFAULTS.extensionDurationMinutes),
       maxExtensions: num(map.max_extensions, DEFAULTS.maxExtensions),
+      lateGraceMinutes: num(map.late_grace_minutes, DEFAULTS.lateGraceMinutes),
     };
   } catch (error) {
     console.error('getGatepassSettings error:', error.message);

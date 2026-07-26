@@ -591,6 +591,32 @@ exports.notifyGatepassOverdue = async (gatepassId, childName, residentGender, pa
   }
 };
 
+// Notify dean + occupant + parent that an occupant returned late (pending dean review)
+exports.notifyGatepassLateReturn = async (gatepassId, childName, residentGender, parentId, occupantId) => {
+  try {
+    const recipients = new Set();
+    (await getDeanIds(residentGender)).forEach((id) => recipients.add(id));
+    if (occupantId) recipients.add(occupantId);
+    if (parentId) recipients.add(parentId);
+
+    for (const uid of recipients) {
+      const isOccupant = uid === occupantId;
+      await exports.createNotification(
+        uid,
+        'gatepass_late_return',
+        isOccupant ? 'Late Return' : 'Occupant Returned Late',
+        isOccupant
+          ? "You returned to campus past your gatepass deadline. This is pending the Home Dean's review."
+          : `${childName} returned to campus past their gatepass deadline.`,
+        gatepassId,
+        'gatepass'
+      );
+    }
+  } catch (error) {
+    console.error('Notify gatepass late return error:', error);
+  }
+};
+
 // Notify the occupant that a disciplinary task was assigned
 exports.notifyOccupantTaskAssigned = async (occupantId, gatepassId, taskTitle) => {
   try {

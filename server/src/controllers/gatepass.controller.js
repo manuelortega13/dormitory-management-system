@@ -498,6 +498,20 @@ exports.recordReturn = async (req, res) => {
       );
     }
 
+    // Flag a late return (beyond deadline + grace) for the dean's disciplinary review
+    const { lateGraceMinutes } = await getGatepassSettings();
+    const [[lateCheck]] = await pool.execute(
+      `SELECT (deadline IS NOT NULL AND return_time > DATE_ADD(deadline, INTERVAL ? MINUTE)) AS is_late
+       FROM gatepasses WHERE id = ?`,
+      [lateGraceMinutes, id]
+    );
+    if (lateCheck && Number(lateCheck.is_late) === 1) {
+      await pool.execute("UPDATE gatepasses SET disciplinary_status = 'pending' WHERE id = ?", [id]);
+      await notificationController.notifyGatepassLateReturn(
+        id, `${gp.first_name} ${gp.last_name}`, gp.gender, gp.parent_id, gp.user_id
+      );
+    }
+
     res.json({ success: true, message: 'Return recorded. Gatepass completed.' });
   } catch (error) {
     console.error('Record gatepass return error:', error);
@@ -570,7 +584,7 @@ exports.extend = async (req, res) => {
     );
 
     await pool.execute(
-      'UPDATE gatepasses SET deadline = ?, overdue_notified_at = NULL WHERE id = ?',
+      "UPDATE gatepasses SET deadline = ?, overdue_notified_at = NULL, disciplinary_status = 'pending' WHERE id = ?",
       [newDeadline, id]
     );
 
@@ -609,102 +623,104 @@ exports.getExtensions = async (req, res) => {
   }
 };
 
-// GET /extensions/pending-review — extensions awaiting dean review (occupant returned)
-exports.getPendingExtensionReviews = async (req, res) => {
+// GET /disciplinary/pending — gatepasses awaiting the dean's disciplinary review
+// (occupant returned late and/or requested an extension). Gender-scoped for home deans.
+exports.getPendingDisciplinary = async (req, res) => {
   try {
     let query = `
-      SELECT e.*, g.reason AS gatepass_reason, g.destination, g.status AS gatepass_status,
-             CONCAT(u.first_name, ' ', u.last_name) AS occupant_name, u.student_resident_id, u.gender
-      FROM gatepass_extensions e
-      JOIN gatepasses g ON e.gatepass_id = g.id
+      SELECT g.id, g.reason, g.destination, g.status, g.deadline, g.return_time, g.disciplinary_status,
+             CONCAT(u.first_name, ' ', u.last_name) AS occupant_name, u.student_resident_id, u.gender,
+             CASE WHEN g.return_time IS NOT NULL AND g.deadline IS NOT NULL AND g.return_time > g.deadline
+                  THEN TIMESTAMPDIFF(MINUTE, g.deadline, g.return_time) ELSE 0 END AS minutes_late,
+             (SELECT COUNT(*) FROM gatepass_extensions e WHERE e.gatepass_id = g.id) AS extension_count
+      FROM gatepasses g
       JOIN users u ON g.user_id = u.id
-      WHERE e.review_status = 'pending_review' AND g.status = 'completed'
+      WHERE g.disciplinary_status = 'pending'
     `;
     const params = [];
     if (req.user.role === 'home_dean' && req.user.deanType) {
       query += ' AND u.gender = ?';
       params.push(req.user.deanType);
     }
-    query += ' ORDER BY e.created_at DESC';
+    query += ' ORDER BY g.return_time DESC, g.created_at DESC';
     const [rows] = await pool.execute(query, params);
+
+    // Attach each gatepass's extensions (reason + photo) as review context
+    if (rows.length > 0) {
+      const ids = rows.map((r) => r.id);
+      const [exts] = await pool.query(
+        `SELECT id, gatepass_id, reason, image, new_deadline, created_at
+         FROM gatepass_extensions WHERE gatepass_id IN (?) ORDER BY created_at ASC`,
+        [ids]
+      );
+      const byGatepass = {};
+      for (const e of exts) {
+        (byGatepass[e.gatepass_id] = byGatepass[e.gatepass_id] || []).push(e);
+      }
+      rows.forEach((r) => {
+        r.extensions = byGatepass[r.id] || [];
+      });
+    }
+
     res.json({ success: true, data: rows });
   } catch (error) {
-    console.error('Get pending extension reviews error:', error);
-    res.status(500).json({ error: 'Failed to fetch extension reviews' });
+    console.error('Get pending disciplinary reviews error:', error);
+    res.status(500).json({ error: 'Failed to fetch disciplinary reviews' });
   }
 };
 
-// Internal: load an extension joined with its gatepass + occupant
-async function loadExtension(extensionId) {
-  const [rows] = await pool.execute(
-    `SELECT e.*, g.user_id AS occupant_id, CONCAT(u.first_name, ' ', u.last_name) AS occupant_name
-     FROM gatepass_extensions e
-     JOIN gatepasses g ON e.gatepass_id = g.id
-     JOIN users u ON g.user_id = u.id
-     WHERE e.id = ?`,
-    [extensionId]
-  );
-  return rows[0] || null;
-}
-
-// POST /extensions/:extId/assign-task — dean assigns a disciplinary task for an extension
-exports.reviewExtensionAssignTask = async (req, res) => {
+// POST /:id/assign-task — dean assigns a disciplinary task for a flagged gatepass
+exports.assignDisciplinaryTask = async (req, res) => {
   try {
-    const { extId } = req.params;
+    const { id } = req.params;
     const { title, description, due_date } = req.body;
     const deanId = req.user.id;
 
     if (!title) return res.status(400).json({ error: 'A task title is required' });
 
-    const ext = await loadExtension(extId);
-    if (!ext) return res.status(404).json({ error: 'Extension not found' });
-    if (ext.review_status !== 'pending_review') {
-      return res.status(400).json({ error: 'This extension has already been reviewed' });
+    const [[gp]] = await pool.execute(
+      'SELECT user_id, disciplinary_status FROM gatepasses WHERE id = ?',
+      [id]
+    );
+    if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    if (gp.disciplinary_status !== 'pending') {
+      return res.status(400).json({ error: 'This gatepass has already been reviewed' });
     }
 
     const [result] = await pool.execute(
-      `INSERT INTO tasks (user_id, assigned_by, gatepass_id, extension_id, title, description, due_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [ext.occupant_id, deanId, ext.gatepass_id, ext.id, title, description || null, due_date || null]
+      `INSERT INTO tasks (user_id, assigned_by, gatepass_id, title, description, due_date)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [gp.user_id, deanId, id, title, description || null, due_date || null]
     );
 
-    await pool.execute(
-      `UPDATE gatepass_extensions SET review_status = 'task_assigned', reviewed_by = ?, reviewed_at = NOW(),
-       review_notes = ? WHERE id = ?`,
-      [deanId, description || null, extId]
-    );
-
-    await notificationController.notifyOccupantTaskAssigned(ext.occupant_id, ext.gatepass_id, title);
+    await pool.execute("UPDATE gatepasses SET disciplinary_status = 'task_assigned' WHERE id = ?", [id]);
+    await notificationController.notifyOccupantTaskAssigned(gp.user_id, id, title);
 
     res.status(201).json({ success: true, message: 'Disciplinary task assigned', data: { task_id: result.insertId } });
   } catch (error) {
-    console.error('Assign extension task error:', error);
+    console.error('Assign disciplinary task error:', error);
     res.status(500).json({ error: 'Failed to assign task' });
   }
 };
 
-// POST /extensions/:extId/waive — dean waives disciplinary action for an extension
-exports.reviewExtensionWaive = async (req, res) => {
+// POST /:id/waive — dean waives disciplinary action for a flagged gatepass
+exports.waiveDisciplinary = async (req, res) => {
   try {
-    const { extId } = req.params;
-    const { notes } = req.body;
-    const deanId = req.user.id;
+    const { id } = req.params;
 
-    const ext = await loadExtension(extId);
-    if (!ext) return res.status(404).json({ error: 'Extension not found' });
-    if (ext.review_status !== 'pending_review') {
-      return res.status(400).json({ error: 'This extension has already been reviewed' });
+    const [[gp]] = await pool.execute(
+      'SELECT disciplinary_status FROM gatepasses WHERE id = ?',
+      [id]
+    );
+    if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    if (gp.disciplinary_status !== 'pending') {
+      return res.status(400).json({ error: 'This gatepass has already been reviewed' });
     }
 
-    await pool.execute(
-      `UPDATE gatepass_extensions SET review_status = 'waived', reviewed_by = ?, reviewed_at = NOW(),
-       review_notes = ? WHERE id = ?`,
-      [deanId, notes || null, extId]
-    );
-
-    res.json({ success: true, message: 'Extension waived — no disciplinary action' });
+    await pool.execute("UPDATE gatepasses SET disciplinary_status = 'waived' WHERE id = ?", [id]);
+    res.json({ success: true, message: 'Waived — no disciplinary action' });
   } catch (error) {
-    console.error('Waive extension error:', error);
-    res.status(500).json({ error: 'Failed to waive extension' });
+    console.error('Waive disciplinary error:', error);
+    res.status(500).json({ error: 'Failed to waive' });
   }
 };

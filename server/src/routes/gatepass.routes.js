@@ -16,10 +16,8 @@ router.get('/my-qr', gatepassController.getMyQR);
 // Guard scan validation
 router.get('/verify/:qrCode', roleMiddleware('admin', 'security_guard'), gatepassController.verifyQRCode);
 
-// Extension review (dean) — literal paths must precede '/:id'
-router.get('/extensions/pending-review', roleMiddleware('admin', 'home_dean'), gatepassController.getPendingExtensionReviews);
-router.post('/extensions/:extId/assign-task', roleMiddleware('admin', 'home_dean'), gatepassController.reviewExtensionAssignTask);
-router.post('/extensions/:extId/waive', roleMiddleware('admin', 'home_dean'), gatepassController.reviewExtensionWaive);
+// Disciplinary review (dean) — literal path must precede '/:id'
+router.get('/disciplinary/pending', roleMiddleware('admin', 'home_dean'), gatepassController.getPendingDisciplinary);
 
 router.get('/:id', gatepassController.getById);
 router.get('/:id/extensions', gatepassController.getExtensions);
@@ -28,6 +26,10 @@ router.get('/:id/extensions', gatepassController.getExtensions);
 router.post('/', gatepassController.create);
 router.post('/:id/cancel', gatepassController.cancel);
 router.post('/:id/extend', gatepassController.extend);
+
+// Dean disciplinary actions on a flagged gatepass
+router.post('/:id/assign-task', roleMiddleware('admin', 'home_dean'), gatepassController.assignDisciplinaryTask);
+router.post('/:id/waive', roleMiddleware('admin', 'home_dean'), gatepassController.waiveDisciplinary);
 
 // Approval chain
 router.post('/:id/parent-approve', roleMiddleware('parent'), gatepassController.parentApprove);
