@@ -106,7 +106,67 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
         }
         break;
 
+      case 'payment':
+        if (user.role === 'resident') this.router.navigate(['/my-payments']);
+        else if (user.role === 'parent') this.router.navigate(['/parent/payments']);
+        else if (user.role === 'admin' || user.role === 'business_officer') this.router.navigate(['/manage/payments']);
+        break;
+
+      case 'announcement':
+        if (user.role === 'resident') this.router.navigate(['/announcements']);
+        else if (user.role === 'admin' || user.role === 'home_dean' || user.role === 'vpsas') {
+          this.router.navigate(['/manage/announcements']);
+        }
+        break;
+
+      case 'gatepass_new':
+      case 'gatepass_parent_approved':
+      case 'gatepass_dean_approved':
+      case 'gatepass_approved':
+      case 'gatepass_declined':
+      case 'gatepass_exit':
+      case 'gatepass_returned':
+      case 'gatepass_overdue':
+      case 'gatepass_extended':
+      case 'gatepass_cancelled':
+      case 'gatepass_task_assigned':
+        this.navigateForGatepass(notification, user.role);
+        break;
+
       default:
+        break;
+    }
+  }
+
+  /** Gatepass notifications reach different roles, so route by the current user's role. */
+  private navigateForGatepass(notification: AppNotification, role: string): void {
+    // Occupant's disciplinary task
+    if (notification.type === 'gatepass_task_assigned') {
+      this.router.navigate(['/my-tasks']);
+      return;
+    }
+
+    switch (role) {
+      case 'admin':
+      case 'home_dean':
+      case 'vpsas':
+        this.router.navigate(['/manage/gatepass']);
+        break;
+      case 'security_guard':
+        this.router.navigate(['/security-guard/check-in-out']);
+        break;
+      case 'parent':
+        // Approval request -> Requests page; movement/updates -> History
+        this.router.navigate([notification.type === 'gatepass_new' ? '/parent' : '/parent/history']);
+        break;
+      case 'resident':
+      default:
+        // Occupant: open the pass when the QR is ready, otherwise the gatepass list
+        if (notification.type === 'gatepass_approved' && notification.reference_id) {
+          this.router.navigate(['/gatepass', notification.reference_id]);
+        } else {
+          this.router.navigate(['/gatepass']);
+        }
         break;
     }
   }
