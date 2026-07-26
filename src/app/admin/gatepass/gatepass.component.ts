@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AdminGatepassService } from './data/admin-gatepass.service';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../auth/auth.service';
-import { Gatepass, GatepassExtension } from '../../models/gatepass.model';
+import { Gatepass, DisciplinaryReview } from '../../models/gatepass.model';
 import { Task } from '../../models/task.model';
 import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
@@ -38,14 +38,14 @@ export class AdminGatepassComponent implements OnInit {
 
   protected readonly deanQueue = signal<Gatepass[]>([]);
   protected readonly vpsasQueue = signal<Gatepass[]>([]);
-  protected readonly reviews = signal<GatepassExtension[]>([]);
+  protected readonly reviews = signal<DisciplinaryReview[]>([]);
   protected readonly tasks = signal<Task[]>([]);
 
   // Decline modal
   protected readonly declineTarget = signal<Gatepass | null>(null);
   protected declineNotes = '';
   // Assign-task modal
-  protected readonly taskTarget = signal<GatepassExtension | null>(null);
+  protected readonly taskTarget = signal<DisciplinaryReview | null>(null);
   protected taskTitle = '';
   protected taskDesc = '';
   protected taskDue = '';
@@ -59,9 +59,12 @@ export class AdminGatepassComponent implements OnInit {
     this.loading.set(true);
     try {
       const jobs: Promise<any>[] = [];
-      if (this.isDean()) jobs.push(this.service.getPendingDean().then((d) => this.deanQueue.set(d)));
-      if (this.isVpsas()) jobs.push(this.service.getPendingVpsas().then((d) => this.vpsasQueue.set(d)));
-      if (this.isDean()) jobs.push(this.service.getPendingExtensionReviews().then((d) => this.reviews.set(d)));
+      if (this.isDean())
+        jobs.push(this.service.getPendingDean().then((d) => this.deanQueue.set(d)));
+      if (this.isVpsas())
+        jobs.push(this.service.getPendingVpsas().then((d) => this.vpsasQueue.set(d)));
+      if (this.isDean())
+        jobs.push(this.service.getPendingDisciplinary().then((d) => this.reviews.set(d)));
       jobs.push(this.taskService.getAllTasks().then((d) => this.tasks.set(d)));
       await Promise.all(jobs);
     } catch {
@@ -95,7 +98,8 @@ export class AdminGatepassComponent implements OnInit {
     if (!g) return;
     this.saving.set(true);
     try {
-      if (g.status === 'pending_dean') await this.service.deanDecline(g.id, this.declineNotes.trim() || undefined);
+      if (g.status === 'pending_dean')
+        await this.service.deanDecline(g.id, this.declineNotes.trim() || undefined);
       else await this.service.vpsasDecline(g.id, this.declineNotes.trim() || undefined);
       this.toast.info('Declined', 'Gatepass declined.');
       this.declineTarget.set(null);
@@ -107,26 +111,26 @@ export class AdminGatepassComponent implements OnInit {
     }
   }
 
-  // ---- Extension reviews ----
-  openAssign(e: GatepassExtension): void {
+  // ---- Disciplinary reviews ----
+  openAssign(r: DisciplinaryReview): void {
     this.taskTitle = '';
     this.taskDesc = '';
     this.taskDue = '';
-    this.taskTarget.set(e);
+    this.taskTarget.set(r);
   }
   closeAssign(): void {
     this.taskTarget.set(null);
   }
   async confirmAssign(): Promise<void> {
-    const e = this.taskTarget();
-    if (!e) return;
+    const r = this.taskTarget();
+    if (!r) return;
     if (!this.taskTitle.trim()) {
       this.toast.error('Error', 'A task title is required');
       return;
     }
     this.saving.set(true);
     try {
-      await this.service.assignTask(e.id, {
+      await this.service.assignTask(r.id, {
         title: this.taskTitle.trim(),
         description: this.taskDesc.trim() || undefined,
         due_date: this.taskDue || undefined,
@@ -140,10 +144,10 @@ export class AdminGatepassComponent implements OnInit {
       this.saving.set(false);
     }
   }
-  async waive(e: GatepassExtension): Promise<void> {
+  async waive(r: DisciplinaryReview): Promise<void> {
     try {
-      await this.service.waiveExtension(e.id);
-      this.toast.info('Waived', 'Extension waived — no disciplinary action.');
+      await this.service.waive(r.id);
+      this.toast.info('Waived', 'Review waived — no disciplinary action.');
       await this.loadAll();
     } catch {
       this.toast.error('Error', 'Failed to waive');

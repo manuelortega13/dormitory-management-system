@@ -5,10 +5,15 @@
   </header>
 
   <div class="tabs">
-    <button [class.active]="activeTab() === 'approvals'" (click)="activeTab.set('approvals')">Approvals</button>
+    <button [class.active]="activeTab() === 'approvals'" (click)="activeTab.set('approvals')">
+      Approvals
+    </button>
     @if (isDean()) {
       <button [class.active]="activeTab() === 'reviews'" (click)="activeTab.set('reviews')">
-        Extension Reviews @if (reviews().length) { <span class="pill">{{ reviews().length }}</span> }
+        Disciplinary Reviews
+        @if (reviews().length) {
+          <span class="pill">{{ reviews().length }}</span>
+        }
       </button>
     }
     <button [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Tasks</button>
@@ -61,22 +66,48 @@
       }
     }
 
-    <!-- EXTENSION REVIEWS -->
+    <!-- DISCIPLINARY REVIEWS -->
     @if (activeTab() === 'reviews' && isDean()) {
       @if (reviews().length === 0) {
-        <div class="state empty">No extensions awaiting review.</div>
+        <div class="state empty">No gatepasses awaiting disciplinary review.</div>
       } @else {
-        @for (e of reviews(); track e.id) {
+        @for (r of reviews(); track r.id) {
           <div class="review">
             <div class="review-main">
-              <span class="name">{{ e.occupant_name }}</span>
-              <span class="meta">Extension reason: {{ e.reason }}</span>
-              @if (e.image) { <img class="ext-img" [src]="e.image" alt="supporting image" /> }
-              <span class="date">Requested {{ e.created_at | date: 'medium' }}</span>
+              <div class="review-head">
+                <span class="name">{{ r.occupant_name }}</span>
+                @if (r.minutes_late > 0) {
+                  <span class="badge late">⏰ {{ r.minutes_late }} min late</span>
+                }
+                @if (r.extension_count > 0) {
+                  <span class="badge ext">↔ Extended ×{{ r.extension_count }}</span>
+                }
+              </div>
+              <span class="meta">📍 {{ r.destination }} · {{ r.reason }}</span>
+              @if (r.deadline) {
+                <span class="date">
+                  Deadline {{ r.deadline | date: 'short' }}
+                  @if (r.return_time) {
+                    · Returned {{ r.return_time | date: 'short' }}
+                  }
+                </span>
+              }
+              @if (r.extensions?.length) {
+                <div class="ext-list">
+                  @for (x of r.extensions; track x.id) {
+                    <div class="ext-item">
+                      <span class="ext-reason">Extension: {{ x.reason }}</span>
+                      @if (x.image) {
+                        <img class="ext-img" [src]="x.image" alt="supporting image" />
+                      }
+                    </div>
+                  }
+                </div>
+              }
             </div>
             <div class="row-actions">
-              <button class="task" (click)="openAssign(e)">Assign Task</button>
-              <button class="waive" (click)="waive(e)">Waive</button>
+              <button class="task" (click)="openAssign(r)">Assign Task</button>
+              <button class="waive" (click)="waive(r)">Waive</button>
             </div>
           </div>
         }
@@ -92,9 +123,16 @@
           <div class="row" [class.done]="t.status === 'completed'">
             <div class="row-main">
               <span class="name">{{ t.title }}</span>
-              <span class="meta">{{ t.occupant_name }}@if (t.description) { · {{ t.description }} }</span>
+              <span class="meta"
+                >{{ t.occupant_name }}
+                @if (t.description) {
+                  · {{ t.description }}
+                }
+              </span>
               <span class="date">
-                @if (t.due_date) { Due {{ t.due_date | date: 'mediumDate' }} · }
+                @if (t.due_date) {
+                  Due {{ t.due_date | date: 'mediumDate' }} ·
+                }
                 Assigned {{ t.created_at | date: 'mediumDate' }}
               </span>
             </div>
@@ -120,7 +158,9 @@
       <label>Reason (optional)</label>
       <textarea rows="3" [(ngModel)]="declineNotes"></textarea>
       <div class="modal-actions">
-        <button class="btn-secondary" (click)="declineTarget.set(null)" [disabled]="saving()">Cancel</button>
+        <button class="btn-secondary" (click)="declineTarget.set(null)" [disabled]="saving()">
+          Cancel
+        </button>
         <button class="decline" (click)="confirmDecline()" [disabled]="saving()">Decline</button>
       </div>
     </div>
@@ -132,7 +172,13 @@
   <div class="modal-overlay" (click)="closeAssign()">
     <div class="modal" (click)="$event.stopPropagation()">
       <h2>Assign Disciplinary Task</h2>
-      <p class="sub">For {{ taskTarget()!.occupant_name }}'s extension.</p>
+      <p class="sub">
+        For {{ taskTarget()!.occupant_name }}
+        @if (taskTarget()!.minutes_late > 0) {
+          — returned {{ taskTarget()!.minutes_late }} min late
+        }
+        .
+      </p>
       <label>Title <span class="req">*</span></label>
       <input type="text" [(ngModel)]="taskTitle" placeholder="e.g. Write a reflection essay" />
       <label>Description</label>

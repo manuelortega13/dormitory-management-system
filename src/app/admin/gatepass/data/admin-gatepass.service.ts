@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Subject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Gatepass, GatepassExtension } from '../../../models/gatepass.model';
+import { Gatepass, DisciplinaryReview } from '../../../models/gatepass.model';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -28,49 +28,65 @@ export class AdminGatepassService {
   }
 
   async getPendingDean(): Promise<Gatepass[]> {
-    const res = await firstValueFrom(this.http.get<ApiResponse<Gatepass[]>>(`${this.apiUrl}/pending-dean`));
+    const res = await firstValueFrom(
+      this.http.get<ApiResponse<Gatepass[]>>(`${this.apiUrl}/pending-dean`),
+    );
     return res.data ?? [];
   }
 
   async getPendingVpsas(): Promise<Gatepass[]> {
-    const res = await firstValueFrom(this.http.get<ApiResponse<Gatepass[]>>(`${this.apiUrl}/pending-vpsas`));
+    const res = await firstValueFrom(
+      this.http.get<ApiResponse<Gatepass[]>>(`${this.apiUrl}/pending-vpsas`),
+    );
     return res.data ?? [];
   }
 
   async deanApprove(id: number, notes?: string): Promise<void> {
-    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/dean-approve`, { notes }));
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/dean-approve`, { notes }),
+    );
     this.notify();
   }
   async deanDecline(id: number, notes?: string): Promise<void> {
-    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/dean-decline`, { notes }));
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/dean-decline`, { notes }),
+    );
     this.notify();
   }
   async vpsasApprove(id: number, notes?: string): Promise<void> {
-    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/vpsas-approve`, { notes }));
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/vpsas-approve`, { notes }),
+    );
     this.notify();
   }
   async vpsasDecline(id: number, notes?: string): Promise<void> {
-    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/vpsas-decline`, { notes }));
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/vpsas-decline`, { notes }),
+    );
     this.notify();
   }
 
-  async getPendingExtensionReviews(): Promise<GatepassExtension[]> {
+  async getPendingDisciplinary(): Promise<DisciplinaryReview[]> {
     const res = await firstValueFrom(
-      this.http.get<ApiResponse<GatepassExtension[]>>(`${this.apiUrl}/extensions/pending-review`)
+      this.http.get<ApiResponse<DisciplinaryReview[]>>(`${this.apiUrl}/disciplinary/pending`),
     );
     return res.data ?? [];
   }
 
   async assignTask(
-    extId: number,
-    task: { title: string; description?: string; due_date?: string }
+    gatepassId: number,
+    task: { title: string; description?: string; due_date?: string },
   ): Promise<void> {
-    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/extensions/${extId}/assign-task`, task));
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${gatepassId}/assign-task`, task),
+    );
     this.notify();
   }
 
-  async waiveExtension(extId: number, notes?: string): Promise<void> {
-    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/extensions/${extId}/waive`, { notes }));
+  async waive(gatepassId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${gatepassId}/waive`, {}),
+    );
     this.notify();
   }
 }

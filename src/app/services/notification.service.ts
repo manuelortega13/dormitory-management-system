@@ -5,11 +5,15 @@ import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
-import { AppNotification, NotificationResponse, UnreadCountResponse } from '../models/notification.model';
+import {
+  AppNotification,
+  NotificationResponse,
+  UnreadCountResponse,
+} from '../models/notification.model';
 import { ToastService } from './toast.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NotificationService implements OnDestroy {
   private http = inject(HttpClient);
@@ -26,23 +30,23 @@ export class NotificationService implements OnDestroy {
   connected = signal<boolean>(false);
   browserNotificationPermission = signal<NotificationPermission>('default');
   soundEnabled = signal<boolean>(true);
-  
+
   // Signal to notify components when new leave request arrives (for admin)
   // Increments each time a new leave_request_new notification is detected
   newLeaveRequestTrigger = signal<number>(0);
-  
+
   // Signal to notify components when leave request status changes (for resident)
   // Increments when leave_request_approved or leave_request_declined notification is detected
   requestStatusUpdateTrigger = signal<number>(0);
-  
+
   // Signal to notify parent dashboard when child's request needs approval
   // Increments when parent_approval_needed notification is detected
   parentApprovalNeededTrigger = signal<number>(0);
-  
+
   // Signal to notify admin when new parent registers and needs approval
   // Increments when registration notification is detected
   newParentRegistrationTrigger = signal<number>(0);
-  
+
   // Signal to notify when new announcement is published
   // Increments when announcement notification is detected
   newAnnouncementTrigger = signal<number>(0);
@@ -68,39 +72,39 @@ export class NotificationService implements OnDestroy {
       this.browserNotificationPermission.set(Notification.permission);
     }
   }
-  
+
   /**
    * Play notification sound using Web Audio API
    */
   private playNotificationSound(): void {
     if (!this.isBrowser || !this.soundEnabled()) return;
-    
+
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+
       // Create a pleasant notification sound
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       // Two-tone notification sound
       oscillator.frequency.setValueAtTime(830, audioContext.currentTime); // First tone
       oscillator.frequency.setValueAtTime(1050, audioContext.currentTime + 0.1); // Second tone (higher)
-      
+
       oscillator.type = 'sine';
-      
+
       // Fade in and out for a pleasant sound
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
       gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
       gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
       gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.12);
       gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.25);
-      
+
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.25);
-      
+
       // Clean up
       oscillator.onended = () => {
         audioContext.close();
@@ -109,12 +113,12 @@ export class NotificationService implements OnDestroy {
       console.warn('Error playing notification sound:', error);
     }
   }
-  
+
   /**
    * Toggle notification sound on/off
    */
   toggleSound(): void {
-    this.soundEnabled.update(v => !v);
+    this.soundEnabled.update((v) => !v);
   }
 
   ngOnDestroy(): void {
@@ -165,8 +169,8 @@ export class NotificationService implements OnDestroy {
       data: {
         notificationId: notification.id,
         referenceId: notification.reference_id,
-        referenceType: notification.reference_type
-      }
+        referenceType: notification.reference_type,
+      },
     };
 
     const browserNotif = new Notification(notification.title, options);
@@ -185,11 +189,7 @@ export class NotificationService implements OnDestroy {
    * Show in-app toast notification
    */
   private showToastNotification(notification: AppNotification): void {
-    this.toastService.notification(
-      notification.title,
-      notification.message,
-      notification.type
-    );
+    this.toastService.notification(notification.title, notification.message, notification.type);
   }
 
   /**
@@ -197,7 +197,7 @@ export class NotificationService implements OnDestroy {
    */
   initSocket(): void {
     if (!this.isBrowser) return;
-    
+
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('[Socket] No auth token available');
@@ -210,13 +210,13 @@ export class NotificationService implements OnDestroy {
     // Connect directly to socket server (bypasses Vite proxy in dev)
     const serverUrl = environment.socketUrl || environment.apiUrl.replace('/api', '');
     console.log(`[Socket] Connecting to ${serverUrl}`);
-    
+
     this.socket = io(serverUrl, {
       auth: { token },
       transports: ['websocket', 'polling'], // Try websocket first (faster), fallback to polling
       withCredentials: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
     });
 
     this.socket.on('connect', () => {
@@ -243,14 +243,14 @@ export class NotificationService implements OnDestroy {
     this.socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error.message);
       this.connected.set(false);
-      
+
       // Handle token-related errors
       if (error.message.includes('Token expired') || error.message.includes('Invalid token')) {
         console.warn('[Socket] Token issue detected, clearing token');
         // Token is invalid/expired - user needs to re-login
         // Don't automatically clear token, just fall back to polling
       }
-      
+
       // Start polling as fallback on connection error
       if (!this.pollingInterval) {
         this.startPolling();
@@ -266,7 +266,7 @@ export class NotificationService implements OnDestroy {
     // Listen for announcement published events (for real-time page updates)
     this.socket.on('announcement-published', (announcement: any) => {
       console.log('📢 New announcement published:', announcement);
-      this.newAnnouncementTrigger.update(v => v + 1);
+      this.newAnnouncementTrigger.update((v) => v + 1);
     });
   }
 
@@ -275,54 +275,59 @@ export class NotificationService implements OnDestroy {
    */
   private handleNewNotification(notification: AppNotification): void {
     // Add to notifications list
-    this.notifications.update(notifs => [notification, ...notifs]);
-    
+    this.notifications.update((notifs) => [notification, ...notifs]);
+
     // Update unread count
     if (!notification.is_read) {
-      this.unreadCount.update(count => count + 1);
+      this.unreadCount.update((count) => count + 1);
     }
-    
+
     // Track notification ID
     this.lastNotificationIds.add(notification.id);
-    
+
     // Play notification sound
     this.playNotificationSound();
-    
+
     // Show in-app toast notification
     this.showToastNotification(notification);
-    
+
     // Show browser notification (for background/PWA)
     this.showBrowserNotification(notification);
-    
+
     // Trigger appropriate component updates based on notification type
-    if (notification.type === 'leave_request_new' || notification.type === 'leave_request_cancelled') {
-      this.newLeaveRequestTrigger.update(v => v + 1);
+    if (
+      notification.type === 'leave_request_new' ||
+      notification.type === 'leave_request_cancelled'
+    ) {
+      this.newLeaveRequestTrigger.update((v) => v + 1);
     }
-    if (notification.type === 'leave_request_approved' || 
-        notification.type === 'leave_request_declined' ||
-        notification.type === 'leave_request_admin_approved' ||
-        notification.type === 'leave_request_dean_approved' ||
-        notification.type === 'leave_request_parent_approved' ||
-        notification.type === 'leave_request_vpsas_approved') {
-      this.requestStatusUpdateTrigger.update(v => v + 1);
+    if (
+      notification.type === 'leave_request_approved' ||
+      notification.type === 'leave_request_declined' ||
+      notification.type === 'leave_request_admin_approved' ||
+      notification.type === 'leave_request_dean_approved' ||
+      notification.type === 'leave_request_parent_approved' ||
+      notification.type === 'leave_request_vpsas_approved'
+    ) {
+      this.requestStatusUpdateTrigger.update((v) => v + 1);
     }
     if (notification.type === 'parent_approval_needed') {
-      this.parentApprovalNeededTrigger.update(v => v + 1);
+      this.parentApprovalNeededTrigger.update((v) => v + 1);
     }
     if (notification.type === 'vpsas_approval_needed') {
-      this.newLeaveRequestTrigger.update(v => v + 1);
+      this.newLeaveRequestTrigger.update((v) => v + 1);
     }
     if (notification.type === 'registration') {
-      this.newParentRegistrationTrigger.update(v => v + 1);
+      this.newParentRegistrationTrigger.update((v) => v + 1);
     }
     if (notification.type === 'announcement') {
-      this.newAnnouncementTrigger.update(v => v + 1);
+      this.newAnnouncementTrigger.update((v) => v + 1);
     }
     if (notification.type === 'payment') {
-      this.paymentStatusUpdateTrigger.update(v => v + 1);
+      this.paymentStatusUpdateTrigger.update((v) => v + 1);
     }
     if (notification.type?.startsWith('gatepass')) {
-      this.gatepassUpdatedTrigger.update(v => v + 1);
+      this.gatepassUpdatedTrigger.update((v) => v + 1);
     }
   }
 
@@ -339,17 +344,15 @@ export class NotificationService implements OnDestroy {
 
   async fetchNotifications(): Promise<void> {
     if (!this.isBrowser) return;
-    
+
     try {
       this.loading.set(true);
-      const response = await firstValueFrom(
-        this.http.get<NotificationResponse>(this.apiUrl)
-      );
+      const response = await firstValueFrom(this.http.get<NotificationResponse>(this.apiUrl));
       const newNotifications = response.data || [];
-      
+
       // Only check for new notifications if we've already loaded before (not initial load)
       const isInitialLoad = this.lastNotificationIds.size === 0;
-      
+
       // Check for new notifications by type
       let hasNewLeaveRequest = false;
       let hasStatusUpdate = false;
@@ -365,12 +368,14 @@ export class NotificationService implements OnDestroy {
             hasNewLeaveRequest = true;
           }
           // Request status update notification (for resident)
-          if (notif.type === 'leave_request_approved' || 
-              notif.type === 'leave_request_declined' ||
-              notif.type === 'leave_request_admin_approved' ||
-              notif.type === 'leave_request_dean_approved' ||
-              notif.type === 'leave_request_parent_approved' ||
-              notif.type === 'leave_request_vpsas_approved') {
+          if (
+            notif.type === 'leave_request_approved' ||
+            notif.type === 'leave_request_declined' ||
+            notif.type === 'leave_request_admin_approved' ||
+            notif.type === 'leave_request_dean_approved' ||
+            notif.type === 'leave_request_parent_approved' ||
+            notif.type === 'leave_request_vpsas_approved'
+          ) {
             hasStatusUpdate = true;
           }
           // Parent approval needed notification (for parent)
@@ -392,22 +397,22 @@ export class NotificationService implements OnDestroy {
         }
         this.lastNotificationIds.add(notif.id);
       }
-      
+
       // Trigger updates for watching components (not on initial load)
       if (hasNewLeaveRequest || hasVpsasApprovalNeeded) {
-        this.newLeaveRequestTrigger.update(v => v + 1);
+        this.newLeaveRequestTrigger.update((v) => v + 1);
       }
       if (hasStatusUpdate) {
-        this.requestStatusUpdateTrigger.update(v => v + 1);
+        this.requestStatusUpdateTrigger.update((v) => v + 1);
       }
       if (hasParentApprovalNeeded) {
-        this.parentApprovalNeededTrigger.update(v => v + 1);
+        this.parentApprovalNeededTrigger.update((v) => v + 1);
       }
       if (hasPaymentUpdate) {
-        this.paymentStatusUpdateTrigger.update(v => v + 1);
+        this.paymentStatusUpdateTrigger.update((v) => v + 1);
       }
       if (hasGatepassUpdate) {
-        this.gatepassUpdatedTrigger.update(v => v + 1);
+        this.gatepassUpdatedTrigger.update((v) => v + 1);
       }
 
       this.notifications.set(newNotifications);
@@ -420,10 +425,10 @@ export class NotificationService implements OnDestroy {
 
   async fetchUnreadCount(): Promise<void> {
     if (!this.isBrowser) return;
-    
+
     try {
       const response = await firstValueFrom(
-        this.http.get<UnreadCountResponse>(`${this.apiUrl}/unread-count`)
+        this.http.get<UnreadCountResponse>(`${this.apiUrl}/unread-count`),
       );
       this.unreadCount.set(response.count || 0);
     } catch (error) {
@@ -433,10 +438,10 @@ export class NotificationService implements OnDestroy {
 
   startPolling(): void {
     if (!this.isBrowser || this.pollingInterval) return;
-    
+
     this.fetchUnreadCount();
     this.fetchNotifications();
-    
+
     this.pollingInterval = setInterval(() => {
       this.fetchUnreadCount();
       this.fetchNotifications(); // Also fetch notifications to detect new ones
@@ -452,14 +457,12 @@ export class NotificationService implements OnDestroy {
 
   async markAsRead(id: number): Promise<void> {
     try {
-      await firstValueFrom(
-        this.http.put(`${this.apiUrl}/${id}/read`, {})
+      await firstValueFrom(this.http.put(`${this.apiUrl}/${id}/read`, {}));
+
+      this.notifications.update((notifs) =>
+        notifs.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       );
-      
-      this.notifications.update(notifs => 
-        notifs.map(n => n.id === id ? { ...n, is_read: true } : n)
-      );
-      this.unreadCount.update(count => Math.max(0, count - 1));
+      this.unreadCount.update((count) => Math.max(0, count - 1));
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
@@ -467,13 +470,9 @@ export class NotificationService implements OnDestroy {
 
   async markAllAsRead(): Promise<void> {
     try {
-      await firstValueFrom(
-        this.http.put(`${this.apiUrl}/mark-all-read`, {})
-      );
-      
-      this.notifications.update(notifs => 
-        notifs.map(n => ({ ...n, is_read: true }))
-      );
+      await firstValueFrom(this.http.put(`${this.apiUrl}/mark-all-read`, {}));
+
+      this.notifications.update((notifs) => notifs.map((n) => ({ ...n, is_read: true })));
       this.unreadCount.set(0);
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
@@ -482,15 +481,13 @@ export class NotificationService implements OnDestroy {
 
   async deleteNotification(id: number): Promise<void> {
     try {
-      const notification = this.notifications().find(n => n.id === id);
-      
-      await firstValueFrom(
-        this.http.delete(`${this.apiUrl}/${id}`)
-      );
-      
-      this.notifications.update(notifs => notifs.filter(n => n.id !== id));
+      const notification = this.notifications().find((n) => n.id === id);
+
+      await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+
+      this.notifications.update((notifs) => notifs.filter((n) => n.id !== id));
       if (notification && !notification.is_read) {
-        this.unreadCount.update(count => Math.max(0, count - 1));
+        this.unreadCount.update((count) => Math.max(0, count - 1));
       }
     } catch (error) {
       console.error('Failed to delete notification:', error);
@@ -532,6 +529,7 @@ export class NotificationService implements OnDestroy {
       case 'gatepass_returned':
         return 'bi-door-open';
       case 'gatepass_overdue':
+      case 'gatepass_late_return':
         return 'bi-clock-history';
       case 'gatepass_extended':
         return 'bi-hourglass-split';
@@ -552,7 +550,7 @@ export class NotificationService implements OnDestroy {
     try {
       // Fetch VAPID public key from server
       const { key } = await firstValueFrom(
-        this.http.get<{ key: string }>(`${this.pushApiUrl}/vapid-public-key`)
+        this.http.get<{ key: string }>(`${this.pushApiUrl}/vapid-public-key`),
       );
 
       if (!key) return;
@@ -563,9 +561,7 @@ export class NotificationService implements OnDestroy {
       });
 
       // Send subscription to backend
-      await firstValueFrom(
-        this.http.post(`${this.pushApiUrl}/subscribe`, { subscription })
-      );
+      await firstValueFrom(this.http.post(`${this.pushApiUrl}/subscribe`, { subscription }));
 
       console.log('Push notification subscription saved');
     } catch (err) {
@@ -585,7 +581,7 @@ export class NotificationService implements OnDestroy {
         await firstValueFrom(
           this.http.delete(`${this.pushApiUrl}/unsubscribe`, {
             body: { endpoint: subscription.endpoint },
-          })
+          }),
         );
       }
       await this.swPush.unsubscribe();
@@ -596,14 +592,14 @@ export class NotificationService implements OnDestroy {
 
   getTimeAgo(date: Date | string | null | undefined): string {
     if (!date) return '';
-    
+
     const now = new Date();
     const notifDate = new Date(date);
-    
+
     if (isNaN(notifDate.getTime())) {
       return '';
     }
-    
+
     const diffMs = now.getTime() - notifDate.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);

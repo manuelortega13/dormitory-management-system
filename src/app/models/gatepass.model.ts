@@ -79,3 +79,18 @@ export interface GatepassExtension {
   destination?: string;
   gatepass_status?: string;
 }
+
+export interface DisciplinaryReview {
+  id: number; // gatepass id
+  occupant_name?: string;
+  student_resident_id?: string | null;
+  gender?: string | null;
+  destination: string;
+  reason: string;
+  status: string;
+  deadline?: string | null;
+  return_time?: string | null;
+  minutes_late: number;
+  extension_count: number;
+  extensions?: GatepassExtension[];
+}

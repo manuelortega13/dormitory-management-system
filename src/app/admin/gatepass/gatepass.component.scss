@@ -59,7 +59,7 @@ header h1 {
 .review {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   background: #fff;
   border: 1px solid #eee;
@@ -95,6 +95,47 @@ header h1 {
   max-width: 160px;
   border-radius: 8px;
   margin: 0.4rem 0;
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.badge.late {
+  background: #ffe3e3;
+  color: #c92a2a;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.badge.ext {
+  background: #fff3bf;
+  color: #a6791b;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ext-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid #f1f3f5;
+}
+.ext-item {
+  display: flex;
+  flex-direction: column;
+}
+.ext-reason {
+  font-size: 0.8rem;
+  color: #495057;
 }
 
 .row-actions {

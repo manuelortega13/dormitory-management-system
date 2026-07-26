@@ -1,4 +1,12 @@
-import { Component, inject, OnInit, OnDestroy, HostListener, ElementRef, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  ElementRef,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
@@ -10,7 +18,7 @@ import { AppNotification } from '../../models/notification.model';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './notification-dropdown.component.html',
-  styleUrl: './notification-dropdown.component.scss'
+  styleUrl: './notification-dropdown.component.scss',
 })
 export class NotificationDropdownComponent implements OnInit, OnDestroy {
   notificationService = inject(NotificationService);
@@ -41,7 +49,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   toggleDropdown(): void {
     const wasOpen = this.isOpen();
     this.isOpen.set(!wasOpen);
-    
+
     if (!wasOpen) {
       this.notificationService.fetchNotifications();
     }
@@ -109,7 +117,8 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
       case 'payment':
         if (user.role === 'resident') this.router.navigate(['/my-payments']);
         else if (user.role === 'parent') this.router.navigate(['/parent/payments']);
-        else if (user.role === 'admin' || user.role === 'business_officer') this.router.navigate(['/manage/payments']);
+        else if (user.role === 'admin' || user.role === 'business_officer')
+          this.router.navigate(['/manage/payments']);
         break;
 
       case 'announcement':
@@ -130,6 +139,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
       case 'gatepass_extended':
       case 'gatepass_cancelled':
       case 'gatepass_task_assigned':
+      case 'gatepass_late_return':
         this.navigateForGatepass(notification, user.role);
         break;
 
@@ -157,7 +167,9 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
         break;
       case 'parent':
         // Approval request -> Requests page; movement/updates -> History
-        this.router.navigate([notification.type === 'gatepass_new' ? '/parent' : '/parent/history']);
+        this.router.navigate([
+          notification.type === 'gatepass_new' ? '/parent' : '/parent/history',
+        ]);
         break;
       case 'resident':
       default:
