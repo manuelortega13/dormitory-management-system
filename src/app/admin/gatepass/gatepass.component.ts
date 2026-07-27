@@ -41,6 +41,35 @@ export class AdminGatepassComponent implements OnInit {
   protected readonly reviews = signal<DisciplinaryReview[]>([]);
   protected readonly tasks = signal<Task[]>([]);
 
+  // Search (by occupant name or student ID) + task status filter
+  protected readonly searchQuery = signal('');
+  protected readonly taskStatusFilter = signal<'all' | 'pending' | 'completed'>('all');
+
+  private matchesSearch(name?: string | null, studentId?: string | null): boolean {
+    const q = this.searchQuery().trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (name?.toLowerCase().includes(q) ?? false) || (studentId?.toLowerCase().includes(q) ?? false)
+    );
+  }
+
+  protected readonly filteredDeanQueue = computed(() =>
+    this.deanQueue().filter((g) => this.matchesSearch(g.occupant_name, g.student_resident_id)),
+  );
+  protected readonly filteredVpsasQueue = computed(() =>
+    this.vpsasQueue().filter((g) => this.matchesSearch(g.occupant_name, g.student_resident_id)),
+  );
+  protected readonly filteredReviews = computed(() =>
+    this.reviews().filter((r) => this.matchesSearch(r.occupant_name, r.student_resident_id)),
+  );
+  protected readonly filteredTasks = computed(() =>
+    this.tasks().filter(
+      (t) =>
+        this.matchesSearch(t.occupant_name, t.student_resident_id) &&
+        (this.taskStatusFilter() === 'all' || t.status === this.taskStatusFilter()),
+    ),
+  );
+
   // Decline modal
   protected readonly declineTarget = signal<Gatepass | null>(null);
   protected declineNotes = '';

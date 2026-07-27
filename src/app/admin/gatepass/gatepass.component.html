@@ -19,6 +19,23 @@
     <button [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Tasks</button>
   </div>
 
+  <div class="toolbar">
+    <div class="search">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by occupant name or student ID…"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+      @if (searchQuery()) {
+        <button class="search-clear" (click)="searchQuery.set('')" aria-label="Clear search">
+          ✕
+        </button>
+      }
+    </div>
+  </div>
+
   @if (loading()) {
     <div class="state">Loading…</div>
   } @else {
@@ -26,13 +43,20 @@
     @if (activeTab() === 'approvals') {
       @if (isDean()) {
         <h3 class="section">Awaiting Home Dean</h3>
-        @if (deanQueue().length === 0) {
-          <div class="state empty">Nothing awaiting dean approval.</div>
+        @if (filteredDeanQueue().length === 0) {
+          <div class="state empty">
+            {{ searchQuery() ? 'No matches.' : 'Nothing awaiting dean approval.' }}
+          </div>
         } @else {
-          @for (g of deanQueue(); track g.id) {
+          @for (g of filteredDeanQueue(); track g.id) {
             <div class="row">
               <div class="row-main">
-                <span class="name">{{ g.occupant_name }}</span>
+                <span class="name"
+                  >{{ g.occupant_name }}
+                  @if (g.student_resident_id) {
+                    <span class="sid">· {{ g.student_resident_id }}</span>
+                  }
+                </span>
                 <span class="meta">📍 {{ g.destination }} · {{ g.reason }}</span>
                 <span class="date">{{ g.created_at | date: 'medium' }}</span>
               </div>
@@ -46,13 +70,20 @@
       }
       @if (isVpsas()) {
         <h3 class="section">Awaiting VPSAS</h3>
-        @if (vpsasQueue().length === 0) {
-          <div class="state empty">Nothing awaiting VPSAS approval.</div>
+        @if (filteredVpsasQueue().length === 0) {
+          <div class="state empty">
+            {{ searchQuery() ? 'No matches.' : 'Nothing awaiting VPSAS approval.' }}
+          </div>
         } @else {
-          @for (g of vpsasQueue(); track g.id) {
+          @for (g of filteredVpsasQueue(); track g.id) {
             <div class="row">
               <div class="row-main">
-                <span class="name">{{ g.occupant_name }}</span>
+                <span class="name"
+                  >{{ g.occupant_name }}
+                  @if (g.student_resident_id) {
+                    <span class="sid">· {{ g.student_resident_id }}</span>
+                  }
+                </span>
                 <span class="meta">📍 {{ g.destination }} · {{ g.reason }}</span>
                 <span class="date">{{ g.created_at | date: 'medium' }}</span>
               </div>
@@ -68,14 +99,21 @@
 
     <!-- DISCIPLINARY REVIEWS -->
     @if (activeTab() === 'reviews' && isDean()) {
-      @if (reviews().length === 0) {
-        <div class="state empty">No gatepasses awaiting disciplinary review.</div>
+      @if (filteredReviews().length === 0) {
+        <div class="state empty">
+          {{ searchQuery() ? 'No matches.' : 'No gatepasses awaiting disciplinary review.' }}
+        </div>
       } @else {
-        @for (r of reviews(); track r.id) {
+        @for (r of filteredReviews(); track r.id) {
           <div class="review">
             <div class="review-main">
               <div class="review-head">
-                <span class="name">{{ r.occupant_name }}</span>
+                <span class="name"
+                  >{{ r.occupant_name }}
+                  @if (r.student_resident_id) {
+                    <span class="sid">· {{ r.student_resident_id }}</span>
+                  }
+                </span>
                 @if (r.minutes_late > 0) {
                   <span class="badge late">⏰ {{ r.minutes_late }} min late</span>
                 }
@@ -116,15 +154,37 @@
 
     <!-- TASKS -->
     @if (activeTab() === 'tasks') {
-      @if (tasks().length === 0) {
-        <div class="state empty">No tasks.</div>
+      <div class="task-filter">
+        <button [class.active]="taskStatusFilter() === 'all'" (click)="taskStatusFilter.set('all')">
+          All
+        </button>
+        <button
+          [class.active]="taskStatusFilter() === 'pending'"
+          (click)="taskStatusFilter.set('pending')"
+        >
+          Pending
+        </button>
+        <button
+          [class.active]="taskStatusFilter() === 'completed'"
+          (click)="taskStatusFilter.set('completed')"
+        >
+          Completed
+        </button>
+      </div>
+      @if (filteredTasks().length === 0) {
+        <div class="state empty">
+          {{ searchQuery() || taskStatusFilter() !== 'all' ? 'No matching tasks.' : 'No tasks.' }}
+        </div>
       } @else {
-        @for (t of tasks(); track t.id) {
+        @for (t of filteredTasks(); track t.id) {
           <div class="row" [class.done]="t.status === 'completed'">
             <div class="row-main">
               <span class="name">{{ t.title }}</span>
               <span class="meta"
                 >{{ t.occupant_name }}
+                @if (t.student_resident_id) {
+                  · {{ t.student_resident_id }}
+                }
                 @if (t.description) {
                   · {{ t.description }}
                 }
