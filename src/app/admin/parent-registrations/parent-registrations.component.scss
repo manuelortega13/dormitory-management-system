@@ -317,7 +317,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  // Above the admin mobile bottom tab bar (1000) and its More sheet (1200)
+  // so the modal (and its footer/Approve button) isn't overlapped by the nav.
+  z-index: 2000;
   padding: 1rem;
 }
 
