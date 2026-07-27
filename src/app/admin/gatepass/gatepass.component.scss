@@ -96,6 +96,23 @@ header h1 {
   border-radius: 8px;
   margin: 0.4rem 0;
 }
+.task-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #f1f3f5;
+
+  .proof-note {
+    font-size: 0.82rem;
+    color: #495057;
+  }
+  .proof-img {
+    max-width: 160px;
+    border-radius: 8px;
+  }
+}
 
 .review-head {
   display: flex;

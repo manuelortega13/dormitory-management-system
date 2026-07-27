@@ -56,6 +56,39 @@ exports.getAll = async (req, res) => {
   }
 };
 
+// PATCH /my/:id/complete — occupant closes their own task with proof
+// (required image, optional note)
+exports.completeMyTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note, image } = req.body;
+
+    if (!image || typeof image !== 'string' || !image.trim()) {
+      return res.status(400).json({ error: 'A proof image is required to complete this task' });
+    }
+
+    const [tasks] = await pool.execute(
+      'SELECT id, status FROM tasks WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+    if (tasks.length === 0) return res.status(404).json({ error: 'Task not found' });
+    if (tasks[0].status === 'completed') {
+      return res.status(400).json({ error: 'Task is already completed' });
+    }
+
+    await pool.execute(
+      `UPDATE tasks
+       SET status = 'completed', completed_at = NOW(), completion_note = ?, completion_image = ?
+       WHERE id = ?`,
+      [note && note.trim() ? note.trim() : null, image, id]
+    );
+    res.json({ success: true, message: 'Task marked as completed' });
+  } catch (error) {
+    console.error('Complete my task error:', error);
+    res.status(500).json({ error: 'Failed to complete task' });
+  }
+};
+
 // PATCH /:id/complete — only staff can close a task (dean-only-closes decision)
 exports.completeTask = async (req, res) => {
   try {

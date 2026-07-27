@@ -135,6 +135,16 @@
                 }
                 Assigned {{ t.created_at | date: 'mediumDate' }}
               </span>
+              @if (t.status === 'completed' && (t.completion_note || t.completion_image)) {
+                <div class="task-proof">
+                  @if (t.completion_note) {
+                    <span class="proof-note">📝 {{ t.completion_note }}</span>
+                  }
+                  @if (t.completion_image) {
+                    <img class="proof-img" [src]="t.completion_image" alt="Completion proof" />
+                  }
+                </div>
+              }
             </div>
             <div class="row-actions">
               @if (t.status === 'pending') {

@@ -6,6 +6,7 @@ import { GatepassService } from '../data/gatepass.service';
 import { Gatepass, GatepassExtension } from '../../models/gatepass.model';
 import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
+import { compressImage } from '../../shared/utils/image.util';
 
 @Component({
   selector: 'app-gatepass-pass',
@@ -46,7 +47,9 @@ import { NotificationService } from '../../services/notification.service';
             @for (e of extensions(); track e.id) {
               <div class="ext-item">
                 <span class="ext-reason">{{ e.reason }}</span>
-                <span class="ext-status" [class]="e.review_status">{{ reviewLabel(e.review_status) }}</span>
+                <span class="ext-status" [class]="e.review_status">{{
+                  reviewLabel(e.review_status)
+                }}</span>
                 <span class="ext-date">{{ e.created_at | date: 'short' }}</span>
               </div>
             }
@@ -60,14 +63,24 @@ import { NotificationService } from '../../services/notification.service';
         <div class="modal" (click)="$event.stopPropagation()">
           <h2>Extend Gatepass</h2>
           <p class="sub">Add another hour. A reason and a supporting photo are required.</p>
-          @if (extError()) { <div class="error">{{ extError() }}</div> }
+          @if (extError()) {
+            <div class="error">{{ extError() }}</div>
+          }
           <label>Reason <span class="req">*</span></label>
-          <textarea rows="3" [(ngModel)]="extReason" placeholder="Why do you need more time?"></textarea>
+          <textarea
+            rows="3"
+            [(ngModel)]="extReason"
+            placeholder="Why do you need more time?"
+          ></textarea>
           <label>Supporting photo <span class="req">*</span></label>
           <input type="file" accept="image/*" (change)="onImage($event)" />
-          @if (extImage()) { <img class="preview" [src]="extImage()" alt="preview" /> }
+          @if (extImage()) {
+            <img class="preview" [src]="extImage()" alt="preview" />
+          }
           <div class="modal-actions">
-            <button class="btn-secondary" (click)="closeExtend()" [disabled]="extSaving()">Cancel</button>
+            <button class="btn-secondary" (click)="closeExtend()" [disabled]="extSaving()">
+              Cancel
+            </button>
             <button class="btn-primary" (click)="submitExtend()" [disabled]="extSaving()">
               {{ extSaving() ? 'Submitting…' : 'Extend' }}
             </button>
@@ -78,41 +91,196 @@ import { NotificationService } from '../../services/notification.service';
   `,
   styles: [
     `
-      .gp-pass { padding: 1rem; max-width: 480px; margin: 0 auto; }
-      .back { color: #4361ee; text-decoration: none; font-size: 0.9rem; }
-      .state { padding: 2rem; text-align: center; color: #6c757d; }
-      .pass-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 1.5rem; text-align: center; margin-top: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-      .pass-card h2 { margin: 0 0 0.25rem; }
-      .reason { color: #495057; margin: 0 0 1rem; }
-      .hint { color: #6c757d; font-size: 0.85rem; }
-      .qr { width: 230px; height: 230px; margin: 0.5rem auto; display: block; }
-      .timer { background: #cfe2ff; border-radius: 12px; padding: 1rem; margin: 0.5rem 0 1rem; }
-      .timer.overdue { background: #f8d7da; }
-      .timer-label { display: block; font-size: 0.75rem; color: #084298; letter-spacing: 0.05em; }
-      .timer.overdue .timer-label { color: #842029; }
-      .timer-value { font-size: 2rem; font-weight: 700; color: #084298; }
-      .timer.overdue .timer-value { color: #842029; }
-      .btn-primary { background: #4361ee; color: #fff; border: none; padding: 0.7rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 0.75rem; }
-      .btn-secondary { background: #f1f3f5; border: 1px solid #dee2e6; padding: 0.7rem 1.2rem; border-radius: 8px; cursor: pointer; }
-      .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
-      .ext-list { margin-top: 1.25rem; }
-      .ext-item { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.4rem; }
-      .ext-reason { flex: 1; font-size: 0.85rem; }
-      .ext-status { font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 12px; }
-      .ext-status.pending_review { background: #fff3cd; color: #856404; }
-      .ext-status.task_assigned { background: #f8d7da; color: #842029; }
-      .ext-status.waived { background: #d1e7dd; color: #0f5132; }
-      .ext-date { font-size: 0.7rem; color: #adb5bd; }
-      .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 1rem; }
-      .modal { background: #fff; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 440px; }
-      .modal h2 { margin: 0 0 0.25rem; }
-      .sub { color: #6c757d; font-size: 0.85rem; margin: 0 0 1rem; }
-      .modal label { display: block; margin: 0.75rem 0 0.3rem; font-weight: 600; font-size: 0.85rem; }
-      .modal textarea, .modal input { width: 100%; padding: 0.6rem; border: 1px solid #dee2e6; border-radius: 8px; font-family: inherit; }
-      .preview { max-width: 100%; margin-top: 0.5rem; border-radius: 8px; max-height: 160px; }
-      .req { color: #dc3545; }
-      .error { background: #f8d7da; color: #842029; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.85rem; }
-      .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+      .gp-pass {
+        padding: 1rem;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      .back {
+        color: #4361ee;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .state {
+        padding: 2rem;
+        text-align: center;
+        color: #6c757d;
+      }
+      .pass-card {
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 14px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-top: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+      .pass-card h2 {
+        margin: 0 0 0.25rem;
+      }
+      .reason {
+        color: #495057;
+        margin: 0 0 1rem;
+      }
+      .hint {
+        color: #6c757d;
+        font-size: 0.85rem;
+      }
+      .qr {
+        width: 230px;
+        height: 230px;
+        margin: 0.5rem auto;
+        display: block;
+      }
+      .timer {
+        background: #cfe2ff;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.5rem 0 1rem;
+      }
+      .timer.overdue {
+        background: #f8d7da;
+      }
+      .timer-label {
+        display: block;
+        font-size: 0.75rem;
+        color: #084298;
+        letter-spacing: 0.05em;
+      }
+      .timer.overdue .timer-label {
+        color: #842029;
+      }
+      .timer-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #084298;
+      }
+      .timer.overdue .timer-value {
+        color: #842029;
+      }
+      .btn-primary {
+        background: #4361ee;
+        color: #fff;
+        border: none;
+        padding: 0.7rem 1.2rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 0.75rem;
+      }
+      .btn-secondary {
+        background: #f1f3f5;
+        border: 1px solid #dee2e6;
+        padding: 0.7rem 1.2rem;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .btn-primary:disabled,
+      .btn-secondary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .ext-list {
+        margin-top: 1.25rem;
+      }
+      .ext-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        align-items: center;
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        margin-bottom: 0.4rem;
+      }
+      .ext-reason {
+        flex: 1;
+        font-size: 0.85rem;
+      }
+      .ext-status {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.15rem 0.5rem;
+        border-radius: 12px;
+      }
+      .ext-status.pending_review {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .ext-status.task_assigned {
+        background: #f8d7da;
+        color: #842029;
+      }
+      .ext-status.waived {
+        background: #d1e7dd;
+        color: #0f5132;
+      }
+      .ext-date {
+        font-size: 0.7rem;
+        color: #adb5bd;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1100;
+        padding: 1rem;
+      }
+      .modal {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        width: 100%;
+        max-width: 440px;
+      }
+      .modal h2 {
+        margin: 0 0 0.25rem;
+      }
+      .sub {
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin: 0 0 1rem;
+      }
+      .modal label {
+        display: block;
+        margin: 0.75rem 0 0.3rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+      .modal textarea,
+      .modal input {
+        width: 100%;
+        padding: 0.6rem;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        font-family: inherit;
+      }
+      .preview {
+        max-width: 100%;
+        margin-top: 0.5rem;
+        border-radius: 8px;
+        max-height: 160px;
+      }
+      .req {
+        color: #dc3545;
+      }
+      .error {
+        background: #f8d7da;
+        color: #842029;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1.25rem;
+      }
     `,
   ],
 })
@@ -125,7 +293,8 @@ export class GatepassPassComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      if (this.notifications.gatepassUpdatedTrigger() > 0 && this.passId) this.loadPass(this.passId);
+      if (this.notifications.gatepassUpdatedTrigger() > 0 && this.passId)
+        this.loadPass(this.passId);
     });
   }
 
@@ -176,7 +345,10 @@ export class GatepassPassComponent implements OnInit, OnDestroy {
   async loadPass(id: number): Promise<void> {
     this.loading.set(true);
     try {
-      const [pass, exts] = await Promise.all([this.service.getById(id), this.service.getExtensions(id)]);
+      const [pass, exts] = await Promise.all([
+        this.service.getById(id),
+        this.service.getExtensions(id),
+      ]);
       this.gp.set(pass);
       this.extensions.set(exts);
     } catch {
@@ -187,7 +359,9 @@ export class GatepassPassComponent implements OnInit, OnDestroy {
   }
 
   reviewLabel(s: string): string {
-    return { pending_review: 'Pending review', task_assigned: 'Task assigned', waived: 'Waived' }[s] || s;
+    return (
+      { pending_review: 'Pending review', task_assigned: 'Task assigned', waived: 'Waived' }[s] || s
+    );
   }
 
   openExtend(): void {
@@ -211,42 +385,10 @@ export class GatepassPassComponent implements OnInit, OnDestroy {
     this.extError.set('');
     try {
       // Compress (downscale + re-encode) so large phone photos don't get rejected
-      this.extImage.set(await this.compressImage(file));
+      this.extImage.set(await compressImage(file));
     } catch {
       this.extError.set('Could not process that image. Please try another.');
     }
-  }
-
-  /** Downscale to a max dimension and re-encode as JPEG to keep the upload small. */
-  private compressImage(file: File, maxDim = 1280, quality = 0.7): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('read failed'));
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = () => reject(new Error('decode failed'));
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > maxDim || height > maxDim) {
-            const scale = Math.min(maxDim / width, maxDim / height);
-            width = Math.round(width * scale);
-            height = Math.round(height * scale);
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            resolve(reader.result as string); // fallback: original data URL
-            return;
-          }
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
   }
 
   async submitExtend(): Promise<void> {

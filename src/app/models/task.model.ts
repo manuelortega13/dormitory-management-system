@@ -9,6 +9,8 @@ export interface Task {
   due_date?: string | null;
   status: 'pending' | 'completed';
   completed_at?: string | null;
+  completion_note?: string | null;
+  completion_image?: string | null;
   occupant_name?: string;
   student_resident_id?: string | null;
   assigned_by_name?: string | null;

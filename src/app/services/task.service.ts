@@ -33,4 +33,11 @@ export class TaskService {
   async completeTask(id: number): Promise<void> {
     await firstValueFrom(this.http.patch<ApiResponse<void>>(`${this.apiUrl}/${id}/complete`, {}));
   }
+
+  // Occupant completes their own task with proof (required image, optional note)
+  async completeMyTask(id: number, payload: { note?: string; image: string }): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<ApiResponse<void>>(`${this.apiUrl}/my/${id}/complete`, payload),
+    );
+  }
 }

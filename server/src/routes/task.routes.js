@@ -7,6 +7,7 @@ router.use(authMiddleware);
 
 // Occupant's own tasks
 router.get('/my', taskController.getMyTasks);
+router.patch('/my/:id/complete', taskController.completeMyTask);
 
 // Staff task management
 router.get('/', roleMiddleware('admin', 'home_dean', 'vpsas'), taskController.getAll);
