@@ -297,7 +297,7 @@
   // Content area — account for top bar and bottom tab bar + safe areas
   .user-content {
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 8px);
     min-height: 100vh;
   }
 
@@ -308,6 +308,9 @@
     bottom: 0;
     left: 0;
     right: 0;
+    // Fixed height so the More sheet and content padding can sit flush against it
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     background: #fff;
     border-top: 1px solid #e5e7eb;
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
@@ -316,18 +319,17 @@
     padding-top: 6px;
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     justify-content: space-around;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .tab-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: 3px;
+    justify-content: center;
+    gap: 2px;
     flex: 1;
-    min-height: 44px;
-    padding: 6px 0 8px;
+    padding: 6px 0;
     text-decoration: none;
     color: #9ca3af;
     background: none;
@@ -410,7 +412,8 @@
 
   .mobile-more-sheet {
     position: fixed;
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
+//     bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     background: #fff;
