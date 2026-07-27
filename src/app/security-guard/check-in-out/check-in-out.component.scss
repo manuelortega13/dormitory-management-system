@@ -110,7 +110,9 @@
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
     text-align: center;
     text-decoration: none;
 
@@ -137,7 +139,8 @@
     max-width: 300px;
     margin: 2rem 0;
 
-    &::before, &::after {
+    &::before,
+    &::after {
       content: '';
       flex: 1;
       height: 1px;
@@ -253,8 +256,13 @@
     }
 
     @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
     }
 
     .camera-error {
@@ -345,7 +353,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -595,6 +604,14 @@
           }
         }
 
+        &.scan-next {
+          background: #4a90d9;
+
+          &:hover:not(:disabled) {
+            background: #357abd;
+          }
+        }
+
         &:disabled {
           opacity: 0.6;
           cursor: not-allowed;
@@ -750,7 +767,8 @@
     .manual-input {
       flex-direction: column;
 
-      input, .btn-submit {
+      input,
+      .btn-submit {
         width: 100%;
       }
     }
@@ -762,7 +780,8 @@
     .action-buttons {
       flex-direction: column;
 
-      .btn-cancel-action, .btn-confirm {
+      .btn-cancel-action,
+      .btn-confirm {
         flex: none;
       }
     }

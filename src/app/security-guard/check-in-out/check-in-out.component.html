@@ -198,7 +198,7 @@
                     </span>
                   </div>
                   <div class="action-buttons">
-                    <button class="btn-confirm" (click)="resetScan()">Scan Next</button>
+                    <button class="btn-confirm scan-next" (click)="resetScan()">Scan Next</button>
                   </div>
                 } @else {
                   @if (verificationResult()?.action === 'exit') {
@@ -279,7 +279,7 @@
                     </span>
                   </div>
                   <div class="action-buttons">
-                    <button class="btn-confirm" (click)="resetScan()">Scan Next</button>
+                    <button class="btn-confirm scan-next" (click)="resetScan()">Scan Next</button>
                   </div>
                 } @else {
                   @if (verificationResult()?.action === 'exit') {
