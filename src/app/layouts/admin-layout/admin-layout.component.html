@@ -11,7 +11,11 @@
     </button>
     <span class="mobile-logo">
       @if (settingsService.systemLogo()) {
-        <img class="logo-img" [src]="settingsService.systemLogo()" [alt]="settingsService.systemName()" />
+        <img
+          class="logo-img"
+          [src]="settingsService.systemLogo()"
+          [alt]="settingsService.systemName()"
+        />
       } @else {
         🏠
       }
@@ -25,7 +29,10 @@
     </div>
   </header>
 
-  <app-sidebar [class.mobile-visible]="isMobileSidebarOpen()" (click)="handleSidebarClick($event)" />
+  <app-sidebar
+    [class.mobile-visible]="isMobileSidebarOpen()"
+    (click)="handleSidebarClick($event)"
+  />
   <main class="admin-content">
     <div class="desktop-top-bar">
       <app-notification-dropdown />
@@ -51,13 +58,36 @@
       <span class="tab-icon">📋</span>
       <span class="tab-label">Leaves</span>
     </a>
-<!--    <a routerLink="/manage/payments" routerLinkActive="active" class="tab-item">-->
-<!--      <span class="tab-icon">💰</span>-->
-<!--      <span class="tab-label">Payments</span>-->
-<!--    </a>-->
-    <button class="tab-item" (click)="toggleMobileSidebar()">
+    <!--    <a routerLink="/manage/payments" routerLinkActive="active" class="tab-item">-->
+    <!--      <span class="tab-icon">💰</span>-->
+    <!--      <span class="tab-label">Payments</span>-->
+    <!--    </a>-->
+    <button class="tab-item" [class.active]="showMobileMore()" (click)="toggleMobileMore()">
       <span class="tab-icon">☰</span>
       <span class="tab-label">More</span>
     </button>
   </nav>
+
+  <!-- Mobile more menu overlay -->
+  @if (showMobileMore()) {
+    <div class="mobile-more-overlay" (click)="closeMobileMore()"></div>
+    <div class="mobile-more-sheet">
+      <div class="sheet-handle"></div>
+      @for (item of moreItems(); track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          class="sheet-item"
+          (click)="closeMobileMore()"
+        >
+          <span class="sheet-icon">{{ item.icon }}</span>
+          <span class="sheet-label">{{ item.label }}</span>
+        </a>
+      }
+      <button class="sheet-item sheet-logout" (click)="closeMobileMore(); logout()">
+        <span class="sheet-icon">🚪</span>
+        <span class="sheet-label">Logout</span>
+      </button>
+    </div>
+  }
 </div>
