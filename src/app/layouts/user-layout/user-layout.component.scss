@@ -316,17 +316,18 @@
     padding-top: 6px;
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     justify-content: space-around;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .tab-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
+    justify-content: flex-end;
+    gap: 3px;
     flex: 1;
-    padding: 6px 0;
+    min-height: 44px;
+    padding: 6px 0 8px;
     text-decoration: none;
     color: #9ca3af;
     background: none;
@@ -482,8 +483,12 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }
 
