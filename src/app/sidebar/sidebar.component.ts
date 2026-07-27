@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService, User } from '../auth/auth.service';
 import { AdminLeaveRequestService } from '../admin/leave-requests/data/admin-leave-request.service';
+import { AdminGatepassService } from '../admin/gatepass/data/admin-gatepass.service';
 import { ParentRegistrationService } from '../admin/parent-registrations/data/parent-registration.service';
 import { NotificationService } from '../services/notification.service';
 import { SettingsService } from '../services/settings.service';
@@ -26,18 +27,21 @@ interface MenuSection {
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.scss'
+  styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private leaveRequestService = inject(AdminLeaveRequestService);
+  private gatepassService = inject(AdminGatepassService);
   private parentRegistrationService = inject(ParentRegistrationService);
   private notificationService = inject(NotificationService);
   protected settingsService = inject(SettingsService);
   private subscription: Subscription | null = null;
+  private gatepassSubscription: Subscription | null = null;
   protected readonly isCollapsed = signal(false);
   protected readonly pendingLeaveRequestsCount = signal(0);
   protected readonly pendingParentRegistrationsCount = signal(0);
+  protected readonly pendingGatepassCount = signal(0);
   protected readonly currentUser = signal<User | null>(null);
 
   constructor() {
@@ -56,6 +60,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.loadPendingParentRegistrationsCount();
       }
     });
+
+    // Watch for gatepass notifications (new request, approval, etc.)
+    effect(() => {
+      const trigger = this.notificationService.gatepassUpdatedTrigger();
+      if (trigger > 0) {
+        this.loadPendingGatepassCount();
+      }
+    });
   }
 
   protected readonly userDisplayName = computed(() => {
@@ -68,12 +80,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
     const user = this.currentUser();
     if (!user) return '';
     switch (user.role) {
-      case 'admin': return 'Administrator';
-      case 'home_dean': return 'Home Dean';
-      case 'vpsas': return 'VPSAS';
-      case 'business_officer': return 'Business Officer';
-      case 'security_guard': return 'Security Guard';
-      default: return user.role;
+      case 'admin':
+        return 'Administrator';
+      case 'home_dean':
+        return 'Home Dean';
+      case 'vpsas':
+        return 'VPSAS';
+      case 'business_officer':
+        return 'Business Officer';
+      case 'security_guard':
+        return 'Security Guard';
+      default:
+        return user.role;
     }
   });
 
@@ -90,8 +108,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     {
       title: 'Main',
       items: [
-        { label: 'Dashboard', icon: '📊', route: '/manage/dashboard', roles: this.adminRoles }
-      ]
+        { label: 'Dashboard', icon: '📊', route: '/manage/dashboard', roles: this.adminRoles },
+      ],
     },
     {
       title: 'Management',
@@ -99,39 +117,64 @@ export class SidebarComponent implements OnInit, OnDestroy {
         { label: 'Rooms', icon: '🛏️', route: '/manage/rooms', roles: this.adminRoles },
         { label: 'Occupants', icon: '👥', route: '/manage/residents', roles: this.adminRoles },
         { label: 'Staff', icon: '👮', route: '/manage/agents', roles: this.adminRoles },
-        { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests', roles: this.adminRoles },
+        {
+          label: 'Leave Requests',
+          icon: '🚪',
+          route: '/manage/leave-requests',
+          roles: this.adminRoles,
+        },
         { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: this.adminRoles },
-        { label: 'Parent Approvals', icon: '👨‍👩‍👦', route: '/manage/parent-registrations', roles: this.adminRoles }
-      ]
+        {
+          label: 'Parent Approvals',
+          icon: '👨‍👩‍👦',
+          route: '/manage/parent-registrations',
+          roles: this.adminRoles,
+        },
+      ],
     },
     {
       title: 'Operations',
       items: [
         // { label: 'Maintenance', icon: '🔧', route: '/manage/maintenance' },
-        { label: 'Payments', icon: '💰', route: '/manage/payments', roles: ['admin', 'business_officer'] },
+        {
+          label: 'Payments',
+          icon: '💰',
+          route: '/manage/payments',
+          roles: ['admin', 'business_officer'],
+        },
         // { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
-      ]
+      ],
     },
     {
       // title: 'Reports & Settings',
       title: 'Notifications & Settings',
       items: [
         // { label: 'Reports', icon: '📈', route: '/manage/reports' },
-        { label: 'Announcements', icon: '📢', route: '/manage/announcements', roles: this.adminRoles },
-        { label: 'Settings', icon: '⚙️', route: '/manage/settings', roles: ['admin', 'home_dean', 'vpsas', 'business_officer'] }
-      ]
-    }
+        {
+          label: 'Announcements',
+          icon: '📢',
+          route: '/manage/announcements',
+          roles: this.adminRoles,
+        },
+        {
+          label: 'Settings',
+          icon: '⚙️',
+          route: '/manage/settings',
+          roles: ['admin', 'home_dean', 'vpsas', 'business_officer'],
+        },
+      ],
+    },
   ]);
 
   // Menu filtered by the current user's role; empty sections are dropped.
   protected readonly visibleSections = computed(() => {
     const role = this.currentUser()?.role;
     return this.menuSections()
-      .map(section => ({
+      .map((section) => ({
         ...section,
-        items: section.items.filter(item => !item.roles || (!!role && item.roles.includes(role)))
+        items: section.items.filter((item) => !item.roles || (!!role && item.roles.includes(role))),
       }))
-      .filter(section => section.items.length > 0);
+      .filter((section) => section.items.length > 0);
   });
 
   private parentRegistrationSubscription: Subscription | null = null;
@@ -140,6 +183,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.currentUser.set(this.authService.getCurrentUser());
     this.loadPendingLeaveRequestsCount();
     this.loadPendingParentRegistrationsCount();
+    this.loadPendingGatepassCount();
 
     // Subscribe to leave request updates
     this.subscription = this.leaveRequestService.leaveRequestUpdated$.subscribe(() => {
@@ -147,14 +191,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
     });
 
     // Subscribe to parent registration updates (approved/declined)
-    this.parentRegistrationSubscription = this.parentRegistrationService.registrationUpdated$.subscribe(() => {
-      this.loadPendingParentRegistrationsCount();
+    this.parentRegistrationSubscription =
+      this.parentRegistrationService.registrationUpdated$.subscribe(() => {
+        this.loadPendingParentRegistrationsCount();
+      });
+
+    // Subscribe to gatepass updates (approve/decline/assign/waive)
+    this.gatepassSubscription = this.gatepassService.updated$.subscribe(() => {
+      this.loadPendingGatepassCount();
     });
   }
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();
     this.parentRegistrationSubscription?.unsubscribe();
+    this.gatepassSubscription?.unsubscribe();
   }
 
   private async loadPendingLeaveRequestsCount(): Promise<void> {
@@ -168,15 +219,47 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private updateLeaveRequestsBadge(count: number): void {
-    this.menuSections.update(sections =>
-      sections.map(section => ({
+    this.menuSections.update((sections) =>
+      sections.map((section) => ({
         ...section,
-        items: section.items.map(item =>
+        items: section.items.map((item) =>
           item.label === 'Leave Requests'
             ? { ...item, badge: count > 0 ? count : undefined }
-            : item
-        )
-      }))
+            : item,
+        ),
+      })),
+    );
+  }
+
+  // Count of gatepasses awaiting the current admin's approval (dean/vpsas queues).
+  private async loadPendingGatepassCount(): Promise<void> {
+    try {
+      const role = this.currentUser()?.role;
+      const jobs: Promise<any[]>[] = [];
+      if (role === 'admin' || role === 'home_dean') {
+        jobs.push(this.gatepassService.getPendingDean());
+      }
+      if (role === 'admin' || role === 'vpsas') {
+        jobs.push(this.gatepassService.getPendingVpsas());
+      }
+      if (jobs.length === 0) return;
+      const results = await Promise.all(jobs);
+      const count = results.reduce((sum, arr) => sum + arr.length, 0);
+      this.pendingGatepassCount.set(count);
+      this.updateGatepassBadge(count);
+    } catch (error) {
+      console.error('Failed to load pending gatepass count:', error);
+    }
+  }
+
+  private updateGatepassBadge(count: number): void {
+    this.menuSections.update((sections) =>
+      sections.map((section) => ({
+        ...section,
+        items: section.items.map((item) =>
+          item.label === 'Gatepass' ? { ...item, badge: count > 0 ? count : undefined } : item,
+        ),
+      })),
     );
   }
 
@@ -188,25 +271,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Failed to load pending parent registrations count:', error);
-      }
+      },
     });
   }
 
   private updateParentApprovalsBadge(count: number): void {
-    this.menuSections.update(sections =>
-      sections.map(section => ({
+    this.menuSections.update((sections) =>
+      sections.map((section) => ({
         ...section,
-        items: section.items.map(item =>
+        items: section.items.map((item) =>
           item.label === 'Parent Approvals'
             ? { ...item, badge: count > 0 ? count : undefined }
-            : item
-        )
-      }))
+            : item,
+        ),
+      })),
     );
   }
 
   toggleSidebar() {
-    this.isCollapsed.update(value => !value);
+    this.isCollapsed.update((value) => !value);
   }
 
   logout() {
