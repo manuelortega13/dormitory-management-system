@@ -99,9 +99,19 @@
 }
 
 .mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1;
   color: #fff;
   font-weight: 700;
   font-size: 1.1rem;
+
+  .logo-img {
+    height: 28px;
+    width: auto;
+    border-radius: 4px;
+  }
 }
 
 // Bottom tab bar (hidden on desktop)
