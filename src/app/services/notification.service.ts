@@ -336,10 +336,18 @@ export class NotificationService implements OnDestroy {
    */
   disconnectSocket(): void {
     if (this.socket) {
+      // Remove listeners BEFORE disconnecting: socket.disconnect() fires the
+      // 'disconnect' handler, which would otherwise call startPolling() and
+      // re-arm background polling during an intentional teardown (logout /
+      // leaving an authed page). That stray poll later 401s on public pages
+      // (login/register) and bounces the user to /login.
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
       this.connected.set(false);
     }
+    // Guarantee no background polling survives teardown.
+    this.stopPolling();
   }
 
   async fetchNotifications(): Promise<void> {
@@ -438,6 +446,9 @@ export class NotificationService implements OnDestroy {
 
   startPolling(): void {
     if (!this.isBrowser || this.pollingInterval) return;
+    // Never poll authed endpoints without a session — otherwise a 401 forces a
+    // redirect to /login on public pages (e.g. while filling the register form).
+    if (!localStorage.getItem('token')) return;
 
     this.fetchUnreadCount();
     this.fetchNotifications();
