@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { SettingsService, SystemSetting, SettingUpdate } from '../../services/settings.service';
 import { AuthService, User } from '../../auth/auth.service';
 
-
 interface SettingSection {
   id: string;
   title: string;
@@ -18,7 +17,7 @@ interface SettingSection {
   standalone: true,
   imports: [FormsModule, CommonModule],
   templateUrl: './settings.component.html',
-  styleUrl: './settings.component.scss'
+  styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit {
   private settingsService = inject(SettingsService);
@@ -32,33 +31,40 @@ export class SettingsComponent implements OnInit {
       title: 'General Settings',
       icon: '⚙️',
       description: 'Basic system configuration',
-      roles: this.adminRoles
+      roles: this.adminRoles,
     },
     {
       id: 'notifications',
       title: 'Notification Settings',
       icon: '🔔',
       description: 'Configure system notifications',
-      roles: this.adminRoles
+      roles: this.adminRoles,
     },
     {
       id: 'security',
       title: 'Security Settings',
       icon: '🔒',
       description: 'Security and access control',
-      roles: this.adminRoles
+      roles: this.adminRoles,
     },
     {
       id: 'payments',
       title: 'Payment Settings',
       icon: '💳',
       description: 'Configure payment options',
-      roles: ['admin', 'business_officer']
-    }
+      roles: ['admin', 'business_officer'],
+    },
+    {
+      id: 'gatepass',
+      title: 'Gatepass Settings',
+      icon: '🎫',
+      description: 'Pass duration, extensions, and late-return grace period',
+      roles: this.adminRoles,
+    },
   ];
 
   // Sections the current user is allowed to see
-  sections: SettingSection[] = this.allSections.filter(section => {
+  sections: SettingSection[] = this.allSections.filter((section) => {
     const role = this.authService.getCurrentUser()?.role;
     return !!role && section.roles.includes(role);
   });
@@ -94,14 +100,14 @@ export class SettingsComponent implements OnInit {
   initializeEditedValues() {
     const settings = this.settingsService.settings();
     const edited: Record<string, Record<string, any>> = {};
-    
+
     for (const category in settings) {
       edited[category] = {};
       for (const setting of settings[category]) {
         edited[category][setting.key] = setting.value;
       }
     }
-    
+
     this.editedValues.set(edited);
     this.hasChanges.set(false);
   }
@@ -111,7 +117,7 @@ export class SettingsComponent implements OnInit {
   }
 
   getActiveSection(): SettingSection | undefined {
-    return this.sections.find(s => s.id === this.activeSection());
+    return this.sections.find((s) => s.id === this.activeSection());
   }
 
   getActiveSettings(): SystemSetting[] {
@@ -148,12 +154,12 @@ export class SettingsComponent implements OnInit {
       // Find all changed values
       for (const category in edited) {
         for (const key in edited[category]) {
-          const originalSetting = original[category]?.find(s => s.key === key);
+          const originalSetting = original[category]?.find((s) => s.key === key);
           if (originalSetting && edited[category][key] !== originalSetting.value) {
             updates.push({
               category,
               key,
-              value: edited[category][key]
+              value: edited[category][key],
             });
           }
         }
@@ -165,7 +171,7 @@ export class SettingsComponent implements OnInit {
         this.successMessage.set('Settings saved successfully!');
 
         // If branding was changed, refresh logo/name everywhere
-        if (updates.some(u => u.key === 'system_logo' || u.key === 'dorm_name')) {
+        if (updates.some((u) => u.key === 'system_logo' || u.key === 'dorm_name')) {
           this.settingsService.loadBranding();
         }
       } else {
@@ -188,7 +194,7 @@ export class SettingsComponent implements OnInit {
     // Convert snake_case to Title Case
     return key
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   }
 
