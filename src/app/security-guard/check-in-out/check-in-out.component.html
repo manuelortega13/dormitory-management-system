@@ -27,26 +27,24 @@
             <div class="scan-icon">📷</div>
             <h2>Scan Occupant Pass</h2>
             <p>Scan the QR code from the occupant's approved go-out pass</p>
-            
+
             @if (isIOSPWA()) {
               <!-- iOS PWA mode - use file capture instead of camera stream -->
-              <label class="btn-scan" for="qrFileInput">
-                📸 Take Photo of QR Code
-              </label>
-              <input 
-                type="file" 
+              <label class="btn-scan" for="qrFileInput"> 📸 Take Photo of QR Code </label>
+              <input
+                type="file"
                 id="qrFileInput"
                 #fileInput
-                accept="image/*" 
+                accept="image/*"
                 capture="environment"
                 (change)="onFileSelected($event)"
-                style="display: none;"
+                style="display: none"
               />
-              <p class="ios-hint">Camera stream is not available in home screen mode. Use photo capture instead.</p>
+              <p class="ios-hint">
+                Camera stream is not available in home screen mode. Use photo capture instead.
+              </p>
             } @else {
-              <button class="btn-scan" (click)="startScanning()">
-                Start Camera Scanner
-              </button>
+              <button class="btn-scan" (click)="startScanning()">Start Camera Scanner</button>
             }
 
             <div class="divider">
@@ -54,16 +52,14 @@
             </div>
 
             <div class="manual-input">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Enter QR code..."
                 [value]="manualQRInput()"
                 (input)="updateManualQR($event)"
                 (keyup.enter)="submitManualQR()"
               />
-              <button class="btn-submit" (click)="submitManualQR()">
-                Verify
-              </button>
+              <button class="btn-submit" (click)="submitManualQR()">Verify</button>
             </div>
           </div>
         } @else if (scanStatus() === 'scanning') {
@@ -77,7 +73,7 @@
                 </div>
               } @else {
                 <video #videoElement autoplay playsinline muted webkit-playsinline></video>
-                <canvas #canvasElement style="display: none;"></canvas>
+                <canvas #canvasElement style="display: none"></canvas>
                 <div class="scan-overlay">
                   <div class="scan-frame"></div>
                   @if (scannerSupported()) {
@@ -86,29 +82,23 @@
                 </div>
               }
             </div>
-            
+
             <div class="camera-controls">
-              <button class="control-btn" (click)="switchCamera()">
-                🔄 Switch Camera
-              </button>
+              <button class="control-btn" (click)="switchCamera()">🔄 Switch Camera</button>
             </div>
 
             <div class="manual-input-inline">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Or enter QR code manually..."
                 [value]="manualQRInput()"
                 (input)="updateManualQR($event)"
                 (keyup.enter)="submitManualQR()"
               />
-              <button class="btn-verify" (click)="submitManualQR()">
-                Verify
-              </button>
+              <button class="btn-verify" (click)="submitManualQR()">Verify</button>
             </div>
 
-            <button class="btn-cancel" (click)="stopScanning()">
-              Cancel
-            </button>
+            <button class="btn-cancel" (click)="stopScanning()">Cancel</button>
           </div>
         } @else if (scanStatus() === 'verifying') {
           <!-- Verifying State -->
@@ -122,7 +112,17 @@
           <div class="success-state">
             <div class="success-header">
               <span class="success-icon">✓</span>
-              <h2>Pass Verified</h2>
+              <h2>
+                @if (verificationResult()?.recorded) {
+                  @if (verificationResult()?.action === 'exit') {
+                    Exit Recorded
+                  } @else {
+                    Return Recorded
+                  }
+                } @else {
+                  Pass Verified
+                }
+              </h2>
             </div>
 
             @if (verificationResult()?.leaveRequest; as request) {
@@ -157,53 +157,81 @@
                 </div>
                 <div class="detail-row">
                   <span class="label">Emergency:</span>
-                  <span class="value">{{ request.emergency_contact }} ({{ request.emergency_phone }})</span>
+                  <span class="value"
+                    >{{ request.emergency_contact }} ({{ request.emergency_phone }})</span
+                  >
                 </div>
               </div>
 
-              @if (verificationResult()?.action === 'exit' && request.parent_status === 'not_required' && !request.parent_id) {
+              @if (
+                verificationResult()?.action === 'exit' &&
+                request.parent_status === 'not_required' &&
+                !request.parent_id
+              ) {
                 <div class="parent-warning">
                   <span class="warning-icon">⚠️</span>
                   <div class="warning-content">
                     <strong>No Parent/Guardian on Record</strong>
-                    <p>This occupant does not have a registered parent/guardian. Please ask the student to call their parent/guardian so you can hear and receive <strong>oral approval</strong> before allowing exit.</p>
+                    <p>
+                      This occupant does not have a registered parent/guardian. Please ask the
+                      student to call their parent/guardian so you can hear and receive
+                      <strong>oral approval</strong> before allowing exit.
+                    </p>
                   </div>
                 </div>
               }
 
               <div class="action-section">
-                @if (verificationResult()?.action === 'exit') {
-                  <div class="action-info exit">
-                    <span class="action-icon">🚪</span>
-                    <span class="action-text">Recording EXIT</span>
-                  </div>
-                } @else {
-                  <div class="action-info return">
-                    <span class="action-icon">🏠</span>
-                    <span class="action-text">Recording RETURN</span>
-                  </div>
-                }
-
-                <div class="action-buttons">
-                  <button class="btn-cancel-action" (click)="resetScan()">
-                    Cancel
-                  </button>
-                  <button 
-                    class="btn-confirm" 
+                @if (verificationResult()?.recorded) {
+                  <div
+                    class="action-info"
                     [class.exit]="verificationResult()?.action === 'exit'"
                     [class.return]="verificationResult()?.action === 'return'"
-                    [disabled]="isProcessing()"
-                    (click)="confirmAction()"
                   >
-                    @if (isProcessing()) {
-                      Processing...
-                    } @else if (verificationResult()?.action === 'exit') {
-                      Confirm Exit
-                    } @else {
-                      Confirm Return
-                    }
-                  </button>
-                </div>
+                    <span class="action-icon">✅</span>
+                    <span class="action-text">
+                      @if (verificationResult()?.action === 'exit') {
+                        EXIT recorded
+                      } @else {
+                        RETURN recorded
+                      }
+                    </span>
+                  </div>
+                  <div class="action-buttons">
+                    <button class="btn-confirm" (click)="resetScan()">Scan Next</button>
+                  </div>
+                } @else {
+                  @if (verificationResult()?.action === 'exit') {
+                    <div class="action-info exit">
+                      <span class="action-icon">🚪</span>
+                      <span class="action-text">Recording EXIT</span>
+                    </div>
+                  } @else {
+                    <div class="action-info return">
+                      <span class="action-icon">🏠</span>
+                      <span class="action-text">Recording RETURN</span>
+                    </div>
+                  }
+
+                  <div class="action-buttons">
+                    <button class="btn-cancel-action" (click)="resetScan()">Cancel</button>
+                    <button
+                      class="btn-confirm"
+                      [class.exit]="verificationResult()?.action === 'exit'"
+                      [class.return]="verificationResult()?.action === 'return'"
+                      [disabled]="isProcessing()"
+                      (click)="confirmAction()"
+                    >
+                      @if (isProcessing()) {
+                        Processing...
+                      } @else if (verificationResult()?.action === 'exit') {
+                        Confirm Exit
+                      } @else {
+                        Confirm Return
+                      }
+                    </button>
+                  </div>
+                }
               </div>
             }
 
@@ -212,36 +240,60 @@
                 <div class="resident-avatar">{{ getInitials(gp.occupant_name || 'U') }}</div>
                 <div class="resident-info">
                   <h3>{{ gp.occupant_name }}</h3>
-                  <p class="room">🎫 Gatepass@if (gp.room_number) { · Room {{ gp.room_number }} }</p>
+                  <p class="room">
+                    🎫 Gatepass
+                    @if (gp.room_number) {
+                      · Room {{ gp.room_number }}
+                    }
+                  </p>
                 </div>
               </div>
 
               <div class="pass-details">
-                <div class="detail-row"><span class="label">Type:</span><span class="value">Gatepass</span></div>
-                <div class="detail-row"><span class="label">Destination:</span><span class="value">{{ gp.destination }}</span></div>
-                <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ gp.reason }}</span></div>
+                <div class="detail-row">
+                  <span class="label">Type:</span><span class="value">Gatepass</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Destination:</span
+                  ><span class="value">{{ gp.destination }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Reason:</span><span class="value">{{ gp.reason }}</span>
+                </div>
               </div>
 
               <div class="action-section">
-                @if (verificationResult()?.action === 'exit') {
-                  <div class="action-info exit"><span class="action-icon">🚪</span><span class="action-text">Recording EXIT (starts 1-hour timer)</span></div>
-                } @else {
-                  <div class="action-info return"><span class="action-icon">🏠</span><span class="action-text">Recording RETURN</span></div>
-                }
-                <div class="action-buttons">
-                  <button class="btn-cancel-action" (click)="resetScan()">Cancel</button>
-                  <button
-                    class="btn-confirm"
+                @if (verificationResult()?.recorded) {
+                  <div
+                    class="action-info"
                     [class.exit]="verificationResult()?.action === 'exit'"
                     [class.return]="verificationResult()?.action === 'return'"
-                    [disabled]="isProcessing()"
-                    (click)="confirmAction()"
                   >
-                    @if (isProcessing()) { Processing... }
-                    @else if (verificationResult()?.action === 'exit') { Confirm Exit }
-                    @else { Confirm Return }
-                  </button>
-                </div>
+                    <span class="action-icon">✅</span>
+                    <span class="action-text">
+                      @if (verificationResult()?.action === 'exit') {
+                        EXIT recorded — 1-hour timer started
+                      } @else {
+                        RETURN recorded
+                      }
+                    </span>
+                  </div>
+                  <div class="action-buttons">
+                    <button class="btn-confirm" (click)="resetScan()">Scan Next</button>
+                  </div>
+                } @else {
+                  @if (verificationResult()?.action === 'exit') {
+                    <div class="action-info exit">
+                      <span class="action-icon">🚪</span
+                      ><span class="action-text">Recording EXIT…</span>
+                    </div>
+                  } @else {
+                    <div class="action-info return">
+                      <span class="action-icon">🏠</span
+                      ><span class="action-text">Recording RETURN…</span>
+                    </div>
+                  }
+                }
               </div>
             }
           </div>
@@ -252,12 +304,10 @@
               <span class="error-icon-large">⚠️</span>
               <h2>Verification Failed</h2>
             </div>
-            
+
             <p class="error-message">{{ errorMessage() }}</p>
-            
-            <button class="btn-retry" (click)="resetScan()">
-              Try Again
-            </button>
+
+            <button class="btn-retry" (click)="resetScan()">Try Again</button>
           </div>
         }
       </div>
@@ -266,7 +316,7 @@
     <!-- Recent Activity Section -->
     <div class="activity-section">
       <h3>Recent Activity</h3>
-      
+
       @if (recentActivities().length === 0) {
         <div class="no-activity">
           <p>No activity recorded yet today</p>
@@ -274,13 +324,24 @@
       } @else {
         <div class="activity-list">
           @for (activity of recentActivities(); track activity.id) {
-            <div class="activity-item" [class.exit]="activity.action === 'exit'" [class.return]="activity.action === 'return'">
+            <div
+              class="activity-item"
+              [class.exit]="activity.action === 'exit'"
+              [class.return]="activity.action === 'return'"
+            >
               <div class="activity-icon">
-                @if (activity.action === 'exit') { 🚪 } @else { 🏠 }
+                @if (activity.action === 'exit') {
+                  🚪
+                } @else {
+                  🏠
+                }
               </div>
               <div class="activity-info">
                 <span class="activity-name">{{ activity.name }}</span>
-                <span class="activity-room">Room {{ activity.roomNumber }} · {{ getLeaveTypeLabel(activity.leaveType) }}</span>
+                <span class="activity-room"
+                  >Room {{ activity.roomNumber }} ·
+                  {{ getLeaveTypeLabel(activity.leaveType) }}</span
+                >
               </div>
               <div class="activity-time">
                 {{ formatTime(activity.timestamp) }}

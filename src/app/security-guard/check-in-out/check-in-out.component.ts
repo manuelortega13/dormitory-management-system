@@ -16,6 +16,7 @@ interface VerificationResult {
   leaveRequest?: LeaveRequest;
   gatepass?: Gatepass;
   action?: 'exit' | 'return';
+  recorded?: boolean;
 }
 
 interface RecentActivity {
@@ -32,13 +33,13 @@ interface RecentActivity {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './check-in-out.component.html',
-  styleUrl: './check-in-out.component.scss'
+  styleUrl: './check-in-out.component.scss',
 })
 export class CheckInOutComponent implements OnInit, OnDestroy {
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
-  
+
   private securityService = inject(SecurityService);
   private gatepassService = inject(SecurityGatepassService);
 
@@ -47,14 +48,14 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
   protected readonly errorMessage = signal('');
   protected readonly currentTime = signal(new Date());
   protected readonly manualQRInput = signal('');
-  
+
   // Camera control signals
   protected readonly isFrontCamera = signal(false);
   protected readonly cameraError = signal('');
   protected readonly isProcessing = signal(false);
   protected readonly scannerSupported = signal(true);
   protected readonly isIOSPWA = signal(false);
-  
+
   private mediaStream: MediaStream | null = null;
   private timeInterval: any;
   private scanInterval: any;
@@ -75,7 +76,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     }
     // Scanner is always supported now with jsQR fallback
     this.scannerSupported.set(true);
-    
+
     // Detect iOS PWA (standalone) mode - camera doesn't work in this mode
     if (typeof window !== 'undefined') {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -91,22 +92,22 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
   async loadTodayLogs() {
     try {
       const response = await this.securityService.getTodayLogs();
-      
+
       // Map backend logs to RecentActivity format
-      const activities: RecentActivity[] = response.logs.map(log => ({
+      const activities: RecentActivity[] = response.logs.map((log) => ({
         id: log.id,
         name: `${log.first_name} ${log.last_name}`,
         roomNumber: log.room_number || '-',
         leaveType: log.leave_type || 'leave',
         action: log.type === 'check-out' ? 'exit' : 'return',
-        timestamp: new Date(log.created_at)
+        timestamp: new Date(log.created_at),
       }));
 
       this.recentActivities.set(activities);
       this.todayStats.set({
         exits: response.stats.checkOuts,
         returns: response.stats.checkIns,
-        total: response.stats.total
+        total: response.stats.total,
       });
     } catch (error) {
       console.error('Failed to load today logs:', error);
@@ -120,8 +121,14 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     this.verificationResult.set(null);
 
     // Check for HTTPS (required for camera on iOS)
-    if (typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-      this.cameraError.set('Camera requires HTTPS. Please access the app via HTTPS or enter QR code manually.');
+    if (
+      typeof window !== 'undefined' &&
+      window.location.protocol !== 'https:' &&
+      window.location.hostname !== 'localhost'
+    ) {
+      this.cameraError.set(
+        'Camera requires HTTPS. Please access the app via HTTPS or enter QR code manually.',
+      );
       return;
     }
 
@@ -135,29 +142,31 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       // For iOS, use simpler constraints first
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const constraints: MediaStreamConstraints = {
-        video: isIOS ? {
-          facingMode: { ideal: this.isFrontCamera() ? 'user' : 'environment' }
-        } : {
-          facingMode: this.isFrontCamera() ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+        video: isIOS
+          ? {
+              facingMode: { ideal: this.isFrontCamera() ? 'user' : 'environment' },
+            }
+          : {
+              facingMode: this.isFrontCamera() ? 'user' : 'environment',
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
       };
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       // Wait for DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       if (this.videoElement?.nativeElement && this.mediaStream) {
         const video = this.videoElement.nativeElement;
         video.srcObject = this.mediaStream;
-        
+
         // iOS requires explicit play after srcObject is set
         video.setAttribute('playsinline', 'true');
         video.setAttribute('webkit-playsinline', 'true');
         video.muted = true;
-        
+
         try {
           await video.play();
           this.startQRScanning();
@@ -176,12 +185,12 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
           };
         }
       }
-
     } catch (error: any) {
       console.error('Camera access error:', error);
       let errorMsg = 'Unable to access camera. ';
       if (error.name === 'NotAllowedError') {
-        errorMsg += 'Camera permission denied. Please allow camera access in Settings > Safari > Camera.';
+        errorMsg +=
+          'Camera permission denied. Please allow camera access in Settings > Safari > Camera.';
       } else if (error.name === 'NotFoundError') {
         errorMsg += 'No camera found on this device.';
       } else if (error.name === 'NotReadableError') {
@@ -205,7 +214,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       this.scanInterval = null;
     }
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream.getTracks().forEach((track) => track.stop());
       this.mediaStream = null;
     }
     if (this.videoElement?.nativeElement) {
@@ -220,7 +229,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
     const video = this.videoElement.nativeElement;
     const canvas = this.canvasElement?.nativeElement;
-    
+
     this.scanInterval = setInterval(async () => {
       if (video.readyState !== video.HAVE_ENOUGH_DATA) {
         return;
@@ -240,7 +249,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
             }
           }
         }
-        
+
         // Fallback to jsQR (works on all browsers including iOS)
         if (canvas) {
           const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -248,12 +257,12 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
+
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(imageData.data, imageData.width, imageData.height, {
-              inversionAttempts: 'dontInvert'
+              inversionAttempts: 'dontInvert',
             });
-            
+
             if (code && code.data) {
               clearInterval(this.scanInterval);
               this.scanInterval = null;
@@ -276,24 +285,26 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
   async switchCamera() {
     if (this.scanStatus() !== 'scanning') return;
-    this.isFrontCamera.update(front => !front);
-    
+    this.isFrontCamera.update((front) => !front);
+
     this.stopCameraStream();
-    
+
     try {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const constraints: MediaStreamConstraints = {
-        video: isIOS ? {
-          facingMode: { ideal: this.isFrontCamera() ? 'user' : 'environment' }
-        } : {
-          facingMode: this.isFrontCamera() ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+        video: isIOS
+          ? {
+              facingMode: { ideal: this.isFrontCamera() ? 'user' : 'environment' },
+            }
+          : {
+              facingMode: this.isFrontCamera() ? 'user' : 'environment',
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
       };
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       if (this.videoElement?.nativeElement && this.mediaStream) {
         const video = this.videoElement.nativeElement;
         video.srcObject = this.mediaStream;
@@ -325,36 +336,36 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
   async onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    
+
     if (!file) return;
-    
+
     this.scanStatus.set('verifying');
     this.errorMessage.set('');
-    
+
     try {
       // Create an image from the file
       const image = new Image();
       const imageUrl = URL.createObjectURL(file);
-      
+
       await new Promise<void>((resolve, reject) => {
         image.onload = () => resolve();
         image.onerror = () => reject(new Error('Failed to load image'));
         image.src = imageUrl;
       });
-      
+
       // Draw image to canvas and extract QR code
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      
+
       if (!ctx) {
         throw new Error('Canvas not supported');
       }
-      
+
       // Scale down large images for faster processing
       const maxDimension = 1024;
       let width = image.width;
       let height = image.height;
-      
+
       if (width > maxDimension || height > maxDimension) {
         if (width > height) {
           height = (height / width) * maxDimension;
@@ -364,23 +375,25 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
           height = maxDimension;
         }
       }
-      
+
       canvas.width = width;
       canvas.height = height;
       ctx.drawImage(image, 0, 0, width, height);
-      
+
       const imageData = ctx.getImageData(0, 0, width, height);
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'attemptBoth'
+        inversionAttempts: 'attemptBoth',
       });
-      
+
       URL.revokeObjectURL(imageUrl);
-      
+
       if (code && code.data) {
         await this.processQRCode(code.data);
       } else {
         this.scanStatus.set('error');
-        this.errorMessage.set('No QR code found in the image. Please try again or enter the code manually.');
+        this.errorMessage.set(
+          'No QR code found in the image. Please try again or enter the code manually.',
+        );
       }
     } catch (error) {
       console.error('Image processing error:', error);
@@ -410,16 +423,26 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
       if (result.valid && result.leave_request) {
         // Determine if this is an exit or return based on current status
-        const action: 'exit' | 'return' = result.leave_request.status === 'approved' ? 'exit' : 'return';
+        const action: 'exit' | 'return' =
+          result.leave_request.status === 'approved' ? 'exit' : 'return';
 
         this.verificationResult.set({
           valid: true,
           kind: 'leave',
           message: result.message,
           leaveRequest: result.leave_request,
-          action
+          action,
         });
         this.scanStatus.set('success');
+        // A leave exit for an occupant with no parent/guardian on record still
+        // requires the guard to obtain oral approval first, so keep it manual.
+        const needsOralApproval =
+          action === 'exit' &&
+          result.leave_request.parent_status === 'not_required' &&
+          !result.leave_request.parent_id;
+        if (!needsOralApproval) {
+          await this.performRecord();
+        }
         return;
       }
 
@@ -431,9 +454,10 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
           kind: 'gatepass',
           message: gp.message,
           gatepass: gp.gatepass,
-          action: gp.action
+          action: gp.action,
         });
         this.scanStatus.set('success');
+        await this.performRecord();
         return;
       }
 
@@ -448,9 +472,16 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Retained for the manual path (leave exit needing oral approval).
   async confirmAction() {
+    await this.performRecord();
+  }
+
+  // Records the exit/return for the verified pass, then shows a recorded
+  // confirmation in place of the Confirm button.
+  private async performRecord() {
     const result = this.verificationResult();
-    if (!result?.valid) return;
+    if (!result?.valid || result.recorded) return;
 
     this.isProcessing.set(true);
 
@@ -471,10 +502,11 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Reload today's logs from backend
+      // Reload today's logs from backend and mark this pass as recorded
       await this.loadTodayLogs();
-      this.resetScan();
+      this.verificationResult.set({ ...result, recorded: true });
     } catch (error: any) {
+      this.scanStatus.set('error');
       this.errorMessage.set(error.message || 'Failed to record action');
     } finally {
       this.isProcessing.set(false);
@@ -492,11 +524,11 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
 
   getLeaveTypeLabel(type: string): string {
     const types: Record<string, string> = {
-      'errand': 'Errand',
-      'overnight': 'Overnight',
-      'weekend': 'Weekend',
-      'emergency': 'Emergency',
-      'other': 'Other'
+      errand: 'Errand',
+      overnight: 'Overnight',
+      weekend: 'Weekend',
+      emergency: 'Emergency',
+      other: 'Other',
     };
     return types[type] || type;
   }
@@ -508,7 +540,7 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
@@ -516,11 +548,16 @@ export class CheckInOutComponent implements OnInit, OnDestroy {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     });
   }
 
   getInitials(name: string): string {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   }
 }
