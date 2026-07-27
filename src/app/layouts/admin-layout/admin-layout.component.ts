@@ -30,7 +30,6 @@ interface MoreItem {
 export class AdminLayoutComponent {
   private readonly authService = inject(AuthService);
   protected readonly settingsService = inject(SettingsService);
-  protected readonly isMobileSidebarOpen = signal(false);
   protected readonly showMobileMore = signal(false);
 
   // Secondary nav shown in the floating "More" sheet (items not in the bottom tab bar).
@@ -64,30 +63,12 @@ export class AdminLayoutComponent {
     return this.allMoreItems.filter((item) => !item.roles || (!!role && item.roles.includes(role)));
   });
 
-  toggleMobileSidebar(): void {
-    this.isMobileSidebarOpen.update((v) => !v);
-  }
-
-  closeMobileSidebar(): void {
-    this.isMobileSidebarOpen.set(false);
-  }
-
   toggleMobileMore(): void {
     this.showMobileMore.update((v) => !v);
   }
 
   closeMobileMore(): void {
     this.showMobileMore.set(false);
-  }
-
-  handleSidebarClick(event: Event): void {
-    // Close sidebar when clicking menu items on mobile
-    const target = event.target as HTMLElement;
-    if (target.closest('.menu-item') || target.closest('.logout-btn')) {
-      if (window.innerWidth <= 768) {
-        this.closeMobileSidebar();
-      }
-    }
   }
 
   logout(): void {
