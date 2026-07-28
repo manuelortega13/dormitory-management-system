@@ -9,24 +9,16 @@
   <!-- Tabs & Search -->
   <div class="controls">
     <div class="tabs">
-      <button 
-        class="tab" 
-        [class.active]="activeTab() === 'pending'"
-        (click)="switchTab('pending')"
-      >
+      <button class="tab" [class.active]="activeTab() === 'pending'" (click)="switchTab('pending')">
         Pending Review
       </button>
-      <button 
-        class="tab" 
-        [class.active]="activeTab() === 'all'"
-        (click)="switchTab('all')"
-      >
+      <button class="tab" [class.active]="activeTab() === 'all'" (click)="switchTab('all')">
         All Requests
       </button>
     </div>
     <div class="search-box">
-      <input 
-        type="text" 
+      <input
+        type="text"
         placeholder="Search by name, destination, room..."
         [ngModel]="searchQuery()"
         (ngModelChange)="searchQuery.set($event)"
@@ -103,20 +95,15 @@
                 </span>
               </td>
               <td class="actions-cell" data-label="Actions">
-                @if (!isVpsas() && (request.status === 'pending_dean' || request.status === 'pending_admin')) {
-                  <button class="btn-approve" (click)="openApproveModal(request)">
-                    ✓ Approve
-                  </button>
-                  <button class="btn-decline" (click)="openDeclineModal(request)">
-                    ✗ Decline
-                  </button>
+                @if (
+                  !isVpsas() &&
+                  (request.status === 'pending_dean' || request.status === 'pending_admin')
+                ) {
+                  <button class="btn-approve" (click)="openApproveModal(request)">✓ Approve</button>
+                  <button class="btn-decline" (click)="openDeclineModal(request)">✗ Decline</button>
                 } @else if (isVpsas() && request.status === 'pending_vpsas') {
-                  <button class="btn-approve" (click)="openApproveModal(request)">
-                    ✓ Approve
-                  </button>
-                  <button class="btn-decline" (click)="openDeclineModal(request)">
-                    ✗ Decline
-                  </button>
+                  <button class="btn-approve" (click)="openApproveModal(request)">✓ Approve</button>
+                  <button class="btn-decline" (click)="openDeclineModal(request)">✗ Decline</button>
                 } @else {
                   <span class="processed-info">
                     @if (isVpsas() && request.vpsas_reviewed_at) {
@@ -128,7 +115,7 @@
                 }
               </td>
             </tr>
-            
+
             <!-- Expanded Details Row -->
             <tr class="details-row">
               <td colspan="6">
@@ -139,7 +126,9 @@
                   </div>
                   <div class="detail-item">
                     <span class="label">📞 Emergency Contact:</span>
-                    <span class="value">{{ request.emergency_contact }} ({{ request.emergency_phone }})</span>
+                    <span class="value"
+                      >{{ request.emergency_contact }} ({{ request.emergency_phone }})</span
+                    >
                   </div>
                   <div class="detail-item">
                     <span class="label">📝 Reason:</span>
@@ -159,20 +148,53 @@
                   }
                   <div class="approval-status">
                     <div class="status-item">
+                      <span class="status-label">Parent:</span>
+                      <span
+                        class="status-value"
+                        [class]="
+                          request.parent_status === 'approved'
+                            ? 'approved'
+                            : request.parent_status === 'declined'
+                              ? 'declined'
+                              : request.parent_status === 'not_required'
+                                ? 'na'
+                                : 'pending'
+                        "
+                      >
+                        {{
+                          request.parent_status === 'not_required'
+                            ? 'N/A'
+                            : (request.parent_status | titlecase)
+                        }}
+                      </span>
+                    </div>
+                    <div class="status-item">
                       <span class="status-label">Home Dean:</span>
-                      <span class="status-value" [class]="request.admin_status === 'approved' ? 'approved' : request.admin_status === 'declined' ? 'declined' : 'pending'">
+                      <span
+                        class="status-value"
+                        [class]="
+                          request.admin_status === 'approved'
+                            ? 'approved'
+                            : request.admin_status === 'declined'
+                              ? 'declined'
+                              : 'pending'
+                        "
+                      >
                         {{ request.admin_status | titlecase }}
                       </span>
                     </div>
                     <div class="status-item">
-                      <span class="status-label">Parent:</span>
-                      <span class="status-value" [class]="request.parent_status === 'approved' ? 'approved' : request.parent_status === 'declined' ? 'declined' : request.parent_status === 'not_required' ? 'na' : 'pending'">
-                        {{ request.parent_status === 'not_required' ? 'N/A' : (request.parent_status | titlecase) }}
-                      </span>
-                    </div>
-                    <div class="status-item">
                       <span class="status-label">VPSAS:</span>
-                      <span class="status-value" [class]="request.vpsas_status === 'approved' ? 'approved' : request.vpsas_status === 'declined' ? 'declined' : 'pending'">
+                      <span
+                        class="status-value"
+                        [class]="
+                          request.vpsas_status === 'approved'
+                            ? 'approved'
+                            : request.vpsas_status === 'declined'
+                              ? 'declined'
+                              : 'pending'
+                        "
+                      >
                         {{ request.vpsas_status | titlecase }}
                       </span>
                     </div>
@@ -197,7 +219,7 @@
     <div class="modal-overlay" (click)="closeModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <button class="modal-close" (click)="closeModal()">×</button>
-        
+
         <h2>
           @if (actionType() === 'approve') {
             Approve Request
@@ -212,14 +234,19 @@
             <p><strong>Type:</strong> {{ getLeaveTypeLabel(selectedRequest()!.leave_type) }}</p>
             <p><strong>Destination:</strong> {{ selectedRequest()!.destination }}</p>
             @if (selectedRequest()!.spending_leave_with) {
-              <p><strong>Spending Leave With:</strong> {{ selectedRequest()!.spending_leave_with }}</p>
+              <p>
+                <strong>Spending Leave With:</strong> {{ selectedRequest()!.spending_leave_with }}
+              </p>
             }
-            <p><strong>Schedule:</strong> {{ formatDate(selectedRequest()!.start_date) }} - {{ formatDate(selectedRequest()!.end_date) }}</p>
+            <p>
+              <strong>Schedule:</strong> {{ formatDate(selectedRequest()!.start_date) }} -
+              {{ formatDate(selectedRequest()!.end_date) }}
+            </p>
           </div>
 
           <div class="form-group">
             <label for="adminNotes">Notes (optional)</label>
-            <textarea 
+            <textarea
               id="adminNotes"
               rows="3"
               placeholder="Add any notes or comments..."
@@ -231,7 +258,7 @@
 
         <div class="modal-actions">
           <button class="btn-cancel" (click)="closeModal()">Cancel</button>
-          <button 
+          <button
             class="btn-confirm"
             [class.approve]="actionType() === 'approve'"
             [class.decline]="actionType() === 'decline'"
