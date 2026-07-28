@@ -10,9 +10,7 @@
         <p>View and manage your campus leave requests</p>
       </div>
     </div>
-    <button class="btn-primary" (click)="createNewRequest()">
-      + New Request
-    </button>
+    <button class="btn-primary" (click)="createNewRequest()">+ New Request</button>
   </div>
 
   <!-- Active QR Code Banner -->
@@ -21,7 +19,9 @@
       <div class="banner-icon">🎫</div>
       <div class="banner-content">
         <h3>You have an active pass!</h3>
-        <p>Tap to view your Campus Leave Pass: {{ getLeaveTypeLabel(activeRequest()!.leave_type) }}</p>
+        <p>
+          Tap to view your Campus Leave Pass: {{ getLeaveTypeLabel(activeRequest()!.leave_type) }}
+        </p>
       </div>
       <span class="banner-arrow">→</span>
     </div>
@@ -44,9 +44,7 @@
       <span class="empty-icon">📋</span>
       <h3>No Requests Yet</h3>
       <p>You haven't submitted any go-out requests.</p>
-      <button class="btn-primary" (click)="createNewRequest()">
-        Create Your First Request
-      </button>
+      <button class="btn-primary" (click)="createNewRequest()">Create Your First Request</button>
     </div>
   } @else {
     <div class="requests-list">
@@ -75,7 +73,9 @@
             }
             <div class="info-row">
               <span class="label">📅 Schedule:</span>
-              <span class="value">{{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</span>
+              <span class="value"
+                >{{ formatDate(request.start_date) }} - {{ formatDate(request.end_date) }}</span
+              >
             </div>
             <div class="info-row">
               <span class="label">📝 Reason:</span>
@@ -85,37 +85,75 @@
 
           <!-- Approval Timeline -->
           <div class="approval-timeline">
-            <div class="timeline-item" [class.completed]="request.admin_status === 'approved'" [class.declined]="request.admin_status === 'declined'">
+            <div
+              class="timeline-item"
+              [class.completed]="request.parent_status === 'approved'"
+              [class.declined]="request.parent_status === 'declined'"
+              [class.na]="request.parent_status === 'not_required'"
+            >
               <span class="timeline-icon">
-                @if (request.admin_status === 'approved') { ✓ }
-                @else if (request.admin_status === 'declined') { ✗ }
-                @else { ○ }
-              </span>
-              <span class="timeline-label">Home Dean</span>
-            </div>
-            <div class="timeline-line" [class.completed]="request.admin_status === 'approved'"></div>
-            <div class="timeline-item" [class.completed]="request.parent_status === 'approved'" [class.declined]="request.parent_status === 'declined'" [class.na]="request.parent_status === 'not_required'">
-              <span class="timeline-icon">
-                @if (request.parent_status === 'approved') { ✓ }
-                @else if (request.parent_status === 'declined') { ✗ }
-                @else if (request.parent_status === 'not_required') { - }
-                @else { ○ }
+                @if (request.parent_status === 'approved') {
+                  ✓
+                } @else if (request.parent_status === 'declined') {
+                  ✗
+                } @else if (request.parent_status === 'not_required') {
+                  -
+                } @else {
+                  ○
+                }
               </span>
               <span class="timeline-label">Parent</span>
             </div>
-            <div class="timeline-line" [class.completed]="request.parent_status === 'approved' || request.parent_status === 'not_required'"></div>
-            <div class="timeline-item" [class.completed]="request.vpsas_status === 'approved'" [class.declined]="request.vpsas_status === 'declined'">
+            <div
+              class="timeline-line"
+              [class.completed]="
+                request.parent_status === 'approved' || request.parent_status === 'not_required'
+              "
+            ></div>
+            <div
+              class="timeline-item"
+              [class.completed]="request.admin_status === 'approved'"
+              [class.declined]="request.admin_status === 'declined'"
+            >
               <span class="timeline-icon">
-                @if (request.vpsas_status === 'approved') { ✓ }
-                @else if (request.vpsas_status === 'declined') { ✗ }
-                @else { ○ }
+                @if (request.admin_status === 'approved') {
+                  ✓
+                } @else if (request.admin_status === 'declined') {
+                  ✗
+                } @else {
+                  ○
+                }
+              </span>
+              <span class="timeline-label">Home Dean</span>
+            </div>
+            <div
+              class="timeline-line"
+              [class.completed]="request.admin_status === 'approved'"
+            ></div>
+            <div
+              class="timeline-item"
+              [class.completed]="request.vpsas_status === 'approved'"
+              [class.declined]="request.vpsas_status === 'declined'"
+            >
+              <span class="timeline-icon">
+                @if (request.vpsas_status === 'approved') {
+                  ✓
+                } @else if (request.vpsas_status === 'declined') {
+                  ✗
+                } @else {
+                  ○
+                }
               </span>
               <span class="timeline-label">VPSAS</span>
             </div>
             <div class="timeline-line" [class.completed]="request.qr_code"></div>
             <div class="timeline-item" [class.completed]="request.qr_code">
               <span class="timeline-icon">
-                @if (request.qr_code) { ✓ } @else { ○ }
+                @if (request.qr_code) {
+                  ✓
+                } @else {
+                  ○
+                }
               </span>
               <span class="timeline-label">QR Code</span>
             </div>
@@ -143,15 +181,21 @@
 
           <!-- Actions -->
           <div class="request-actions">
-            @if (request.qr_code && !isExpired(request) && (request.status === 'approved' || request.status === 'active')) {
-              <button class="btn-qr" (click)="viewQRCode(request)">
-                🎫 View QR Code
-              </button>
+            @if (
+              request.qr_code &&
+              !isExpired(request) &&
+              (request.status === 'approved' || request.status === 'active')
+            ) {
+              <button class="btn-qr" (click)="viewQRCode(request)">🎫 View QR Code</button>
             }
-            @if (!isExpired(request) && (request.status === 'pending_dean' || request.status === 'pending_admin' || request.status === 'pending_parent' || request.status === 'pending_vpsas')) {
-              <button class="btn-cancel" (click)="cancelRequest(request)">
-                Cancel Request
-              </button>
+            @if (
+              !isExpired(request) &&
+              (request.status === 'pending_dean' ||
+                request.status === 'pending_admin' ||
+                request.status === 'pending_parent' ||
+                request.status === 'pending_vpsas')
+            ) {
+              <button class="btn-cancel" (click)="cancelRequest(request)">Cancel Request</button>
             }
           </div>
         </div>
@@ -166,9 +210,12 @@
         <button class="modal-close" (click)="closeQRModal()">×</button>
         <h2>Your Campus Pass</h2>
         @if (activeRequest()) {
-          <p class="modal-subtitle">{{ getLeaveTypeLabel(activeRequest()!.leave_type) }} - {{ activeRequest()!.destination }}</p>
+          <p class="modal-subtitle">
+            {{ getLeaveTypeLabel(activeRequest()!.leave_type) }} -
+            {{ activeRequest()!.destination }}
+          </p>
         }
-        
+
         <div class="qr-display">
           <div class="qr-placeholder">
             <img [src]="getQRCodeUrl(activeQRCode()!)" alt="QR Code" class="qr-code-image" />

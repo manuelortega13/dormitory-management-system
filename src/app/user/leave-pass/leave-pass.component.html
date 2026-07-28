@@ -35,16 +35,17 @@
         <!-- QR Code Section -->
         <div class="qr-section">
           <div class="qr-wrapper">
-            <img 
-              [src]="getQRCodeUrl(qrCode()!)" 
-              alt="Leave Pass QR Code" 
-              class="qr-image"
-            />
+            <img [src]="getQRCodeUrl(qrCode()!)" alt="Leave Pass QR Code" class="qr-image" />
           </div>
           <p class="qr-instruction">Present this QR code to the security guard</p>
           <div class="qr-code-text">
             <code>{{ qrCode() }}</code>
-            <button class="copy-btn" (click)="copyQRCode()" [class.copied]="copiedFeedback()" title="Copy QR Code">
+            <button
+              class="copy-btn"
+              (click)="copyQRCode()"
+              [class.copied]="copiedFeedback()"
+              title="Copy QR Code"
+            >
               @if (copiedFeedback()) {
                 <i class="bi bi-check2"></i>
               } @else {
@@ -65,18 +66,20 @@
             <i class="bi bi-person-fill"></i>
             Occupant Information
           </h3>
-          
+
           <div class="details-grid">
             <div class="detail-item">
               <span class="detail-label">Name of Occupant</span>
               <span class="detail-value">{{ getResidentName() }}</span>
             </div>
-            
+
             <div class="detail-item">
               <span class="detail-label">Address</span>
-              <span class="detail-value">{{ leaveRequest()!.room_number ? 'Room ' + leaveRequest()!.room_number : 'N/A' }}</span>
+              <span class="detail-value">{{
+                leaveRequest()!.room_number ? 'Room ' + leaveRequest()!.room_number : 'N/A'
+              }}</span>
             </div>
-            
+
             <div class="detail-item">
               <span class="detail-label">Course/Year Level</span>
               <span class="detail-value">N/A</span>
@@ -90,28 +93,28 @@
             <i class="bi bi-calendar-event"></i>
             Leave Details
           </h3>
-          
+
           <div class="details-grid">
             <div class="detail-item">
               <span class="detail-label">Date & Time of Leave</span>
               <span class="detail-value">{{ formatDate(leaveRequest()!.start_date) }}</span>
             </div>
-            
+
             <div class="detail-item">
               <span class="detail-label">Date & Time of Return</span>
               <span class="detail-value">{{ formatDate(leaveRequest()!.end_date) }}</span>
             </div>
-            
+
             <div class="detail-item full-width">
               <span class="detail-label">Destination</span>
               <span class="detail-value">{{ leaveRequest()!.destination }}</span>
             </div>
-            
+
             <div class="detail-item full-width">
               <span class="detail-label">Spending Leave With</span>
               <span class="detail-value">{{ leaveRequest()!.spending_leave_with || 'N/A' }}</span>
             </div>
-            
+
             <div class="detail-item full-width">
               <span class="detail-label">Purpose</span>
               <span class="detail-value">{{ leaveRequest()!.reason }}</span>
@@ -125,18 +128,18 @@
             <i class="bi bi-telephone-fill"></i>
             Contact Information
           </h3>
-          
+
           <div class="details-grid">
             <div class="detail-item">
               <span class="detail-label">Emergency Contact</span>
               <span class="detail-value">{{ leaveRequest()!.emergency_contact }}</span>
             </div>
-            
+
             <div class="detail-item">
               <span class="detail-label">Emergency Phone</span>
               <span class="detail-value">{{ leaveRequest()!.emergency_phone }}</span>
             </div>
-            
+
             <div class="detail-item">
               <span class="detail-label">Parent Phone Number</span>
               <span class="detail-value">{{ leaveRequest()!.parent_phone || 'N/A' }}</span>
@@ -150,8 +153,21 @@
             <i class="bi bi-check-circle-fill"></i>
             Approvals
           </h3>
-          
+
           <div class="approval-grid">
+            <div class="approval-item">
+              <span class="approval-label">Parent/Guardian</span>
+              <span class="approval-value">{{ leaveRequest()!.parent_name || 'N/A' }}</span>
+              <span
+                class="approval-status"
+                [class.approved]="leaveRequest()!.parent_status === 'approved'"
+                [class.not-required]="leaveRequest()!.parent_status === 'not_required'"
+              >
+                <i class="bi bi-check-circle-fill"></i>
+                {{ leaveRequest()!.parent_status === 'not_required' ? 'Not Required' : 'Approved' }}
+              </span>
+            </div>
+
             <div class="approval-item">
               <span class="approval-label">Home Dean</span>
               <span class="approval-value">{{ leaveRequest()!.admin_reviewer_name || 'N/A' }}</span>
@@ -159,15 +175,7 @@
                 <i class="bi bi-check-circle-fill"></i> Approved
               </span>
             </div>
-            
-            <div class="approval-item">
-              <span class="approval-label">Parent/Guardian</span>
-              <span class="approval-value">{{ leaveRequest()!.parent_name || 'N/A' }}</span>
-              <span class="approval-status" [class.approved]="leaveRequest()!.parent_status === 'approved'" [class.not-required]="leaveRequest()!.parent_status === 'not_required'">
-                <i class="bi bi-check-circle-fill"></i> {{ leaveRequest()!.parent_status === 'not_required' ? 'Not Required' : 'Approved' }}
-              </span>
-            </div>
-            
+
             <div class="approval-item">
               <span class="approval-label">VPSAS</span>
               <span class="approval-value">{{ leaveRequest()!.vpsas_reviewer_name || 'N/A' }}</span>
@@ -182,11 +190,12 @@
         <div class="pass-footer">
           <p class="validity-notice">
             <i class="bi bi-info-circle"></i>
-            This pass is valid from <strong>{{ formatDate(leaveRequest()!.start_date) }}</strong> 
-            to <strong>{{ formatDate(leaveRequest()!.end_date) }}</strong>
+            This pass is valid from <strong>{{ formatDate(leaveRequest()!.start_date) }}</strong> to
+            <strong>{{ formatDate(leaveRequest()!.end_date) }}</strong>
           </p>
           <p class="generated-date">
-            Generated: {{ formatDate(leaveRequest()!.qr_generated_at || leaveRequest()!.updated_at) }}
+            Generated:
+            {{ formatDate(leaveRequest()!.qr_generated_at || leaveRequest()!.updated_at) }}
           </p>
         </div>
       </div>
