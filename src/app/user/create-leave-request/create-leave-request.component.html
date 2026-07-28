@@ -6,7 +6,10 @@
     </button>
     <div class="header-content">
       <h1>Request to Go Out</h1>
-      <p>Submit your request to leave campus. Your request will be reviewed by the Home Dean, your parent, and VPSAS.</p>
+      <p>
+        Submit your request to leave campus. Your request will be reviewed by your parent, the Home
+        Dean, and VPSAS.
+      </p>
     </div>
   </div>
 
@@ -31,10 +34,10 @@
       <div class="leave-types">
         @for (type of leaveTypes; track type.value) {
           <label class="type-option" [class.selected]="form.leaveType === type.value">
-            <input 
-              type="radio" 
-              name="leaveType" 
-              [value]="type.value" 
+            <input
+              type="radio"
+              name="leaveType"
+              [value]="type.value"
               [(ngModel)]="form.leaveType"
             />
             <div class="type-content">
@@ -52,10 +55,10 @@
       <div class="date-time-grid">
         <div class="form-group" [class.has-error]="fieldErrors().startDate">
           <label for="startDate">Departure Date *</label>
-          <input 
-            type="date" 
-            id="startDate" 
-            [(ngModel)]="form.startDate" 
+          <input
+            type="date"
+            id="startDate"
+            [(ngModel)]="form.startDate"
             name="startDate"
             [min]="getTodayDate()"
             (ngModelChange)="onStartDateTimeChange(); clearFieldError('startDate')"
@@ -67,10 +70,10 @@
         </div>
         <div class="form-group" [class.has-error]="fieldErrors().startTime">
           <label for="startTime">Departure Time *</label>
-          <input 
-            type="time" 
-            id="startTime" 
-            [(ngModel)]="form.startTime" 
+          <input
+            type="time"
+            id="startTime"
+            [(ngModel)]="form.startTime"
             name="startTime"
             [min]="getMinStartTime()"
             (ngModelChange)="onStartDateTimeChange(); clearFieldError('startTime')"
@@ -82,10 +85,10 @@
         </div>
         <div class="form-group" [class.has-error]="fieldErrors().endDate">
           <label for="endDate">Return Date *</label>
-          <input 
-            type="date" 
-            id="endDate" 
-            [(ngModel)]="form.endDate" 
+          <input
+            type="date"
+            id="endDate"
+            [(ngModel)]="form.endDate"
             name="endDate"
             [min]="getMinEndDate()"
             (ngModelChange)="onEndDateChange()"
@@ -97,10 +100,10 @@
         </div>
         <div class="form-group" [class.has-error]="fieldErrors().endTime">
           <label for="endTime">Return Time *</label>
-          <input 
-            type="time" 
-            id="endTime" 
-            [(ngModel)]="form.endTime" 
+          <input
+            type="time"
+            id="endTime"
+            [(ngModel)]="form.endTime"
             name="endTime"
             [min]="getMinEndTime()"
             (input)="clearFieldError('endTime')"
@@ -118,10 +121,10 @@
       <h3>Details</h3>
       <div class="form-group" [class.has-error]="fieldErrors().destination">
         <label for="destination">Destination *</label>
-        <input 
-          type="text" 
-          id="destination" 
-          [(ngModel)]="form.destination" 
+        <input
+          type="text"
+          id="destination"
+          [(ngModel)]="form.destination"
           name="destination"
           placeholder="Where are you going? (e.g., Mall of Asia, Home - Quezon City)"
           (input)="clearFieldError('destination')"
@@ -132,20 +135,22 @@
         }
       </div>
       <div class="form-group">
-        <label for="spendingLeaveWith">Spending Leave With <span class="optional-label">(Optional)</span></label>
-        <input 
-          type="text" 
-          id="spendingLeaveWith" 
-          [(ngModel)]="form.spendingLeaveWith" 
+        <label for="spendingLeaveWith"
+          >Spending Leave With <span class="optional-label">(Optional)</span></label
+        >
+        <input
+          type="text"
+          id="spendingLeaveWith"
+          [(ngModel)]="form.spendingLeaveWith"
           name="spendingLeaveWith"
           placeholder="Who will you be with? (e.g., Family, Friend - John Doe)"
         />
       </div>
       <div class="form-group" [class.has-error]="fieldErrors().reason">
         <label for="reason">Reason for Leave *</label>
-        <textarea 
-          id="reason" 
-          [(ngModel)]="form.reason" 
+        <textarea
+          id="reason"
+          [(ngModel)]="form.reason"
           name="reason"
           rows="4"
           placeholder="Please provide a detailed reason for your request..."
@@ -165,10 +170,10 @@
       <div class="contact-grid">
         <div class="form-group" [class.has-error]="fieldErrors().emergencyContact">
           <label for="emergencyContact">Contact Name *</label>
-          <input 
-            type="text" 
-            id="emergencyContact" 
-            [(ngModel)]="form.emergencyContact" 
+          <input
+            type="text"
+            id="emergencyContact"
+            [(ngModel)]="form.emergencyContact"
             name="emergencyContact"
             placeholder="Full name of emergency contact"
             (input)="clearFieldError('emergencyContact')"
@@ -180,10 +185,10 @@
         </div>
         <div class="form-group" [class.has-error]="fieldErrors().emergencyPhone">
           <label for="emergencyPhone">Contact Phone *</label>
-          <input 
-            type="tel" 
-            id="emergencyPhone" 
-            [(ngModel)]="form.emergencyPhone" 
+          <input
+            type="tel"
+            id="emergencyPhone"
+            [(ngModel)]="form.emergencyPhone"
             name="emergencyPhone"
             placeholder="e.g., 09171234567"
             (input)="clearFieldError('emergencyPhone')"
@@ -200,22 +205,33 @@
     <div class="info-box">
       <h4>📋 Approval Process</h4>
       <ol>
-        <li><strong>Home Dean Review:</strong> Your request will first be reviewed by the Home Dean.</li>
-        <li><strong>Parent Approval:</strong> Once Home Dean approves, your parent/guardian will be notified to approve.</li>
-        <li><strong>VPSAS Final Approval:</strong> After parent approval, VPSAS will give final approval.</li>
-        <li><strong>QR Code Generated:</strong> After all approvals, a QR code will be generated for you.</li>
-        <li><strong>Security Scan:</strong> Show your QR code to the security guard when leaving and returning.</li>
+        <li>
+          <strong>Parent Approval:</strong> Your parent/guardian will first be notified to approve
+          your request.
+        </li>
+        <li>
+          <strong>Home Dean Review:</strong> Once your parent approves, the Home Dean will review
+          the request.
+        </li>
+        <li>
+          <strong>VPSAS Final Approval:</strong> After the Home Dean approves, VPSAS will give final
+          approval.
+        </li>
+        <li>
+          <strong>QR Code Generated:</strong> After all approvals, a QR code will be generated for
+          you.
+        </li>
+        <li>
+          <strong>Security Scan:</strong> Show your QR code to the security guard when leaving and
+          returning.
+        </li>
       </ol>
     </div>
 
     <!-- Submit Button -->
     <div class="form-actions">
       <button type="button" class="btn-secondary" (click)="goBack()">Cancel</button>
-      <button 
-        type="submit" 
-        class="btn-primary" 
-        [disabled]="!isFormValid() || isSubmitting()"
-      >
+      <button type="submit" class="btn-primary" [disabled]="!isFormValid() || isSubmitting()">
         @if (isSubmitting()) {
           <span class="spinner"></span>
           Submitting...

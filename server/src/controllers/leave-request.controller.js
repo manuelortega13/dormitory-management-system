@@ -206,16 +206,20 @@ exports.create = async (req, res) => {
       [userId]
     );
     
-    const hasParent = users[0]?.parent_id != null;
+    const parentId = users[0]?.parent_id ?? null;
+    const hasParent = parentId != null;
     const parentStatus = hasParent ? 'pending' : 'not_required';
+    // Approval chain: Parent -> Home Dean -> VPSAS. Residents with no parent on
+    // record skip straight to the Home Dean.
+    const initialStatus = hasParent ? 'pending_parent' : 'pending_dean';
 
     const [result] = await pool.execute(
-      `INSERT INTO leave_requests 
-       (user_id, leave_type, start_date, end_date, reason, destination, 
+      `INSERT INTO leave_requests
+       (user_id, leave_type, start_date, end_date, reason, destination,
         spending_leave_with, emergency_contact, emergency_phone, status, admin_status, parent_status, vpsas_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_dean', 'pending', ?, 'pending')`,
-      [userId, leaveType, formattedStartDate, formattedEndDate, reason, destination, 
-       spendingLeaveWith || null, emergencyContact || null, emergencyPhone || null, parentStatus]
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'pending')`,
+      [userId, leaveType, formattedStartDate, formattedEndDate, reason, destination,
+       spendingLeaveWith || null, emergencyContact || null, emergencyPhone || null, initialStatus, parentStatus]
     );
 
     // Get resident name and gender for notification
@@ -226,8 +230,27 @@ exports.create = async (req, res) => {
     const residentName = `${residentInfo[0].first_name} ${residentInfo[0].last_name}`;
     const residentGender = residentInfo[0].gender;
 
-    // Notify home deans about new leave request (filtered by gender)
-    await notificationController.notifyHomeDeanNewRequest(residentName, result.insertId, residentGender);
+    if (hasParent) {
+      // Parent approves first — notify parent (in-app + SMS)
+      await notificationController.notifyParentApprovalNeeded(parentId, residentName, result.insertId);
+
+      const [parentRows] = await pool.execute(
+        'SELECT first_name, last_name, phone FROM users WHERE id = ?',
+        [parentId]
+      );
+      if (parentRows[0]?.phone) {
+        const smsService = require('../services/sms.service');
+        const parentName = `${parentRows[0].first_name} ${parentRows[0].last_name}`;
+        smsService.notifyParentLeaveApproval(parentRows[0].phone, parentName, residentName, {
+          destination,
+          departure_date: formattedStartDate,
+          return_date: formattedEndDate,
+        });
+      }
+    } else {
+      // No parent on record — goes straight to the Home Dean (filtered by gender)
+      await notificationController.notifyHomeDeanNewRequest(residentName, result.insertId, residentGender);
+    }
 
     // Fetch the created request
     const [created] = await pool.execute(
@@ -236,7 +259,9 @@ exports.create = async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Leave request submitted successfully. Awaiting Home Dean approval.',
+      message: hasParent
+        ? 'Leave request submitted successfully. Awaiting parent approval.'
+        : 'Leave request submitted successfully. Awaiting Home Dean approval.',
       data: created[0]
     });
   } catch (error) {
@@ -317,54 +342,29 @@ exports.adminApprove = async (req, res) => {
       return res.status(400).json({ error: 'Request is not pending Home Dean approval' });
     }
 
-    const hasParent = request.parent_id != null;
-    let newStatus;
     const childName = `${request.first_name} ${request.last_name}`;
 
-    if (hasParent && request.parent_status === 'pending') {
-      // Needs parent approval next
-      newStatus = 'pending_parent';
-
-      // Notify parent about approval needed
-      await notificationController.notifyParentApprovalNeeded(request.parent_id, childName, id);
-
-      // Send SMS to parent
-      const smsService = require('../services/sms.service');
-      const parentName = `${request.parent_first_name} ${request.parent_last_name}`;
-      smsService.notifyParentLeaveApproval(request.parent_phone, parentName, childName, {
-        destination: request.destination,
-        departure_date: request.departure_date,
-        return_date: request.return_date,
-      });
-
-      // Notify resident that dean approved (awaiting parent)
-      await notificationController.notifyResidentDeanApproved(request.user_id, id);
-    } else {
-      // No parent - skip to VPSAS approval
-      newStatus = 'pending_vpsas';
-      
-      // Notify VPSAS about approval needed
-      await notificationController.notifyVpsasApprovalNeeded(childName, id);
-      
-      // Notify resident that dean approved (awaiting VPSAS)
-      await notificationController.notifyResidentDeanApproved(request.user_id, id);
-    }
-
+    // Home Dean is followed by VPSAS (final). The parent, if any, has already
+    // approved earlier in the chain (Parent -> Home Dean -> VPSAS).
     await pool.execute(
-      `UPDATE leave_requests SET 
-       admin_status = 'approved', 
-       admin_reviewed_by = ?, 
-       admin_reviewed_at = NOW(), 
+      `UPDATE leave_requests SET
+       admin_status = 'approved',
+       admin_reviewed_by = ?,
+       admin_reviewed_at = NOW(),
        admin_notes = ?,
-       status = ?
+       status = 'pending_vpsas'
        WHERE id = ?`,
-      [adminId, notes || null, newStatus, id]
+      [adminId, notes || null, id]
     );
 
-    res.json({ 
-      message: hasParent && request.parent_status === 'pending' 
-        ? 'Home Dean approved. Awaiting parent approval.' 
-        : 'Home Dean approved. Awaiting VPSAS approval.'
+    // Notify VPSAS about approval needed
+    await notificationController.notifyVpsasApprovalNeeded(childName, id);
+
+    // Notify resident that dean approved (awaiting VPSAS)
+    await notificationController.notifyResidentDeanApproved(request.user_id, id);
+
+    res.json({
+      message: 'Home Dean approved. Awaiting VPSAS approval.'
     });
   } catch (error) {
     console.error('Admin approve request error:', error);
@@ -437,7 +437,7 @@ exports.parentApprove = async (req, res) => {
 
     // Verify this parent owns this request's resident
     const [requests] = await pool.execute(
-      `SELECT lr.*, u.parent_id, u.first_name, u.last_name FROM leave_requests lr
+      `SELECT lr.*, u.parent_id, u.first_name, u.last_name, u.gender FROM leave_requests lr
        JOIN users u ON lr.user_id = u.id
        WHERE lr.id = ?`,
       [id]
@@ -481,27 +481,27 @@ exports.parentApprove = async (req, res) => {
     console.log(`Face verification PASSED for parent ${parentId}, distance: ${verificationResult.distance.toFixed(4)}`);
 
 
-    // After parent approval, move to VPSAS approval
+    // After parent approval, move to Home Dean approval (next in the chain)
     const childName = `${request.first_name} ${request.last_name}`;
 
     await pool.execute(
-      `UPDATE leave_requests SET 
-       parent_status = 'approved', 
-       parent_reviewed_at = NOW(), 
+      `UPDATE leave_requests SET
+       parent_status = 'approved',
+       parent_reviewed_at = NOW(),
        parent_notes = ?,
-       status = 'pending_vpsas'
+       status = 'pending_dean'
        WHERE id = ?`,
       [notes || null, id]
     );
 
-    // Notify VPSAS about approval needed
-    await notificationController.notifyVpsasApprovalNeeded(childName, id);
+    // Notify home deans (filtered by gender) that a parent-approved request needs their review
+    await notificationController.notifyHomeDeanNewRequest(childName, id, request.gender);
 
-    // Notify resident about parent approval (awaiting VPSAS)
+    // Notify resident about parent approval (awaiting Home Dean)
     await notificationController.notifyResidentParentApproved(request.user_id, id);
 
-    res.json({ 
-      message: 'Face verified. Parent approved. Awaiting VPSAS approval.'
+    res.json({
+      message: 'Face verified. Parent approved. Awaiting Home Dean approval.'
     });
   } catch (error) {
     console.error('Parent approve request error:', error);

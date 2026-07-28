@@ -250,7 +250,7 @@ exports.notifyResidentParentApproved = async (residentId, leaveRequestId) => {
       residentId,
       'leave_request_parent_approved',
       'Parent Approved',
-      'Your leave request has been approved by your parent. Awaiting VPSAS approval.',
+      'Your leave request has been approved by your parent. Awaiting Home Dean approval.',
       leaveRequestId,
       'leave_request'
     );
