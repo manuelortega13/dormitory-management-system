@@ -5,7 +5,8 @@ import { AuthService, User } from './auth.service';
 import { SettingsService } from '../services/settings.service';
 
 // Roles that keep full access while maintenance mode is ON (so they can turn it off).
-const MAINTENANCE_BYPASS_ROLES: User['role'][] = ['admin', 'home_dean', 'vpsas'];
+// Only the admin controls maintenance mode, so only the admin bypasses it.
+const MAINTENANCE_BYPASS_ROLES: User['role'][] = ['admin'];
 
 // When maintenance mode is ON, redirect everyone except bypass roles to /maintenance.
 // Applied AFTER the role guards on each protected route group.

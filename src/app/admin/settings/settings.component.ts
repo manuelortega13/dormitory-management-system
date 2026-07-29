@@ -122,7 +122,10 @@ export class SettingsComponent implements OnInit {
 
   getActiveSettings(): SystemSetting[] {
     const settings = this.settingsService.settings();
-    return settings[this.activeSection()] || [];
+    const active = settings[this.activeSection()] || [];
+    // Maintenance mode is admin-only — hide the toggle from other roles.
+    const isAdmin = this.authService.getCurrentUser()?.role === 'admin';
+    return active.filter((s) => isAdmin || s.key !== 'maintenance_mode');
   }
 
   getSettingValue(category: string, key: string): any {

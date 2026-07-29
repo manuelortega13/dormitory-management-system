@@ -134,6 +134,11 @@ exports.updateSettings = async (req, res) => {
       return res.status(403).json({ message: 'Business officers can only update payment settings' });
     }
 
+    // Only true admins may toggle maintenance mode
+    if (req.user.role !== 'admin' && settings.some(s => s.category === 'general' && s.key === 'maintenance_mode')) {
+      return res.status(403).json({ message: 'Only an administrator can change maintenance mode' });
+    }
+
     const connection = await pool.getConnection();
     
     try {
@@ -183,6 +188,11 @@ exports.updateSetting = async (req, res) => {
     // Business officers may only modify Payment Settings
     if (req.user.role === 'business_officer' && category !== 'payments') {
       return res.status(403).json({ message: 'Business officers can only update payment settings' });
+    }
+
+    // Only true admins may toggle maintenance mode
+    if (req.user.role !== 'admin' && category === 'general' && key === 'maintenance_mode') {
+      return res.status(403).json({ message: 'Only an administrator can change maintenance mode' });
     }
 
     // Convert value to string for storage
