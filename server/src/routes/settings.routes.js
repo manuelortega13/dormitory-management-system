@@ -6,6 +6,7 @@ const { authMiddleware, roleMiddleware } = require('../middleware/auth.middlewar
 // Public routes (no auth required)
 router.get('/public/branding', settingsController.getPublicBranding);
 router.get('/public/logo.png', settingsController.getPublicLogoImage);
+router.get('/public/maintenance', settingsController.getPublicMaintenance);
 
 // All other settings routes require authentication and admin role
 router.use(authMiddleware);

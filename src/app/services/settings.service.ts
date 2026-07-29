@@ -35,6 +35,26 @@ export class SettingsService {
   error = signal<string | null>(null);
   systemLogo = signal<string | null>(null);
   systemName = signal('PAC DMS');
+  maintenanceMode = signal(false);
+  private maintenanceChecked = false;
+
+  /**
+   * Read the public maintenance-mode flag. Cached per app load; pass force=true
+   * (e.g. from the maintenance page's "Try again") to re-check immediately.
+   */
+  async checkMaintenance(force = false): Promise<boolean> {
+    if (this.maintenanceChecked && !force) return this.maintenanceMode();
+    try {
+      const res = await firstValueFrom(
+        this.http.get<{ maintenance: boolean }>(`${this.apiUrl}/public/maintenance`),
+      );
+      this.maintenanceMode.set(!!res?.maintenance);
+    } catch {
+      this.maintenanceMode.set(false); // fail open
+    }
+    this.maintenanceChecked = true;
+    return this.maintenanceMode();
+  }
 
   async getAllSettings(): Promise<void> {
     this.isLoading.set(true);
@@ -55,7 +75,7 @@ export class SettingsService {
   async getSettingsByCategory(category: string): Promise<SystemSetting[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<SystemSetting[]>(`${this.apiUrl}/category/${category}`)
+        this.http.get<SystemSetting[]>(`${this.apiUrl}/category/${category}`),
       );
       return response || [];
     } catch (err: any) {
@@ -110,7 +130,7 @@ export class SettingsService {
   async loadBranding(): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ logo: string; name: string }>(`${this.apiUrl}/public/branding`)
+        this.http.get<{ logo: string; name: string }>(`${this.apiUrl}/public/branding`),
       );
       if (response?.logo) {
         this.systemLogo.set(response.logo);
@@ -132,7 +152,7 @@ export class SettingsService {
 
     // Update apple-touch-icon to server URL (iOS reads this for home screen icon)
     const appleTouchIcon = document.querySelector(
-      'link[rel="apple-touch-icon"]'
+      'link[rel="apple-touch-icon"]',
     ) as HTMLLinkElement;
     if (appleTouchIcon) {
       appleTouchIcon.href = logoServerUrl;
@@ -145,9 +165,7 @@ export class SettingsService {
     }
 
     // Update manifest dynamically with server-served logo URL
-    const existingManifestLink = document.querySelector(
-      'link[rel="manifest"]'
-    ) as HTMLLinkElement;
+    const existingManifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
     if (existingManifestLink) {
       const appName = name || this.systemName();
       const manifest = {

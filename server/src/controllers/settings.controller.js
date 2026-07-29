@@ -212,6 +212,21 @@ exports.updateSetting = async (req, res) => {
 };
 
 // Get public branding (logo + name, no auth required)
+// Public: whether the app is in maintenance mode (read before auth, on every load)
+exports.getPublicMaintenance = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT setting_value FROM system_settings WHERE category = 'general' AND setting_key = 'maintenance_mode' LIMIT 1`
+    );
+    const maintenance = rows.length > 0 && rows[0].setting_value === 'true';
+    res.json({ maintenance });
+  } catch (error) {
+    console.error('Error fetching maintenance status:', error);
+    // Fail open — never lock everyone out because of a read error
+    res.json({ maintenance: false });
+  }
+};
+
 exports.getPublicBranding = async (req, res) => {
   try {
     const [rows] = await pool.query(
