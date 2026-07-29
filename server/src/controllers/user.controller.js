@@ -570,6 +570,11 @@ exports.resetAgentPassword = async (req, res) => {
       return res.status(400).json({ error: 'Can only reset staff member passwords' });
     }
 
+    // An admin's password may only be reset by another admin (not the Home Dean).
+    if (rows[0].role === 'admin' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Only an administrator can reset an admin's password" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
 
