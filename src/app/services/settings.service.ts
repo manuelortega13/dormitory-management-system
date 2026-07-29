@@ -36,14 +36,12 @@ export class SettingsService {
   systemLogo = signal<string | null>(null);
   systemName = signal('PAC DMS');
   maintenanceMode = signal(false);
-  private maintenanceChecked = false;
 
   /**
-   * Read the public maintenance-mode flag. Cached per app load; pass force=true
-   * (e.g. from the maintenance page's "Try again") to re-check immediately.
+   * Read the public maintenance-mode flag. Always fetches fresh so the guard
+   * picks up a toggle on the very next navigation (no page reload needed).
    */
-  async checkMaintenance(force = false): Promise<boolean> {
-    if (this.maintenanceChecked && !force) return this.maintenanceMode();
+  async checkMaintenance(): Promise<boolean> {
     try {
       const res = await firstValueFrom(
         this.http.get<{ maintenance: boolean }>(`${this.apiUrl}/public/maintenance`),
@@ -52,7 +50,6 @@ export class SettingsService {
     } catch {
       this.maintenanceMode.set(false); // fail open
     }
-    this.maintenanceChecked = true;
     return this.maintenanceMode();
   }
 

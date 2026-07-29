@@ -120,7 +120,7 @@ export class MaintenanceComponent {
     this.checking.set(true);
     this.stillDown.set(false);
     try {
-      const stillOn = await this.settingsService.checkMaintenance(true);
+      const stillOn = await this.settingsService.checkMaintenance();
       if (!stillOn) {
         // Maintenance lifted — send the user back to where they belong
         if (this.auth.isLoggedIn()) {
