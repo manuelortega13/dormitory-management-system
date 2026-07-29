@@ -544,6 +544,42 @@ exports.updateAgent = async (req, res) => {
   }
 };
 
+// Reset a staff member's password (admin & home_dean only)
+exports.resetAgentPassword = async (req, res) => {
+  try {
+    // roleMiddleware treats vpsas/home_dean as admin; restrict to admin + home_dean explicitly.
+    if (!['admin', 'home_dean'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const [rows] = await pool.execute('SELECT id, role FROM users WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    // Only staff accounts can be reset here (not residents/parents)
+    const STAFF_ROLES = ['admin', 'home_dean', 'vpsas', 'business_officer', 'security_guard'];
+    if (!STAFF_ROLES.includes(rows[0].role)) {
+      return res.status(400).json({ error: 'Can only reset staff member passwords' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
+
+    res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Reset agent password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+};
+
 // Suspend agent (admin, security_guard, home_dean, vpsas) - admin only
 exports.suspendAgent = async (req, res) => {
   try {

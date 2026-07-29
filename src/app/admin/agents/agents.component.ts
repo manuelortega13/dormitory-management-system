@@ -11,7 +11,7 @@ import { AuthService } from '../../auth/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, AgentEditModalComponent],
   templateUrl: './agents.component.html',
-  styleUrl: './agents.component.scss'
+  styleUrl: './agents.component.scss',
 })
 export class AgentsComponent implements OnInit {
   private readonly agentsService = inject(AgentsService);
@@ -19,9 +19,15 @@ export class AgentsComponent implements OnInit {
 
   // Only admins can deactivate (suspend/reactivate) or delete staff
   protected readonly isAdmin = signal(this.authService.getCurrentUser()?.role === 'admin');
+  // Admin and Home Dean can reset a staff member's password
+  protected readonly canResetPassword = signal(
+    ['admin', 'home_dean'].includes(this.authService.getCurrentUser()?.role ?? ''),
+  );
 
   protected readonly searchQuery = signal('');
-  protected readonly selectedRole = signal<'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all'>('all');
+  protected readonly selectedRole = signal<
+    'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all'
+  >('all');
   protected readonly selectedStatus = signal<'active' | 'suspended' | 'all'>('all');
   protected readonly isLoading = signal(false);
   protected readonly showAddModal = signal(false);
@@ -50,6 +56,16 @@ export class AgentsComponent implements OnInit {
   protected readonly deleteSaving = signal(false);
   protected readonly deleteError = signal('');
 
+  // Reset password modal
+  protected readonly showResetModal = signal(false);
+  protected readonly resettingAgent = signal<Agent | null>(null);
+  protected resetPwd = '';
+  protected resetConfirm = '';
+  protected readonly resetSaving = signal(false);
+  protected readonly resetError = signal('');
+  protected readonly resetSuccess = signal('');
+  protected readonly showResetPwd = signal(false);
+
   @ViewChild(AgentEditModalComponent) editModalComponent?: AgentEditModalComponent;
 
   protected readonly agents = signal<Agent[]>([]);
@@ -61,7 +77,7 @@ export class AgentsComponent implements OnInit {
     firstName: '',
     lastName: '',
     role: 'security_guard',
-    phone: ''
+    phone: '',
   });
 
   ngOnInit(): void {
@@ -78,7 +94,7 @@ export class AgentsComponent implements OnInit {
       error: (err) => {
         console.error('Failed to load agents:', err);
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -86,12 +102,12 @@ export class AgentsComponent implements OnInit {
     const all = this.agents();
     return {
       total: all.length,
-      admins: all.filter(a => a.role === 'admin').length,
-      securityGuards: all.filter(a => a.role === 'security_guard').length,
-      homeDeans: all.filter(a => a.role === 'home_dean').length,
-      businessOfficers: all.filter(a => a.role === 'business_officer').length,
-      active: all.filter(a => a.status === 'active').length,
-      suspended: all.filter(a => a.status === 'suspended').length
+      admins: all.filter((a) => a.role === 'admin').length,
+      securityGuards: all.filter((a) => a.role === 'security_guard').length,
+      homeDeans: all.filter((a) => a.role === 'home_dean').length,
+      businessOfficers: all.filter((a) => a.role === 'business_officer').length,
+      active: all.filter((a) => a.status === 'active').length,
+      suspended: all.filter((a) => a.status === 'suspended').length,
     };
   });
 
@@ -102,19 +118,20 @@ export class AgentsComponent implements OnInit {
     const status = this.selectedStatus();
 
     if (query) {
-      filtered = filtered.filter(a =>
-        a.first_name.toLowerCase().includes(query) ||
-        a.last_name.toLowerCase().includes(query) ||
-        a.email.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (a) =>
+          a.first_name.toLowerCase().includes(query) ||
+          a.last_name.toLowerCase().includes(query) ||
+          a.email.toLowerCase().includes(query),
       );
     }
 
     if (role !== 'all') {
-      filtered = filtered.filter(a => a.role === role);
+      filtered = filtered.filter((a) => a.role === role);
     }
 
     if (status !== 'all') {
-      filtered = filtered.filter(a => a.status === status);
+      filtered = filtered.filter((a) => a.status === status);
     }
 
     return filtered;
@@ -127,7 +144,10 @@ export class AgentsComponent implements OnInit {
 
   updateRole(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    this.selectedRole.set(select.value as 'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all');
+    this.selectedRole.set(
+      select.value as
+        'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all',
+    );
   }
 
   updateStatus(event: Event): void {
@@ -137,15 +157,20 @@ export class AgentsComponent implements OnInit {
 
   getRoleLabel(role: string, deanType?: 'male' | 'female' | null): string {
     switch (role) {
-      case 'admin': return 'Admin';
-      case 'security_guard': return 'Security Guard';
+      case 'admin':
+        return 'Admin';
+      case 'security_guard':
+        return 'Security Guard';
       case 'home_dean':
         if (deanType === 'male') return 'Dean for Males';
         if (deanType === 'female') return 'Dean for Females';
         return 'Home Dean';
-      case 'vpsas': return 'VPSAS';
-      case 'business_officer': return 'Business Officer';
-      default: return role;
+      case 'vpsas':
+        return 'VPSAS';
+      case 'business_officer':
+        return 'Business Officer';
+      default:
+        return role;
     }
   }
 
@@ -167,8 +192,14 @@ export class AgentsComponent implements OnInit {
 
   getAvatarColor(name: string): string {
     const colors = [
-      '#4a90d9', '#667eea', '#27ae60', '#e74c3c',
-      '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'
+      '#4a90d9',
+      '#667eea',
+      '#27ae60',
+      '#e74c3c',
+      '#f39c12',
+      '#9b59b6',
+      '#1abc9c',
+      '#e67e22',
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -185,7 +216,7 @@ export class AgentsComponent implements OnInit {
       lastName: '',
       role: 'security_guard',
       deanType: undefined,
-      phone: ''
+      phone: '',
     });
     this.modalError.set('');
     this.showAddModal.set(true);
@@ -198,10 +229,10 @@ export class AgentsComponent implements OnInit {
 
   updateNewAgentField(field: keyof CreateAgentDto, event: Event): void {
     const input = event.target as HTMLInputElement | HTMLSelectElement;
-    this.newAgent.update(current => {
+    this.newAgent.update((current) => {
       const updated = {
         ...current,
-        [field]: input.value
+        [field]: input.value,
       };
       // Reset deanType when role changes to non-home_dean
       if (field === 'role' && input.value !== 'home_dean') {
@@ -212,7 +243,7 @@ export class AgentsComponent implements OnInit {
   }
 
   togglePasswordVisibility(): void {
-    this.showPassword.update(v => !v);
+    this.showPassword.update((v) => !v);
   }
 
   saveNewAgent(): void {
@@ -247,7 +278,7 @@ export class AgentsComponent implements OnInit {
       error: (err) => {
         this.modalSaving.set(false);
         this.modalError.set(err.error?.error || 'Failed to create agent');
-      }
+      },
     });
   }
 
@@ -284,7 +315,7 @@ export class AgentsComponent implements OnInit {
         if (this.editModalComponent) {
           this.editModalComponent.setError(err.error?.error || 'Failed to update agent');
         }
-      }
+      },
     });
   }
 
@@ -329,7 +360,7 @@ export class AgentsComponent implements OnInit {
       error: (err) => {
         this.suspendSaving.set(false);
         this.suspendError.set(err.error?.error || 'Failed to suspend agent');
-      }
+      },
     });
   }
 
@@ -362,7 +393,61 @@ export class AgentsComponent implements OnInit {
       error: (err) => {
         this.reactivateSaving.set(false);
         this.reactivateError.set(err.error?.error || 'Failed to reactivate staff member');
-      }
+      },
+    });
+  }
+
+  // ---- Reset password ----
+  openResetModal(agent: Agent): void {
+    this.resettingAgent.set(agent);
+    this.resetPwd = '';
+    this.resetConfirm = '';
+    this.resetError.set('');
+    this.resetSuccess.set('');
+    this.showResetPwd.set(false);
+    this.showResetModal.set(true);
+  }
+
+  closeResetModal(): void {
+    this.showResetModal.set(false);
+    this.resettingAgent.set(null);
+    this.resetPwd = '';
+    this.resetConfirm = '';
+    this.resetError.set('');
+    this.resetSuccess.set('');
+  }
+
+  toggleResetPwdVisibility(): void {
+    this.showResetPwd.update((v) => !v);
+  }
+
+  confirmReset(): void {
+    const agent = this.resettingAgent();
+    if (!agent) return;
+
+    const pwd = this.resetPwd.trim();
+    if (pwd.length < 6) {
+      this.resetError.set('Password must be at least 6 characters');
+      return;
+    }
+    if (pwd !== this.resetConfirm.trim()) {
+      this.resetError.set('Passwords do not match');
+      return;
+    }
+
+    this.resetSaving.set(true);
+    this.resetError.set('');
+    this.agentsService.resetPassword(agent.id, pwd).subscribe({
+      next: () => {
+        this.resetSaving.set(false);
+        this.resetSuccess.set(`Password reset for ${agent.first_name} ${agent.last_name}.`);
+        this.resetPwd = '';
+        this.resetConfirm = '';
+      },
+      error: (err) => {
+        this.resetSaving.set(false);
+        this.resetError.set(err.error?.error || 'Failed to reset password');
+      },
     });
   }
 
@@ -395,7 +480,7 @@ export class AgentsComponent implements OnInit {
       error: (err) => {
         this.deleteSaving.set(false);
         this.deleteError.set(err.error?.error || 'Failed to delete staff member');
-      }
+      },
     });
   }
 }

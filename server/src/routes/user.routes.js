@@ -36,6 +36,9 @@ router.post('/agents', authMiddleware, roleMiddleware('admin'), userController.c
 // PUT /api/users/agents/:id - Update agent (admin only)
 router.put('/agents/:id', authMiddleware, roleMiddleware('admin'), userController.updateAgent);
 
+// POST /api/users/agents/:id/reset-password - Reset a staff member's password (admin & home_dean)
+router.post('/agents/:id/reset-password', authMiddleware, roleMiddleware('admin', 'home_dean'), userController.resetAgentPassword);
+
 // PATCH /api/users/agents/:id/suspend - Suspend a staff member (admin only)
 router.patch('/agents/:id/suspend', authMiddleware, roleMiddleware('admin'), userController.suspendAgent);
 

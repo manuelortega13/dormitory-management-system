@@ -4,9 +4,7 @@
       <h1>Staff Management</h1>
       <p class="subtitle">Manage administrators, security guards, and deans</p>
     </div>
-    <button class="btn-primary" (click)="openAddModal()">
-      <span>➕</span> Add New Staff
-    </button>
+    <button class="btn-primary" (click)="openAddModal()"><span>➕</span> Add New Staff</button>
   </header>
 
   <!-- Stats Overview -->
@@ -95,10 +93,7 @@
       @for (agent of filteredAgents(); track agent.id) {
         <div class="table-row" [class]="getStatusClass(agent.status)">
           <div class="col-name" data-label="Staff">
-            <div 
-              class="agent-avatar" 
-              [style.background]="getAvatarColor(agent.first_name)"
-            >
+            <div class="agent-avatar" [style.background]="getAvatarColor(agent.first_name)">
               {{ getInitials(agent) }}
             </div>
             <div class="agent-info">
@@ -123,18 +118,37 @@
             </span>
           </div>
           <div class="col-created" data-label="Created">
-            <span class="date">{{ agent.created_at | date:'mediumDate' }}</span>
+            <span class="date">{{ agent.created_at | date: 'mediumDate' }}</span>
           </div>
           <div class="col-actions" data-label="Actions">
             <button class="btn-icon view" title="View" (click)="openViewModal(agent)">👁️</button>
             <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
+            @if (canResetPassword()) {
+              <button
+                class="btn-icon reset-pwd"
+                title="Reset Password"
+                (click)="openResetModal(agent)"
+              >
+                🔑
+              </button>
+            }
             @if (isAdmin()) {
               @if (agent.status !== 'suspended') {
-                <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">🚫</button>
+                <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">
+                  🚫
+                </button>
               } @else {
-                <button class="btn-icon reactivate" title="Reactivate" (click)="openReactivateModal(agent)">✅</button>
+                <button
+                  class="btn-icon reactivate"
+                  title="Reactivate"
+                  (click)="openReactivateModal(agent)"
+                >
+                  ✅
+                </button>
               }
-              <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(agent)">🗑️</button>
+              <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(agent)">
+                🗑️
+              </button>
             }
           </div>
         </div>
@@ -151,7 +165,7 @@
         <h2>Add New Staff</h2>
         <button class="btn-close" (click)="closeAddModal()">✕</button>
       </div>
-      
+
       <div class="modal-body">
         @if (modalError()) {
           <div class="error-message">{{ modalError() }}</div>
@@ -159,8 +173,8 @@
 
         <div class="form-group">
           <label for="firstName">First Name <span class="required">*</span></label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             id="firstName"
             placeholder="Enter first name"
             [value]="newAgent().firstName"
@@ -170,8 +184,8 @@
 
         <div class="form-group">
           <label for="lastName">Last Name <span class="required">*</span></label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             id="lastName"
             placeholder="Enter last name"
             [value]="newAgent().lastName"
@@ -181,8 +195,8 @@
 
         <div class="form-group">
           <label for="email">Email <span class="required">*</span></label>
-          <input 
-            type="email" 
+          <input
+            type="email"
             id="email"
             placeholder="Enter email address"
             [value]="newAgent().email"
@@ -193,8 +207,8 @@
         <div class="form-group">
           <label for="password">Password <span class="required">*</span></label>
           <div class="password-input">
-            <input 
-              [type]="showPassword() ? 'text' : 'password'" 
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
               id="password"
               placeholder="Enter password (min 6 characters)"
               [value]="newAgent().password"
@@ -208,7 +222,7 @@
 
         <div class="form-group">
           <label for="role">Role <span class="required">*</span></label>
-          <select 
+          <select
             id="role"
             [value]="newAgent().role"
             (change)="updateNewAgentField('role', $event)"
@@ -224,7 +238,7 @@
         @if (newAgent().role === 'home_dean') {
           <div class="form-group">
             <label for="deanType">Dean Type <span class="required">*</span></label>
-            <select 
+            <select
               id="deanType"
               [value]="newAgent().deanType || ''"
               (change)="updateNewAgentField('deanType', $event)"
@@ -238,8 +252,8 @@
 
         <div class="form-group">
           <label for="phone">Phone</label>
-          <input 
-            type="tel" 
+          <input
+            type="tel"
             id="phone"
             placeholder="Enter phone number (optional)"
             [value]="newAgent().phone"
@@ -309,11 +323,13 @@
         </div>
         <div class="view-field">
           <span class="view-label">Status</span>
-          <span class="status-badge" [class]="viewing.status">{{ viewing.status | titlecase }}</span>
+          <span class="status-badge" [class]="viewing.status">{{
+            viewing.status | titlecase
+          }}</span>
         </div>
         <div class="view-field">
           <span class="view-label">Created</span>
-          <span class="view-value">{{ viewing.created_at | date:'medium' }}</span>
+          <span class="view-value">{{ viewing.created_at | date: 'medium' }}</span>
         </div>
 
         @if (viewing.status === 'suspended') {
@@ -322,12 +338,14 @@
             @if (viewing.suspended_at) {
               <div class="view-field">
                 <span class="view-label">Suspended On</span>
-                <span class="view-value">{{ viewing.suspended_at | date:'medium' }}</span>
+                <span class="view-value">{{ viewing.suspended_at | date: 'medium' }}</span>
               </div>
             }
             <div class="view-field">
               <span class="view-label">Reason</span>
-              <span class="view-value">{{ viewing.suspension_reason || 'No reason recorded' }}</span>
+              <span class="view-value">{{
+                viewing.suspension_reason || 'No reason recorded'
+              }}</span>
             </div>
           </div>
         }
@@ -348,20 +366,20 @@
         <h2>Suspend Staff</h2>
         <button class="btn-close" (click)="closeSuspendModal()">✕</button>
       </div>
-      
+
       <div class="modal-body">
         @if (suspendError()) {
           <div class="error-message">{{ suspendError() }}</div>
         }
 
         <p class="suspend-warning">
-          You are about to suspend <strong>{{ getFullName(suspendingAgent()!) }}</strong>. 
-          This will revoke their access to the system.
+          You are about to suspend <strong>{{ getFullName(suspendingAgent()!) }}</strong
+          >. This will revoke their access to the system.
         </p>
 
         <div class="form-group">
           <label for="suspendReason">Reason for Suspension <span class="required">*</span></label>
-          <textarea 
+          <textarea
             id="suspendReason"
             placeholder="Enter the reason for suspension"
             rows="4"
@@ -402,13 +420,17 @@
         }
 
         <p class="reactivate-message">
-          You are about to reactivate <strong>{{ getFullName(reactivating) }}</strong>.
-          This will restore their access to the system.
+          You are about to reactivate <strong>{{ getFullName(reactivating) }}</strong
+          >. This will restore their access to the system.
         </p>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeReactivateModal()" [disabled]="reactivateSaving()">
+        <button
+          class="btn-secondary"
+          (click)="closeReactivateModal()"
+          [disabled]="reactivateSaving()"
+        >
           Cancel
         </button>
         <button class="btn-primary" (click)="confirmReactivate()" [disabled]="reactivateSaving()">
@@ -438,8 +460,8 @@
         }
 
         <p class="delete-warning">
-          You are about to permanently delete <strong>{{ getFullName(deleting) }}</strong>.
-          This action cannot be undone.
+          You are about to permanently delete <strong>{{ getFullName(deleting) }}</strong
+          >. This action cannot be undone.
         </p>
       </div>
 
@@ -454,6 +476,73 @@
             Delete Staff
           }
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reset Password Modal -->
+@if (showResetModal() && resettingAgent(); as resetting) {
+  <div class="modal-overlay" (click)="closeResetModal()">
+    <div class="modal-content reset-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Reset Password</h2>
+        <button class="btn-close" (click)="closeResetModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="reset-sub">
+          Set a new password for
+          <strong>{{ resetting.first_name }} {{ resetting.last_name }}</strong> ({{
+            resetting.email
+          }}).
+        </p>
+
+        @if (resetSuccess()) {
+          <div class="alert alert-success">{{ resetSuccess() }}</div>
+        } @else {
+          @if (resetError()) {
+            <div class="alert alert-error">{{ resetError() }}</div>
+          }
+          <div class="form-group">
+            <label>New Password</label>
+            <div class="password-field">
+              <input
+                [type]="showResetPwd() ? 'text' : 'password'"
+                [(ngModel)]="resetPwd"
+                placeholder="At least 6 characters"
+                autocomplete="new-password"
+              />
+              <button type="button" class="toggle-password" (click)="toggleResetPwdVisibility()">
+                {{ showResetPwd() ? '🙈' : '👁️' }}
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input
+              [type]="showResetPwd() ? 'text' : 'password'"
+              [(ngModel)]="resetConfirm"
+              placeholder="Re-enter the new password"
+              autocomplete="new-password"
+            />
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        @if (resetSuccess()) {
+          <button class="btn-primary" (click)="closeResetModal()">Done</button>
+        } @else {
+          <button class="btn-secondary" (click)="closeResetModal()" [disabled]="resetSaving()">
+            Cancel
+          </button>
+          <button class="btn-primary" (click)="confirmReset()" [disabled]="resetSaving()">
+            @if (resetSaving()) {
+              <span class="spinner">⏳</span> Resetting...
+            } @else {
+              Reset Password
+            }
+          </button>
+        }
       </div>
     </div>
   </div>

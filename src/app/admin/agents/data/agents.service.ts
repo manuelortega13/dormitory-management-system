@@ -5,7 +5,7 @@ import { Agent, AgentFilters, CreateAgentDto, UpdateAgentDto } from './agent.mod
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AgentsService {
   private readonly http = inject(HttpClient);
@@ -30,17 +30,11 @@ export class AgentsService {
   }
 
   createAgent(data: CreateAgentDto): Observable<{ message: string; data: Agent }> {
-    return this.http.post<{ message: string; data: Agent }>(
-      `${this.apiUrl}/agents`,
-      data
-    );
+    return this.http.post<{ message: string; data: Agent }>(`${this.apiUrl}/agents`, data);
   }
 
   updateAgent(id: number, data: UpdateAgentDto): Observable<{ message: string }> {
-    return this.http.put<{ message: string }>(
-      `${this.apiUrl}/agents/${id}`,
-      data
-    );
+    return this.http.put<{ message: string }>(`${this.apiUrl}/agents/${id}`, data);
   }
 
   deleteAgent(id: number): Observable<{ message: string }> {
@@ -48,16 +42,16 @@ export class AgentsService {
   }
 
   suspendAgent(id: number, reason: string): Observable<{ message: string }> {
-    return this.http.patch<{ message: string }>(
-      `${this.apiUrl}/agents/${id}/suspend`,
-      { reason }
-    );
+    return this.http.patch<{ message: string }>(`${this.apiUrl}/agents/${id}/suspend`, { reason });
   }
 
   reactivateAgent(id: number): Observable<{ message: string }> {
-    return this.http.patch<{ message: string }>(
-      `${this.apiUrl}/agents/${id}/reactivate`,
-      {}
-    );
+    return this.http.patch<{ message: string }>(`${this.apiUrl}/agents/${id}/reactivate`, {});
+  }
+
+  resetPassword(id: number, password: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/agents/${id}/reset-password`, {
+      password,
+    });
   }
 }
