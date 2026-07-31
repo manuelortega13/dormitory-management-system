@@ -27,6 +27,9 @@ router.get('/:id', authMiddleware, leaveRequestController.getById);
 // POST /api/leave-requests - Create leave request
 router.post('/', authMiddleware, leaveRequestController.create);
 
+// POST /api/leave-requests/for-occupant - Admin/Home Dean create a request on an occupant's behalf
+router.post('/for-occupant', authMiddleware, roleMiddleware('admin', 'home_dean'), leaveRequestController.createForOccupant);
+
 // PUT /api/leave-requests/:id - Update request (before admin approval)
 router.put('/:id', authMiddleware, leaveRequestController.update);
 

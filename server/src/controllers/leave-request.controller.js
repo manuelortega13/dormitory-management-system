@@ -182,90 +182,128 @@ exports.getById = async (req, res) => {
   }
 };
 
+// Shared: insert a leave request for `userId` and start the approval chain
+// (Parent -> Home Dean -> VPSAS). Returns { data, hasParent } or null if the user
+// doesn't exist. Used by both occupant self-create and dean create-for-occupant.
+async function insertLeaveRequestForUser(userId, data) {
+  const {
+    leaveType, startDate, endDate, reason, destination,
+    spendingLeaveWith, emergencyContact, emergencyPhone,
+  } = data;
+
+  // Convert ISO dates to MySQL datetime format
+  const formatDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+  };
+  const formattedStartDate = formatDate(startDate);
+  const formattedEndDate = formatDate(endDate);
+
+  const [users] = await pool.execute(
+    'SELECT parent_id, first_name, last_name, gender FROM users WHERE id = ?',
+    [userId]
+  );
+  if (users.length === 0) return null;
+
+  const parentId = users[0].parent_id ?? null;
+  const hasParent = parentId != null;
+  const parentStatus = hasParent ? 'pending' : 'not_required';
+  // Approval chain: Parent -> Home Dean -> VPSAS. Residents with no parent on
+  // record skip straight to the Home Dean.
+  const initialStatus = hasParent ? 'pending_parent' : 'pending_dean';
+
+  const [result] = await pool.execute(
+    `INSERT INTO leave_requests
+     (user_id, leave_type, start_date, end_date, reason, destination,
+      spending_leave_with, emergency_contact, emergency_phone, status, admin_status, parent_status, vpsas_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'pending')`,
+    [userId, leaveType, formattedStartDate, formattedEndDate, reason, destination,
+     spendingLeaveWith || null, emergencyContact || null, emergencyPhone || null, initialStatus, parentStatus]
+  );
+
+  const residentName = `${users[0].first_name} ${users[0].last_name}`;
+  const residentGender = users[0].gender;
+
+  if (hasParent) {
+    // Parent approves first — notify parent (in-app + SMS)
+    await notificationController.notifyParentApprovalNeeded(parentId, residentName, result.insertId);
+
+    const [parentRows] = await pool.execute(
+      'SELECT first_name, last_name, phone FROM users WHERE id = ?',
+      [parentId]
+    );
+    if (parentRows[0]?.phone) {
+      const smsService = require('../services/sms.service');
+      const parentName = `${parentRows[0].first_name} ${parentRows[0].last_name}`;
+      smsService.notifyParentLeaveApproval(parentRows[0].phone, parentName, residentName, {
+        destination,
+        departure_date: formattedStartDate,
+        return_date: formattedEndDate,
+      });
+    }
+  } else {
+    // No parent on record — goes straight to the Home Dean (filtered by gender)
+    await notificationController.notifyHomeDeanNewRequest(residentName, result.insertId, residentGender);
+  }
+
+  const [created] = await pool.execute('SELECT * FROM leave_requests WHERE id = ?', [result.insertId]);
+  return { data: created[0], hasParent };
+}
+
 exports.create = async (req, res) => {
   try {
-    const { 
-      leaveType, startDate, endDate, reason, destination, 
-      spendingLeaveWith, emergencyContact, emergencyPhone 
-    } = req.body;
-    const userId = req.user.id;
-
-    // Convert ISO dates to MySQL datetime format
-    const formatDate = (date) => {
-      if (!date) return null;
-      const d = new Date(date);
-      return d.toISOString().slice(0, 19).replace('T', ' ');
-    };
-
-    const formattedStartDate = formatDate(startDate);
-    const formattedEndDate = formatDate(endDate);
-
-    // Check if user has a parent linked
-    const [users] = await pool.execute(
-      'SELECT parent_id FROM users WHERE id = ?',
-      [userId]
-    );
-    
-    const parentId = users[0]?.parent_id ?? null;
-    const hasParent = parentId != null;
-    const parentStatus = hasParent ? 'pending' : 'not_required';
-    // Approval chain: Parent -> Home Dean -> VPSAS. Residents with no parent on
-    // record skip straight to the Home Dean.
-    const initialStatus = hasParent ? 'pending_parent' : 'pending_dean';
-
-    const [result] = await pool.execute(
-      `INSERT INTO leave_requests
-       (user_id, leave_type, start_date, end_date, reason, destination,
-        spending_leave_with, emergency_contact, emergency_phone, status, admin_status, parent_status, vpsas_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'pending')`,
-      [userId, leaveType, formattedStartDate, formattedEndDate, reason, destination,
-       spendingLeaveWith || null, emergencyContact || null, emergencyPhone || null, initialStatus, parentStatus]
-    );
-
-    // Get resident name and gender for notification
-    const [residentInfo] = await pool.execute(
-      'SELECT first_name, last_name, gender FROM users WHERE id = ?',
-      [userId]
-    );
-    const residentName = `${residentInfo[0].first_name} ${residentInfo[0].last_name}`;
-    const residentGender = residentInfo[0].gender;
-
-    if (hasParent) {
-      // Parent approves first — notify parent (in-app + SMS)
-      await notificationController.notifyParentApprovalNeeded(parentId, residentName, result.insertId);
-
-      const [parentRows] = await pool.execute(
-        'SELECT first_name, last_name, phone FROM users WHERE id = ?',
-        [parentId]
-      );
-      if (parentRows[0]?.phone) {
-        const smsService = require('../services/sms.service');
-        const parentName = `${parentRows[0].first_name} ${parentRows[0].last_name}`;
-        smsService.notifyParentLeaveApproval(parentRows[0].phone, parentName, residentName, {
-          destination,
-          departure_date: formattedStartDate,
-          return_date: formattedEndDate,
-        });
-      }
-    } else {
-      // No parent on record — goes straight to the Home Dean (filtered by gender)
-      await notificationController.notifyHomeDeanNewRequest(residentName, result.insertId, residentGender);
-    }
-
-    // Fetch the created request
-    const [created] = await pool.execute(
-      'SELECT * FROM leave_requests WHERE id = ?',
-      [result.insertId]
-    );
+    const result = await insertLeaveRequestForUser(req.user.id, req.body);
+    if (!result) return res.status(404).json({ error: 'User not found' });
 
     res.status(201).json({
-      message: hasParent
+      message: result.hasParent
         ? 'Leave request submitted successfully. Awaiting parent approval.'
         : 'Leave request submitted successfully. Awaiting Home Dean approval.',
-      data: created[0]
+      data: result.data,
     });
   } catch (error) {
     console.error('Create leave request error:', error);
+    res.status(500).json({ error: 'Failed to create leave request' });
+  }
+};
+
+// POST /for-occupant — admin & home_dean create a leave request on an occupant's
+// behalf (e.g. occupant has no phone). Goes through the normal approval chain.
+exports.createForOccupant = async (req, res) => {
+  try {
+    if (!['admin', 'home_dean'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { userId, leaveType, startDate, endDate, reason, destination } = req.body;
+    if (!userId || !leaveType || !startDate || !endDate || !reason || !destination) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const [rows] = await pool.execute('SELECT id, role, gender, status FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0 || rows[0].role !== 'resident') {
+      return res.status(404).json({ error: 'Occupant not found' });
+    }
+    if (rows[0].status !== 'active') {
+      return res.status(400).json({ error: 'Occupant account is not active' });
+    }
+    // Home Dean may only create for occupants of their assigned gender
+    if (req.user.role === 'home_dean' && req.user.deanType && rows[0].gender !== req.user.deanType) {
+      return res.status(403).json({ error: 'You can only create requests for occupants of your assigned gender' });
+    }
+
+    const result = await insertLeaveRequestForUser(userId, req.body);
+    if (!result) return res.status(404).json({ error: 'Occupant not found' });
+
+    res.status(201).json({
+      message: result.hasParent
+        ? 'Leave request created. Awaiting parent approval.'
+        : 'Leave request created. Awaiting Home Dean approval.',
+      data: result.data,
+    });
+  } catch (error) {
+    console.error('Create leave request for occupant error:', error);
     res.status(500).json({ error: 'Failed to create leave request' });
   }
 };
