@@ -8,6 +8,8 @@ import { Gatepass, DisciplinaryReview } from '../../models/gatepass.model';
 import { Task } from '../../models/task.model';
 import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
+import { ResidentsService } from '../residents/data/residents.service';
+import { Resident } from '../residents/data/resident.model';
 
 @Component({
   selector: 'app-admin-gatepass',
@@ -22,6 +24,7 @@ export class AdminGatepassComponent implements OnInit {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
   private notifications = inject(NotificationService);
+  private residentsService = inject(ResidentsService);
 
   constructor() {
     effect(() => {
@@ -33,13 +36,15 @@ export class AdminGatepassComponent implements OnInit {
   protected readonly isDean = computed(() => ['admin', 'home_dean'].includes(this.role()));
   protected readonly isVpsas = computed(() => ['admin', 'vpsas'].includes(this.role()));
 
-  protected readonly activeTab = signal<'approvals' | 'reviews' | 'tasks'>('approvals');
+  protected readonly activeTab = signal<'approvals' | 'reviews' | 'passes' | 'tasks'>('approvals');
   protected readonly loading = signal(false);
 
   protected readonly deanQueue = signal<Gatepass[]>([]);
   protected readonly vpsasQueue = signal<Gatepass[]>([]);
   protected readonly reviews = signal<DisciplinaryReview[]>([]);
   protected readonly tasks = signal<Task[]>([]);
+  // Approved / active / completed gatepasses (they have a QR to print)
+  protected readonly passes = signal<Gatepass[]>([]);
 
   // Search (by occupant name or student ID) + task status filter
   protected readonly searchQuery = signal('');
@@ -69,6 +74,9 @@ export class AdminGatepassComponent implements OnInit {
         (this.taskStatusFilter() === 'all' || t.status === this.taskStatusFilter()),
     ),
   );
+  protected readonly filteredPasses = computed(() =>
+    this.passes().filter((g) => this.matchesSearch(g.occupant_name, g.student_resident_id)),
+  );
 
   // Decline modal
   protected readonly declineTarget = signal<Gatepass | null>(null);
@@ -79,6 +87,148 @@ export class AdminGatepassComponent implements OnInit {
   protected taskDesc = '';
   protected taskDue = '';
   protected readonly saving = signal(false);
+
+  // ---- Create-for-occupant modal ----
+  protected readonly showCreateModal = signal(false);
+  protected readonly createSaving = signal(false);
+  protected readonly createError = signal('');
+  protected readonly occupants = signal<Resident[]>([]);
+  protected readonly occupantQuery = signal('');
+  protected readonly selectedOccupant = signal<Resident | null>(null);
+  protected readonly filteredOccupants = computed(() => {
+    const q = this.occupantQuery().toLowerCase().trim();
+    if (!q) return [];
+    return this.occupants()
+      .filter(
+        (r) =>
+          `${r.first_name} ${r.last_name}`.toLowerCase().includes(q) ||
+          (r.student_resident_id ?? '').toLowerCase().includes(q),
+      )
+      .slice(0, 25);
+  });
+  protected cReason = '';
+  protected cDestination = '';
+
+  openCreateModal(): void {
+    this.createError.set('');
+    this.selectedOccupant.set(null);
+    this.occupantQuery.set('');
+    this.cReason = '';
+    this.cDestination = '';
+    this.showCreateModal.set(true);
+    this.residentsService.getResidents({ status: 'active' }).subscribe({
+      next: (list) => this.occupants.set(list),
+      error: () => this.createError.set('Failed to load occupants'),
+    });
+  }
+
+  closeCreateModal(): void {
+    this.showCreateModal.set(false);
+  }
+
+  selectOccupant(r: Resident): void {
+    this.selectedOccupant.set(r);
+    this.occupantQuery.set('');
+  }
+
+  clearOccupant(): void {
+    this.selectedOccupant.set(null);
+  }
+
+  async submitCreateForOccupant(): Promise<void> {
+    const occ = this.selectedOccupant();
+    if (!occ) {
+      this.createError.set('Please select an occupant');
+      return;
+    }
+    if (!this.cReason.trim() || !this.cDestination.trim()) {
+      this.createError.set('Reason and destination are required');
+      return;
+    }
+    this.createSaving.set(true);
+    this.createError.set('');
+    try {
+      await this.service.createForOccupant({
+        userId: occ.id,
+        reason: this.cReason.trim(),
+        destination: this.cDestination.trim(),
+      });
+      this.toast.success('Created', `Gatepass created for ${occ.first_name} ${occ.last_name}.`);
+      this.showCreateModal.set(false);
+      await this.loadAll();
+    } catch (err: any) {
+      this.createError.set(err?.error?.error || 'Failed to create gatepass');
+    } finally {
+      this.createSaving.set(false);
+    }
+  }
+
+  // Print the QR code of an approved gatepass (e.g. for an occupant with no phone)
+  printGatepassQR(g: Gatepass): void {
+    if (!g.qr_code) {
+      this.toast.error('No QR code', 'This gatepass has no QR code yet.');
+      return;
+    }
+    const esc = (s: unknown) =>
+      String(s ?? '').replace(
+        /[&<>"']/g,
+        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c,
+      );
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+      g.qr_code,
+    )}`;
+    const name = esc(g.occupant_name || 'Occupant');
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Gatepass QR — ${name}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; color: #1a1a2e; }
+    .pass { max-width: 480px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; padding: 28px; text-align: center; }
+    h1 { font-size: 1.15rem; margin: 0 0 2px; }
+    .sub { color: #666; font-size: 0.8rem; margin: 0 0 14px; }
+    .qr { width: 260px; height: 260px; margin: 4px auto 8px; display: block; }
+    .code { font-family: monospace; font-size: 0.72rem; color: #555; word-break: break-all; margin: 0 0 14px; }
+    .details { text-align: left; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 12px; }
+    .details div { margin-bottom: 6px; }
+    .details .lbl { color: #888; }
+    @media print { @page { margin: 12mm; } .pass { border: none; } }
+  </style>
+</head>
+<body>
+  <div class="pass">
+    <h1>Campus Gatepass</h1>
+    <p class="sub">Present this QR code to the security guard</p>
+    <img class="qr" src="${qrUrl}" alt="Gatepass QR" />
+    <p class="code">${esc(g.qr_code)}</p>
+    <div class="details">
+      <div><span class="lbl">Occupant:</span> ${name}</div>
+      <div><span class="lbl">Room:</span> ${esc(g.room_number || '-')}</div>
+      <div><span class="lbl">Destination:</span> ${esc(g.destination)}</div>
+      <div><span class="lbl">Reason:</span> ${esc(g.reason)}</div>
+    </div>
+  </div>
+  <script>
+    var img = document.querySelector('img');
+    function go() { window.focus(); window.print(); }
+    if (img.complete) { go(); } else { img.onload = go; img.onerror = go; }
+    window.onafterprint = function () { window.close(); };
+  </script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank', 'width=1100,height=720');
+    if (!w) {
+      this.toast.error('Pop-up blocked', 'Allow pop-ups for this site to print the QR code.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
 
   ngOnInit(): void {
     this.loadAll();
@@ -95,6 +245,10 @@ export class AdminGatepassComponent implements OnInit {
       if (this.isDean())
         jobs.push(this.service.getPendingDisciplinary().then((d) => this.reviews.set(d)));
       jobs.push(this.taskService.getAllTasks().then((d) => this.tasks.set(d)));
+      // Gatepasses that have a QR (approved/active/completed)
+      jobs.push(
+        this.service.getAll().then((list) => this.passes.set(list.filter((g) => !!g.qr_code))),
+      );
       await Promise.all(jobs);
     } catch {
       this.toast.error('Error', 'Failed to load gatepasses');

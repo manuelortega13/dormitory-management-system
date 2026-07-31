@@ -1,7 +1,14 @@
 <div class="gp-admin">
   <header>
-    <h1>🎫 Gatepass Management</h1>
-    <p class="subtitle">Review approvals, extensions, and disciplinary tasks</p>
+    <div class="header-text">
+      <h1>🎫 Gatepass Management</h1>
+      <p class="subtitle">Review approvals, extensions, and disciplinary tasks</p>
+    </div>
+    @if (isDean()) {
+      <button class="btn-create-for" (click)="openCreateModal()">
+        <span>➕</span> Create for Occupant
+      </button>
+    }
   </header>
 
   <div class="tabs">
@@ -16,6 +23,9 @@
         }
       </button>
     }
+    <button [class.active]="activeTab() === 'passes'" (click)="activeTab.set('passes')">
+      Passes
+    </button>
     <button [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Tasks</button>
   </div>
 
@@ -152,6 +162,38 @@
       }
     }
 
+    <!-- PASSES (approved gatepasses — print QR) -->
+    @if (activeTab() === 'passes') {
+      @if (filteredPasses().length === 0) {
+        <div class="state empty">
+          {{ searchQuery() ? 'No matches.' : 'No approved gatepasses.' }}
+        </div>
+      } @else {
+        @for (g of filteredPasses(); track g.id) {
+          <div class="row">
+            <div class="row-main">
+              <span class="name"
+                >{{ g.occupant_name }}
+                @if (g.student_resident_id) {
+                  <span class="sid">· {{ g.student_resident_id }}</span>
+                }
+              </span>
+              <span class="meta">📍 {{ g.destination }} · {{ g.reason }}</span>
+              <span class="date">
+                {{ statusLabel(g.status) }}
+                @if (g.created_at) {
+                  · {{ g.created_at | date: 'medium' }}
+                }
+              </span>
+            </div>
+            <div class="row-actions">
+              <button class="print-qr" (click)="printGatepassQR(g)">🖨️ Print QR</button>
+            </div>
+          </div>
+        }
+      }
+    }
+
     <!-- TASKS -->
     @if (activeTab() === 'tasks') {
       <div class="task-filter">
@@ -258,6 +300,76 @@
       <div class="modal-actions">
         <button class="btn-secondary" (click)="closeAssign()" [disabled]="saving()">Cancel</button>
         <button class="task" (click)="confirmAssign()" [disabled]="saving()">Assign Task</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Create Gatepass for Occupant -->
+@if (showCreateModal()) {
+  <div class="modal-overlay" (click)="closeCreateModal()">
+    <div class="modal create-for-modal" (click)="$event.stopPropagation()">
+      <h2>Create Gatepass for Occupant</h2>
+      @if (createError()) {
+        <div class="error">{{ createError() }}</div>
+      }
+
+      <label>Occupant <span class="req">*</span></label>
+      @if (selectedOccupant(); as occ) {
+        <div class="selected-occupant">
+          <span
+            >{{ occ.first_name }} {{ occ.last_name }}
+            @if (occ.student_resident_id) {
+              · {{ occ.student_resident_id }}
+            }
+          </span>
+          <button type="button" class="btn-link" (click)="clearOccupant()">Change</button>
+        </div>
+      } @else {
+        <input
+          type="text"
+          placeholder="Search occupant by name or student ID…"
+          [ngModel]="occupantQuery()"
+          (ngModelChange)="occupantQuery.set($event)"
+        />
+        @if (occupantQuery().trim()) {
+          <div class="occupant-results">
+            @for (r of filteredOccupants(); track r.id) {
+              <button type="button" class="occupant-item" (click)="selectOccupant(r)">
+                <span class="oc-name">{{ r.first_name }} {{ r.last_name }}</span>
+                <span class="oc-meta">
+                  @if (r.student_resident_id) {
+                    {{ r.student_resident_id }}
+                  }
+                  @if (!r.parent_id) {
+                    · No parent
+                  }
+                </span>
+              </button>
+            } @empty {
+              <p class="no-results">No matching occupants.</p>
+            }
+          </div>
+        }
+      }
+
+      <label>Destination <span class="req">*</span></label>
+      <input type="text" [(ngModel)]="cDestination" placeholder="Where is the occupant going?" />
+
+      <label>Reason <span class="req">*</span></label>
+      <textarea rows="3" [(ngModel)]="cReason" placeholder="Reason for the gatepass"></textarea>
+
+      <p class="chain-note">
+        This gatepass will go through the normal approval chain (Parent → Home Dean → VPSAS).
+      </p>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeCreateModal()" [disabled]="createSaving()">
+          Cancel
+        </button>
+        <button class="task" (click)="submitCreateForOccupant()" [disabled]="createSaving()">
+          {{ createSaving() ? 'Creating…' : 'Create Gatepass' }}
+        </button>
       </div>
     </div>
   </div>

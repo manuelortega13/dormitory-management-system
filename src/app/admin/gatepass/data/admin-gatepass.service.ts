@@ -27,6 +27,16 @@ export class AdminGatepassService {
     return res.data ?? [];
   }
 
+  // Admin / Home Dean create a gatepass on an occupant's behalf
+  async createForOccupant(payload: {
+    userId: number;
+    reason: string;
+    destination: string;
+  }): Promise<void> {
+    await firstValueFrom(this.http.post<ApiResponse<void>>(`${this.apiUrl}/for-occupant`, payload));
+    this.notify();
+  }
+
   async getPendingDean(): Promise<Gatepass[]> {
     const res = await firstValueFrom(
       this.http.get<ApiResponse<Gatepass[]>>(`${this.apiUrl}/pending-dean`),
