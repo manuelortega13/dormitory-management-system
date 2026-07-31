@@ -24,6 +24,9 @@ router.get('/:id/extensions', gatepassController.getExtensions);
 
 // Occupant
 router.post('/', gatepassController.create);
+
+// Admin/Home Dean create a gatepass on an occupant's behalf
+router.post('/for-occupant', roleMiddleware('admin', 'home_dean'), gatepassController.createForOccupant);
 router.post('/:id/cancel', gatepassController.cancel);
 router.post('/:id/extend', gatepassController.extend);
 

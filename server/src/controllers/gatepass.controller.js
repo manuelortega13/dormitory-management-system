@@ -75,44 +75,97 @@ exports.getById = async (req, res) => {
   }
 };
 
+// Shared: insert a gatepass for `userId` and start the approval chain
+// (Parent -> Home Dean -> VPSAS -> QR). Returns { id, status, hasParent } or
+// null if the user doesn't exist. Used by occupant self-create and dean create.
+async function insertGatepassForUser(userId, reason, destination) {
+  const [users] = await pool.execute(
+    'SELECT parent_id, gender, first_name, last_name FROM users WHERE id = ?',
+    [userId]
+  );
+  if (users.length === 0) return null;
+
+  const user = users[0];
+  const hasParent = !!user.parent_id;
+  const parentStatus = hasParent ? 'pending' : 'not_required';
+  const status = hasParent ? 'pending_parent' : 'pending_dean';
+  const childName = `${user.first_name} ${user.last_name}`;
+
+  const [result] = await pool.execute(
+    `INSERT INTO gatepasses (user_id, reason, destination, status, parent_status)
+     VALUES (?, ?, ?, ?, ?)`,
+    [userId, reason, destination, status, parentStatus]
+  );
+  const gatepassId = result.insertId;
+
+  if (hasParent) {
+    await notificationController.notifyParentGatepassNeeded(user.parent_id, childName, gatepassId);
+  } else {
+    await notificationController.notifyDeanGatepassNeeded(childName, gatepassId, user.gender);
+  }
+
+  return { id: gatepassId, status, hasParent };
+}
+
 // POST / — occupant creates a gatepass
 exports.create = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { reason, destination } = req.body;
-
     if (!reason || !destination) {
       return res.status(400).json({ error: 'Reason and destination are required' });
     }
 
-    const [users] = await pool.execute(
-      'SELECT parent_id, gender, first_name, last_name FROM users WHERE id = ?',
-      [userId]
-    );
-    if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+    const result = await insertGatepassForUser(req.user.id, reason, destination);
+    if (!result) return res.status(404).json({ error: 'User not found' });
 
-    const user = users[0];
-    const hasParent = !!user.parent_id;
-    const parentStatus = hasParent ? 'pending' : 'not_required';
-    const status = hasParent ? 'pending_parent' : 'pending_dean';
-    const childName = `${user.first_name} ${user.last_name}`;
-
-    const [result] = await pool.execute(
-      `INSERT INTO gatepasses (user_id, reason, destination, status, parent_status)
-       VALUES (?, ?, ?, ?, ?)`,
-      [userId, reason, destination, status, parentStatus]
-    );
-    const gatepassId = result.insertId;
-
-    if (hasParent) {
-      await notificationController.notifyParentGatepassNeeded(user.parent_id, childName, gatepassId);
-    } else {
-      await notificationController.notifyDeanGatepassNeeded(childName, gatepassId, user.gender);
-    }
-
-    res.status(201).json({ success: true, message: 'Gatepass request submitted', data: { id: gatepassId, status } });
+    res.status(201).json({
+      success: true,
+      message: 'Gatepass request submitted',
+      data: { id: result.id, status: result.status },
+    });
   } catch (error) {
     console.error('Create gatepass error:', error);
+    res.status(500).json({ error: 'Failed to create gatepass' });
+  }
+};
+
+// POST /for-occupant — admin & home_dean create a gatepass on an occupant's
+// behalf (e.g. occupant has no phone). Goes through the normal approval chain.
+exports.createForOccupant = async (req, res) => {
+  try {
+    if (!['admin', 'home_dean'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+    }
+
+    const { userId, reason, destination } = req.body;
+    if (!userId || !reason || !destination) {
+      return res.status(400).json({ error: 'Occupant, reason and destination are required' });
+    }
+
+    const [rows] = await pool.execute('SELECT id, role, gender, status FROM users WHERE id = ?', [userId]);
+    if (rows.length === 0 || rows[0].role !== 'resident') {
+      return res.status(404).json({ error: 'Occupant not found' });
+    }
+    if (rows[0].status !== 'active') {
+      return res.status(400).json({ error: 'Occupant account is not active' });
+    }
+    // Home Dean may only create for occupants of their assigned gender
+    if (req.user.role === 'home_dean' && req.user.deanType && rows[0].gender !== req.user.deanType) {
+      return res.status(403).json({ error: 'You can only create gatepasses for occupants of your assigned gender' });
+    }
+
+    const result = await insertGatepassForUser(userId, reason, destination);
+    if (!result) return res.status(404).json({ error: 'Occupant not found' });
+
+    res.status(201).json({
+      success: true,
+      message: result.hasParent
+        ? 'Gatepass created. Awaiting parent approval.'
+        : 'Gatepass created. Awaiting Home Dean approval.',
+      data: { id: result.id, status: result.status },
+    });
+  } catch (error) {
+    console.error('Create gatepass for occupant error:', error);
     res.status(500).json({ error: 'Failed to create gatepass' });
   }
 };
