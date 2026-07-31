@@ -4,6 +4,11 @@
       <h1>Leave Requests</h1>
       <p>Review and manage occupant go-out requests</p>
     </div>
+    @if (canCreateForOccupant()) {
+      <button class="btn-create-for" (click)="openCreateModal()">
+        <span>➕</span> Create for Occupant
+      </button>
+    }
   </div>
 
   <!-- Tabs & Search -->
@@ -65,9 +70,21 @@
         </thead>
         <tbody>
           @for (request of filteredRequests(); track request.id) {
-            <tr>
+            <tr
+              class="request-row"
+              [class.expanded]="isExpanded(request.id)"
+              (click)="toggleDetails(request.id)"
+            >
               <td class="resident-cell" data-label="Occupant">
                 <div class="resident-info">
+                  <span
+                    class="expand-toggle"
+                    [class.open]="isExpanded(request.id)"
+                    [attr.aria-expanded]="isExpanded(request.id)"
+                    title="Toggle details"
+                  >
+                    ▶
+                  </span>
                   <div class="avatar">{{ getInitials(request.user_name) }}</div>
                   <div class="info">
                     <span class="name">{{ request.user_name || 'Unknown' }}</span>
@@ -99,11 +116,31 @@
                   !isVpsas() &&
                   (request.status === 'pending_dean' || request.status === 'pending_admin')
                 ) {
-                  <button class="btn-approve" (click)="openApproveModal(request)">✓ Approve</button>
-                  <button class="btn-decline" (click)="openDeclineModal(request)">✗ Decline</button>
+                  <button
+                    class="btn-approve"
+                    (click)="openApproveModal(request); $event.stopPropagation()"
+                  >
+                    ✓ Approve
+                  </button>
+                  <button
+                    class="btn-decline"
+                    (click)="openDeclineModal(request); $event.stopPropagation()"
+                  >
+                    ✗ Decline
+                  </button>
                 } @else if (isVpsas() && request.status === 'pending_vpsas') {
-                  <button class="btn-approve" (click)="openApproveModal(request)">✓ Approve</button>
-                  <button class="btn-decline" (click)="openDeclineModal(request)">✗ Decline</button>
+                  <button
+                    class="btn-approve"
+                    (click)="openApproveModal(request); $event.stopPropagation()"
+                  >
+                    ✓ Approve
+                  </button>
+                  <button
+                    class="btn-decline"
+                    (click)="openDeclineModal(request); $event.stopPropagation()"
+                  >
+                    ✗ Decline
+                  </button>
                 } @else {
                   <span class="processed-info">
                     @if (isVpsas() && request.vpsas_reviewed_at) {
@@ -113,96 +150,108 @@
                     }
                   </span>
                 }
+                @if (request.qr_code) {
+                  <button class="btn-print-qr" (click)="printQR(request); $event.stopPropagation()">
+                    🖨️ Print QR
+                  </button>
+                }
               </td>
             </tr>
 
             <!-- Expanded Details Row -->
-            <tr class="details-row">
+            <tr class="details-row" [class.open]="isExpanded(request.id)">
               <td colspan="6">
-                <div class="details-content">
-                  <div class="detail-item">
-                    <span class="label">📧 Email:</span>
-                    <span class="value">{{ request.user_email || '-' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">📞 Emergency Contact:</span>
-                    <span class="value"
-                      >{{ request.emergency_contact }} ({{ request.emergency_phone }})</span
-                    >
-                  </div>
-                  <div class="detail-item">
-                    <span class="label">📝 Reason:</span>
-                    <span class="value">{{ request.reason }}</span>
-                  </div>
-                  @if (request.admin_notes) {
-                    <div class="detail-item">
-                      <span class="label">💬 Home Dean Notes:</span>
-                      <span class="value">{{ request.admin_notes }}</span>
-                    </div>
-                  }
-                  @if (request.vpsas_notes) {
-                    <div class="detail-item">
-                      <span class="label">💬 VPSAS Notes:</span>
-                      <span class="value">{{ request.vpsas_notes }}</span>
-                    </div>
-                  }
-                  <div class="approval-status">
-                    <div class="status-item">
-                      <span class="status-label">Parent:</span>
-                      <span
-                        class="status-value"
-                        [class]="
-                          request.parent_status === 'approved'
-                            ? 'approved'
-                            : request.parent_status === 'declined'
-                              ? 'declined'
-                              : request.parent_status === 'not_required'
-                                ? 'na'
-                                : 'pending'
-                        "
-                      >
-                        {{
-                          request.parent_status === 'not_required'
-                            ? 'N/A'
-                            : (request.parent_status | titlecase)
-                        }}
-                      </span>
-                    </div>
-                    <div class="status-item">
-                      <span class="status-label">Home Dean:</span>
-                      <span
-                        class="status-value"
-                        [class]="
-                          request.admin_status === 'approved'
-                            ? 'approved'
-                            : request.admin_status === 'declined'
-                              ? 'declined'
-                              : 'pending'
-                        "
-                      >
-                        {{ request.admin_status | titlecase }}
-                      </span>
-                    </div>
-                    <div class="status-item">
-                      <span class="status-label">VPSAS:</span>
-                      <span
-                        class="status-value"
-                        [class]="
-                          request.vpsas_status === 'approved'
-                            ? 'approved'
-                            : request.vpsas_status === 'declined'
-                              ? 'declined'
-                              : 'pending'
-                        "
-                      >
-                        {{ request.vpsas_status | titlecase }}
-                      </span>
-                    </div>
-                    <div class="status-item">
-                      <span class="status-label">QR Code:</span>
-                      <span class="status-value" [class]="request.qr_code ? 'approved' : 'pending'">
-                        {{ request.qr_code ? 'Generated' : 'Not Yet' }}
-                      </span>
+                <div class="details-collapser">
+                  <div class="details-inner">
+                    <div class="details-content">
+                      <div class="detail-item">
+                        <span class="label">📧 Email:</span>
+                        <span class="value">{{ request.user_email || '-' }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="label">📞 Emergency Contact:</span>
+                        <span class="value"
+                          >{{ request.emergency_contact }} ({{ request.emergency_phone }})</span
+                        >
+                      </div>
+                      <div class="detail-item">
+                        <span class="label">📝 Reason:</span>
+                        <span class="value">{{ request.reason }}</span>
+                      </div>
+                      @if (request.admin_notes) {
+                        <div class="detail-item">
+                          <span class="label">💬 Home Dean Notes:</span>
+                          <span class="value">{{ request.admin_notes }}</span>
+                        </div>
+                      }
+                      @if (request.vpsas_notes) {
+                        <div class="detail-item">
+                          <span class="label">💬 VPSAS Notes:</span>
+                          <span class="value">{{ request.vpsas_notes }}</span>
+                        </div>
+                      }
+                      <div class="approval-status">
+                        <div class="status-item">
+                          <span class="status-label">Parent:</span>
+                          <span
+                            class="status-value"
+                            [class]="
+                              request.parent_status === 'approved'
+                                ? 'approved'
+                                : request.parent_status === 'declined'
+                                  ? 'declined'
+                                  : request.parent_status === 'not_required'
+                                    ? 'na'
+                                    : 'pending'
+                            "
+                          >
+                            {{
+                              request.parent_status === 'not_required'
+                                ? 'N/A'
+                                : (request.parent_status | titlecase)
+                            }}
+                          </span>
+                        </div>
+                        <div class="status-item">
+                          <span class="status-label">Home Dean:</span>
+                          <span
+                            class="status-value"
+                            [class]="
+                              request.admin_status === 'approved'
+                                ? 'approved'
+                                : request.admin_status === 'declined'
+                                  ? 'declined'
+                                  : 'pending'
+                            "
+                          >
+                            {{ request.admin_status | titlecase }}
+                          </span>
+                        </div>
+                        <div class="status-item">
+                          <span class="status-label">VPSAS:</span>
+                          <span
+                            class="status-value"
+                            [class]="
+                              request.vpsas_status === 'approved'
+                                ? 'approved'
+                                : request.vpsas_status === 'declined'
+                                  ? 'declined'
+                                  : 'pending'
+                            "
+                          >
+                            {{ request.vpsas_status | titlecase }}
+                          </span>
+                        </div>
+                        <div class="status-item">
+                          <span class="status-label">QR Code:</span>
+                          <span
+                            class="status-value"
+                            [class]="request.qr_code ? 'approved' : 'pending'"
+                          >
+                            {{ request.qr_code ? 'Generated' : 'Not Yet' }}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -272,6 +321,155 @@
             } @else {
               Confirm Decline
             }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Create For Occupant Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-content create-for-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Create Leave Request for Occupant</h2>
+          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (createError()) {
+            <div class="alert alert-error">{{ createError() }}</div>
+          }
+
+          <!-- Occupant picker -->
+          <div class="form-group">
+            <label>Occupant <span class="required">*</span></label>
+            @if (selectedOccupant(); as occ) {
+              <div class="selected-occupant">
+                <span>
+                  {{ occ.first_name }} {{ occ.last_name }}
+                  @if (occ.student_resident_id) {
+                    · {{ occ.student_resident_id }}
+                  }
+                </span>
+                <button type="button" class="btn-clear" (click)="clearOccupant()">Change</button>
+              </div>
+            } @else {
+              <input
+                type="text"
+                placeholder="Search occupant by name or student ID…"
+                [ngModel]="occupantQuery()"
+                (ngModelChange)="occupantQuery.set($event)"
+              />
+              @if (occupantQuery().trim()) {
+                <div class="occupant-results">
+                  @for (r of filteredOccupants(); track r.id) {
+                    <button type="button" class="occupant-item" (click)="selectOccupant(r)">
+                      <span class="oc-name">{{ r.first_name }} {{ r.last_name }}</span>
+                      <span class="oc-meta">
+                        @if (r.student_resident_id) {
+                          {{ r.student_resident_id }}
+                        }
+                        @if (!r.parent_id) {
+                          · No parent
+                        }
+                      </span>
+                    </button>
+                  } @empty {
+                    <p class="no-results">No matching occupants.</p>
+                  }
+                </div>
+              }
+            }
+          </div>
+
+          <div class="form-group">
+            <label>Leave Type <span class="required">*</span></label>
+            <select [ngModel]="cLeaveType()" (ngModelChange)="cLeaveType.set($event)">
+              @for (t of leaveTypes; track t) {
+                <option [value]="t">{{ t | titlecase }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date &amp; Time of Leave <span class="required">*</span></label>
+              <input
+                type="datetime-local"
+                [ngModel]="cStart()"
+                (ngModelChange)="cStart.set($event)"
+              />
+            </div>
+            <div class="form-group">
+              <label>Expected Return <span class="required">*</span></label>
+              <input type="datetime-local" [ngModel]="cEnd()" (ngModelChange)="cEnd.set($event)" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Destination <span class="required">*</span></label>
+            <input
+              type="text"
+              placeholder="Where is the occupant going?"
+              [ngModel]="cDestination()"
+              (ngModelChange)="cDestination.set($event)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Reason <span class="required">*</span></label>
+            <textarea
+              rows="3"
+              placeholder="Reason for the leave"
+              [ngModel]="cReason()"
+              (ngModelChange)="cReason.set($event)"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Spending Leave With <span class="optional">(optional)</span></label>
+            <input
+              type="text"
+              [ngModel]="cSpendingWith()"
+              (ngModelChange)="cSpendingWith.set($event)"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Emergency Contact <span class="optional">(optional)</span></label>
+              <input
+                type="text"
+                [ngModel]="cEmergencyContact()"
+                (ngModelChange)="cEmergencyContact.set($event)"
+              />
+            </div>
+            <div class="form-group">
+              <label>Emergency Phone <span class="optional">(optional)</span></label>
+              <input
+                type="tel"
+                [ngModel]="cEmergencyPhone()"
+                (ngModelChange)="cEmergencyPhone.set($event)"
+              />
+            </div>
+          </div>
+
+          <p class="chain-note">
+            This request will go through the normal approval chain (Parent → Home Dean → VPSAS).
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeCreateModal()" [disabled]="createSaving()">
+            Cancel
+          </button>
+          <button
+            class="btn-primary"
+            (click)="submitCreateForOccupant()"
+            [disabled]="createSaving()"
+          >
+            {{ createSaving() ? 'Creating…' : 'Create Request' }}
           </button>
         </div>
       </div>

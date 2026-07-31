@@ -8,22 +8,20 @@ import { AuthService } from '../../../auth/auth.service';
 export type { LeaveRequest };
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AdminLeaveRequestService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private apiUrl = `${environment.apiUrl}/leave-requests`;
-  
+
   // Subject to notify when leave requests are updated
   private leaveRequestUpdated = new Subject<void>();
   leaveRequestUpdated$ = this.leaveRequestUpdated.asObservable();
 
   // Get all leave requests (admin view)
   async getAllRequests(): Promise<LeaveRequest[]> {
-    const response = await firstValueFrom(
-      this.http.get<{ data: LeaveRequest[] }>(this.apiUrl)
-    );
+    const response = await firstValueFrom(this.http.get<{ data: LeaveRequest[] }>(this.apiUrl));
     return response.data;
   }
 
@@ -32,7 +30,7 @@ export class AdminLeaveRequestService {
     const user = this.authService.getCurrentUser();
     const endpoint = user?.role === 'vpsas' ? 'pending-vpsas' : 'pending-admin';
     const response = await firstValueFrom(
-      this.http.get<{ data: LeaveRequest[] }>(`${this.apiUrl}/${endpoint}`)
+      this.http.get<{ data: LeaveRequest[] }>(`${this.apiUrl}/${endpoint}`),
     );
     return response.data;
   }
@@ -40,7 +38,7 @@ export class AdminLeaveRequestService {
   // Get a specific leave request
   async getById(id: number): Promise<LeaveRequest> {
     const response = await firstValueFrom(
-      this.http.get<{ data: LeaveRequest }>(`${this.apiUrl}/${id}`)
+      this.http.get<{ data: LeaveRequest }>(`${this.apiUrl}/${id}`),
     );
     return response.data;
   }
@@ -49,9 +47,7 @@ export class AdminLeaveRequestService {
   async approve(id: number, notes?: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     const endpoint = user?.role === 'vpsas' ? 'vpsas-approve' : 'admin-approve';
-    await firstValueFrom(
-      this.http.post(`${this.apiUrl}/${id}/${endpoint}`, { notes })
-    );
+    await firstValueFrom(this.http.post(`${this.apiUrl}/${id}/${endpoint}`, { notes }));
     this.leaveRequestUpdated.next();
   }
 
@@ -59,9 +55,23 @@ export class AdminLeaveRequestService {
   async decline(id: number, notes?: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     const endpoint = user?.role === 'vpsas' ? 'vpsas-decline' : 'admin-decline';
-    await firstValueFrom(
-      this.http.post(`${this.apiUrl}/${id}/${endpoint}`, { notes })
-    );
+    await firstValueFrom(this.http.post(`${this.apiUrl}/${id}/${endpoint}`, { notes }));
+    this.leaveRequestUpdated.next();
+  }
+
+  // Admin / Home Dean create a leave request on an occupant's behalf
+  async createForOccupant(payload: {
+    userId: number;
+    leaveType: string;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    destination: string;
+    spendingLeaveWith?: string;
+    emergencyContact?: string;
+    emergencyPhone?: string;
+  }): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.apiUrl}/for-occupant`, payload));
     this.leaveRequestUpdated.next();
   }
 }

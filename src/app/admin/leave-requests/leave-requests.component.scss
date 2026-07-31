@@ -1,9 +1,14 @@
 .leave-requests {
-  padding: 2rem;
+  padding: 3rem 2rem;
 }
 
 .page-header {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
 
   h1 {
     font-size: 1.75rem;
@@ -14,6 +19,225 @@
   p {
     color: #666;
     margin: 0;
+  }
+}
+
+.btn-create-for {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-end;
+  gap: 0.4rem;
+  background: linear-gradient(90deg, #4a90d9 0%, #667eea 100%);
+  color: #fff;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.92;
+  }
+}
+
+// ── Create-for-occupant modal ──
+.modal-content.create-for-modal {
+  max-width: 720px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #eee;
+
+    h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: #888;
+      line-height: 1;
+    }
+  }
+
+  .modal-body {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #eee;
+  }
+
+  .alert-error {
+    background: #fff3f3;
+    color: #c0392b;
+    border: 1px solid #ffd7d7;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: #333;
+    }
+    .required {
+      color: #e03131;
+    }
+    .optional {
+      color: #adb5bd;
+      font-weight: 400;
+    }
+    input,
+    select,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.6rem 0.7rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+
+      &:focus {
+        outline: none;
+        border-color: #4361ee;
+      }
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+
+    .form-group {
+      flex: 1;
+    }
+  }
+
+  .selected-occupant {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: #eef2ff;
+    border: 1px solid #d7e0ff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+
+    .btn-clear {
+      background: none;
+      border: none;
+      color: #4361ee;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+  }
+
+  .occupant-results {
+    max-height: 190px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-top: 0.4rem;
+
+    .occupant-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      border-bottom: 1px solid #f1f3f5;
+      padding: 0.55rem 0.75rem;
+      cursor: pointer;
+
+      &:last-child {
+        border-bottom: none;
+      }
+      &:hover {
+        background: #f5f7ff;
+      }
+      .oc-name {
+        font-weight: 600;
+        color: #1a1a2e;
+        font-size: 0.88rem;
+      }
+      .oc-meta {
+        font-size: 0.75rem;
+        color: #868e96;
+      }
+    }
+    .no-results {
+      margin: 0;
+      padding: 0.75rem;
+      color: #868e96;
+      font-size: 0.85rem;
+    }
+  }
+
+  .chain-note {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    color: #868e96;
+  }
+
+  .btn-secondary {
+    background: #f1f3f5;
+    color: #495057;
+    border: none;
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: linear-gradient(90deg, #4a90d9 0%, #667eea 100%);
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.3rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+  .btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 
@@ -148,7 +372,8 @@
     width: 100%;
     border-collapse: collapse;
 
-    th, td {
+    th,
+    td {
       padding: 1rem;
       text-align: left;
       border-bottom: 1px solid #eee;
@@ -172,6 +397,11 @@
 
       td {
         padding: 0;
+        border-bottom: 0;
+      }
+
+      &.open td {
+        border-bottom: 1px solid #eee;
       }
 
       &:hover {
@@ -181,11 +411,37 @@
   }
 }
 
+.request-row {
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: #f8f9ff;
+  }
+}
+
 .resident-cell {
   .resident-info {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+
+    .expand-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #868e96;
+      font-size: 0.7rem;
+      padding: 0.15rem;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+
+      &.open {
+        transform: rotate(90deg);
+        color: #4361ee;
+      }
+    }
 
     .avatar {
       width: 40px;
@@ -327,6 +583,43 @@
     font-size: 0.8rem;
     color: #888;
   }
+
+  .btn-print-qr {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid #d7e0ff;
+    background: #eef2ff;
+    color: #4361ee;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      background: #4361ee;
+      color: #fff;
+      border-color: #4361ee;
+    }
+  }
+}
+
+// Smooth expand/collapse in BOTH directions: the grid track animates
+// 0fr <-> 1fr, so the row eases to the real content height either way.
+.details-collapser {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+.details-row.open .details-collapser {
+  grid-template-rows: 1fr;
+}
+.details-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .details-content {
@@ -406,7 +699,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  // Above the admin mobile bottom tab bar (1000) and its More sheet (1200)
+  z-index: 2000;
   padding: 1rem;
 }
 
@@ -551,6 +845,28 @@
     padding: 1rem;
   }
 
+  // Every input goes full-width on smaller screens
+  input,
+  select,
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .search-box input {
+    width: 100%;
+  }
+
+  // Stack the paired date/time fields so each gets full width (fixes cramped
+  // datetime-local inputs on mobile)
+  .modal-content.create-for-modal .form-row {
+    flex-direction: column;
+    gap: 0;
+
+    input {
+      min-height: 44px;
+    }
+  }
+
   .page-header {
     h1 {
       font-size: 1.5rem;
@@ -615,7 +931,7 @@
         flex-direction: column;
         padding: 0;
         border-bottom: none;
-        
+
         &[data-label]::before {
           content: attr(data-label);
           font-size: 0.75rem;
