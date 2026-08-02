@@ -164,6 +164,9 @@
     justify-content: center;
     gap: 2px;
     flex: 1;
+    // Cap the width so roles with only a couple of tabs (e.g. business_officer)
+    // stay grouped instead of stretching across the whole bar.
+    max-width: 110px;
     padding: 8px 0;
     text-decoration: none;
     color: #9ca3af;

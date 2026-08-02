@@ -35,26 +35,18 @@
 
   <!-- Mobile bottom tab bar -->
   <nav class="bottom-tab-bar">
-    <a routerLink="/manage/dashboard" routerLinkActive="active" class="tab-item">
-      <span class="tab-icon">📊</span>
-      <span class="tab-label">Dashboard</span>
-    </a>
-    <a routerLink="/manage/residents" routerLinkActive="active" class="tab-item">
-      <span class="tab-icon">👥</span>
-      <span class="tab-label">Occupants</span>
-    </a>
-    <a routerLink="/manage/leave-requests" routerLinkActive="active" class="tab-item">
-      <span class="tab-icon">📋</span>
-      <span class="tab-label">Leaves</span>
-    </a>
-    <!--    <a routerLink="/manage/payments" routerLinkActive="active" class="tab-item">-->
-    <!--      <span class="tab-icon">💰</span>-->
-    <!--      <span class="tab-label">Payments</span>-->
-    <!--    </a>-->
-    <button class="tab-item" [class.active]="showMobileMore()" (click)="toggleMobileMore()">
-      <span class="tab-icon">☰</span>
-      <span class="tab-label">More</span>
-    </button>
+    @for (item of tabItems(); track item.route) {
+      <a [routerLink]="item.route" routerLinkActive="active" class="tab-item">
+        <span class="tab-icon">{{ item.icon }}</span>
+        <span class="tab-label">{{ item.label }}</span>
+      </a>
+    }
+    @if (showMoreTab()) {
+      <button class="tab-item" [class.active]="showMobileMore()" (click)="toggleMobileMore()">
+        <span class="tab-icon">☰</span>
+        <span class="tab-label">More</span>
+      </button>
+    }
   </nav>
 
   <!-- Mobile more menu overlay -->
