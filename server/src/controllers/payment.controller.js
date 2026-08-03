@@ -536,9 +536,12 @@ exports.makePayment = async (req, res) => {
       [bill_id, residentId, paidBy, amount, payment_method, reference_number || null, notes || null, receipt_image || null]
     );
 
-    // Notify admins about new payment
+    // Notify the staff who handle payments. business_officer is included because it
+    // has full access to the Payments page and relies on this notification to refresh
+    // its view in real time. (home_dean is kept for backwards compatibility even though
+    // exactRoleMiddleware keeps it out of the Payments page itself.)
     const [admins] = await pool.execute(
-      `SELECT id FROM users WHERE role IN ('admin', 'home_dean')`
+      `SELECT id FROM users WHERE role IN ('admin', 'home_dean', 'business_officer')`
     );
 
     const [payer] = await pool.execute(

@@ -1,8 +1,9 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, effect, untracked, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PaymentService, Bill, Payment, PaymentStats, Resident, CreateBillRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
 import { ToastService } from '../../services/toast.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-payments',
@@ -14,6 +15,22 @@ import { ToastService } from '../../services/toast.service';
 export class PaymentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
   private toastService = inject(ToastService);
+  private notificationService = inject(NotificationService);
+
+  constructor() {
+    // Keep the page live. Any 'payment' notification — most importantly an occupant
+    // submitting a payment — increments this trigger, so refresh in place instead of
+    // leaving the lists and the "Pending Verification" tile stale until a manual reload.
+    effect(() => {
+      const trigger = this.notificationService.paymentStatusUpdateTrigger();
+      if (trigger > 0) {
+        // untracked: only the trigger should re-run this effect. The loaders read the
+        // filter/pagination signals, which would otherwise become dependencies and
+        // cause a duplicate fetch on every filter change.
+        untracked(() => this.refreshData());
+      }
+    });
+  }
 
   // Tab management
   activeTab = signal<'bills' | 'payments' | 'settings'>('bills');
@@ -114,6 +131,20 @@ export class PaymentsComponent implements OnInit {
       this.errorMessage.set('Failed to load data');
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  /**
+   * Silent refresh used by the real-time effect: reloads the two tabs' data and the
+   * stat tiles without toggling isLoading, so the tables don't flash back to a spinner
+   * under the user, and the current filters/page are preserved. Settings and the
+   * residents dropdown are skipped — a payment can't change them.
+   */
+  private async refreshData(): Promise<void> {
+    try {
+      await Promise.all([this.loadBills(), this.loadPayments(), this.loadStats()]);
+    } catch (error) {
+      console.error('Failed to refresh payment data:', error);
     }
   }
 
