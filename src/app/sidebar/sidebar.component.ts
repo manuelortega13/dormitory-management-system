@@ -104,6 +104,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // Roles allowed to see standard admin-area items (excludes business_officer)
   private readonly adminRoles: User['role'][] = ['admin', 'home_dean', 'vpsas'];
 
+  // Badge counts come from admin-only endpoints, so only fetch them for roles that
+  // can actually see the badged items. Without this, business_officer 403s on load.
+  private isAdminRole(): boolean {
+    const role = this.currentUser()?.role;
+    return !!role && this.adminRoles.includes(role);
+  }
+
   protected readonly menuSections = signal<MenuSection[]>([
     {
       title: 'Main',
@@ -209,6 +216,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private async loadPendingLeaveRequestsCount(): Promise<void> {
+    if (!this.isAdminRole()) return;
     try {
       const pendingRequests = await this.leaveRequestService.getPendingRequests();
       this.pendingLeaveRequestsCount.set(pendingRequests.length);
@@ -264,6 +272,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private loadPendingParentRegistrationsCount(): void {
+    if (!this.isAdminRole()) return;
     this.parentRegistrationService.getPendingCount().subscribe({
       next: (response) => {
         this.pendingParentRegistrationsCount.set(response.count);
