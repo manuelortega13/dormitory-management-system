@@ -675,7 +675,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  // Above the occupant mobile bottom tab bar (1000) and its More sheet (1200)
+  // so the Pay Now dialog (and its footer/submit button) isn't overlapped.
+  z-index: 2000;
   padding: 1rem;
 }
 
