@@ -18,7 +18,8 @@ const MAX_TOOL_ROUNDS = 5;
 function buildSystemPrompt(user) {
   const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
   return `You are a helpful assistant for PAC DMS (Dormitory Management System).
-You help users with questions about residents, campus activity, announcements, leave requests, payments, rooms, and visitors.
+You help users with questions about residents, campus activity, announcements, leave requests,
+payments and billing, gatepasses, room occupancy, assigned tasks, incident reports, and visitors.
 
 Current user: ${user.firstName} ${user.lastName} (ID: ${user.id}), role: ${user.role}
 Current date/time: ${now}
@@ -31,7 +32,10 @@ Rules:
 - Format responses in a friendly, conversational tone
 - When presenting lists or data, use clear formatting
 - If a tool returns an error about access, explain that the user doesn't have permission for that information
-- When a resident asks about "my" data (my bills, my leave requests, etc.), they mean their own data — search using their own name or ID`;
+- When a resident asks about "my" data (my bills, my leave requests, etc.), they mean their own data — search using their own name or ID
+- Show peso amounts with a ₱ prefix and thousands separators
+- For "who owes money" style questions use list_unpaid_bills; for one specific bill's payment history use get_bill_details
+- If get_bill_details returns needs_disambiguation, list the candidate bills and ask which one they mean — do not guess`;
 }
 
 exports.sendMessage = async (req, res) => {
