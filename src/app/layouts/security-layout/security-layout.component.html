@@ -1,9 +1,11 @@
 <div class="security-layout" [class.sidebar-open]="isSidebarOpen()">
   <!-- Mobile Header -->
   <header class="mobile-header">
-    <button class="menu-toggle" (click)="toggleSidebar()">
-      <span class="hamburger-icon">☰</span>
-    </button>
+    <!-- Navigation is hidden while the guard has a single page — nothing to open.
+         Restore this (and the sidebar nav / bottom tab bar below) to bring it back. -->
+    <!--    <button class="menu-toggle" (click)="toggleSidebar()">-->
+    <!--      <span class="hamburger-icon">☰</span>-->
+    <!--    </button>-->
     <div class="mobile-logo">
       @if (settingsService.systemLogo()) {
         <img class="logo-img" [src]="settingsService.systemLogo()" alt="PAC DMS" />
@@ -14,11 +16,16 @@
     </div>
     <div class="header-right">
       <app-notification-dropdown />
+      <!-- Logout lives here on mobile: with the nav hidden the sidebar (and the logout
+           button in its footer) is no longer reachable on a phone. -->
+      <button class="mobile-logout-btn" (click)="logout()" title="Logout">
+        <span>🚪</span>
+      </button>
     </div>
   </header>
 
-  <!-- Overlay for mobile -->
-  <div class="sidebar-overlay" (click)="closeSidebar()"></div>
+  <!-- Overlay for mobile — only used by the hamburger, hidden with the nav -->
+  <!--  <div class="sidebar-overlay" (click)="closeSidebar()"></div>-->
 
   <aside class="security-sidebar">
     <div class="sidebar-header">
@@ -33,28 +40,30 @@
       <button class="close-sidebar" (click)="closeSidebar()">✕</button>
     </div>
 
-    <nav class="sidebar-nav">
-<!--      <a routerLink="/security-guard/dashboard" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
-<!--        <span class="nav-icon">📊</span>-->
-<!--        <span class="nav-label">Dashboard</span>-->
-<!--      </a>-->
-<!--      <a routerLink="/security-guard/visitor-log" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
-<!--        <span class="nav-icon">📝</span>-->
-<!--        <span class="nav-label">Visitor Log</span>-->
-<!--      </a>-->
-      <a routerLink="/security-guard/check-in-out" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">
-        <span class="nav-icon">🚪</span>
-        <span class="nav-label">Check In/Out</span>
-      </a>
-<!--      <a routerLink="/security-guard/incidents" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
-<!--        <span class="nav-icon">⚠️</span>-->
-<!--        <span class="nav-label">Incidents</span>-->
-<!--      </a>-->
-<!--      <a routerLink="/security-guard/emergency" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
-<!--        <span class="nav-icon">🚨</span>-->
-<!--        <span class="nav-label">Emergency</span>-->
-<!--      </a>-->
-    </nav>
+    <!-- Sidebar navigation hidden: the guard only has Check In/Out, so a menu with a
+         single entry pointing at the current page adds nothing. Uncomment to restore. -->
+    <!--    <nav class="sidebar-nav">-->
+    <!--      <a routerLink="/security-guard/dashboard" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
+    <!--        <span class="nav-icon">📊</span>-->
+    <!--        <span class="nav-label">Dashboard</span>-->
+    <!--      </a>-->
+    <!--      <a routerLink="/security-guard/visitor-log" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
+    <!--        <span class="nav-icon">📝</span>-->
+    <!--        <span class="nav-label">Visitor Log</span>-->
+    <!--      </a>-->
+    <!--      <a routerLink="/security-guard/check-in-out" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
+    <!--        <span class="nav-icon">🚪</span>-->
+    <!--        <span class="nav-label">Check In/Out</span>-->
+    <!--      </a>-->
+    <!--      <a routerLink="/security-guard/incidents" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
+    <!--        <span class="nav-icon">⚠️</span>-->
+    <!--        <span class="nav-label">Incidents</span>-->
+    <!--      </a>-->
+    <!--      <a routerLink="/security-guard/emergency" routerLinkActive="active" class="nav-item" (click)="closeSidebar()">-->
+    <!--        <span class="nav-icon">🚨</span>-->
+    <!--        <span class="nav-label">Emergency</span>-->
+    <!--      </a>-->
+    <!--    </nav>-->
 
     <div class="sidebar-footer">
       <div class="guard-info">
@@ -77,27 +86,28 @@
     <router-outlet />
   </main>
 
-  <!-- Mobile bottom tab bar -->
-  <nav class="bottom-tab-bar">
-    <a routerLink="/security-guard/check-in-out" routerLinkActive="active" class="tab-item">
-      <span class="tab-icon">🚪</span>
-      <span class="tab-label">Check</span>
-    </a>
-<!--    <a routerLink="/security-guard/visitor-log" routerLinkActive="active" class="tab-item">-->
-<!--      <span class="tab-icon">📝</span>-->
-<!--      <span class="tab-label">Visitors</span>-->
-<!--    </a>-->
-<!--    <a routerLink="/security-guard/dashboard" routerLinkActive="active" class="tab-item">-->
-<!--      <span class="tab-icon">📊</span>-->
-<!--      <span class="tab-label">Dashboard</span>-->
-<!--    </a>-->
-<!--    <a routerLink="/security-guard/incidents" routerLinkActive="active" class="tab-item">-->
-<!--      <span class="tab-icon">⚠️</span>-->
-<!--      <span class="tab-label">Incidents</span>-->
-<!--    </a>-->
-<!--    <a routerLink="/security-guard/emergency" routerLinkActive="active" class="tab-item">-->
-<!--      <span class="tab-icon">🚨</span>-->
-<!--      <span class="tab-label">SOS</span>-->
-<!--    </a>-->
-  </nav>
+  <!-- Mobile bottom tab bar — hidden for the same reason as the sidebar nav.
+       Uncomment to restore once the guard has more than one page. -->
+  <!--  <nav class="bottom-tab-bar">-->
+  <!--    <a routerLink="/security-guard/check-in-out" routerLinkActive="active" class="tab-item">-->
+  <!--      <span class="tab-icon">🚪</span>-->
+  <!--      <span class="tab-label">Check</span>-->
+  <!--    </a>-->
+  <!--    <a routerLink="/security-guard/visitor-log" routerLinkActive="active" class="tab-item">-->
+  <!--      <span class="tab-icon">📝</span>-->
+  <!--      <span class="tab-label">Visitors</span>-->
+  <!--    </a>-->
+  <!--    <a routerLink="/security-guard/dashboard" routerLinkActive="active" class="tab-item">-->
+  <!--      <span class="tab-icon">📊</span>-->
+  <!--      <span class="tab-label">Dashboard</span>-->
+  <!--    </a>-->
+  <!--    <a routerLink="/security-guard/incidents" routerLinkActive="active" class="tab-item">-->
+  <!--      <span class="tab-icon">⚠️</span>-->
+  <!--      <span class="tab-label">Incidents</span>-->
+  <!--    </a>-->
+  <!--    <a routerLink="/security-guard/emergency" routerLinkActive="active" class="tab-item">-->
+  <!--      <span class="tab-icon">🚨</span>-->
+  <!--      <span class="tab-label">SOS</span>-->
+  <!--    </a>-->
+  <!--  </nav>-->
 </div>

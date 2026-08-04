@@ -22,6 +22,27 @@
     color: #fff;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+  }
+
+  // Mobile logout: the sidebar footer's logout is unreachable now the hamburger is
+  // hidden, so it sits top-right next to the notification bell.
+  .mobile-logout-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.3);
+    }
   }
 }
 
@@ -171,6 +192,9 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  // .sidebar-nav (flex: 1) used to push this down; with the nav hidden this keeps the
+  // footer pinned to the bottom of the sidebar. Harmless if the nav is restored.
+  margin-top: auto;
 }
 
 .logout-btn {
@@ -271,7 +295,10 @@
   .security-content {
     margin-left: 0;
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+    // No bottom tab bar to clear while the nav is hidden — restore the 64px allowance
+    // below if the tab bar comes back.
+    /*    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);*/
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
   }
 
   .desktop-notification-bar {
