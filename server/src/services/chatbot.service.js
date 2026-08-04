@@ -451,9 +451,55 @@ const toolDefinitions = [
   },
 ];
 
+/**
+ * Groq validates the model's generated tool call against these schemas server-side and
+ * fails the whole request with a 400 when a small model emits null or an off-list enum
+ * value — which llama-3.1-8b does regularly on optional filters. The rejection happens
+ * before our handlers run, so it cannot be sanitised there.
+ *
+ * So we advertise permissive types (every property also accepts null, no strict enum)
+ * and move the allowed values into the description. Each handler whitelists what it
+ * actually receives, so an off-list filter is ignored instead of breaking the request.
+ */
+function relaxParameterSchemas(tools) {
+  return tools.map((tool) => {
+    const properties = tool.function?.parameters?.properties;
+    if (!properties) return tool;
+
+    const relaxed = {};
+    for (const [name, spec] of Object.entries(properties)) {
+      const { enum: allowed, type, description, ...rest } = spec;
+      const types = Array.isArray(type) ? type : [type];
+      relaxed[name] = {
+        ...rest,
+        type: [...new Set([...types, 'null'])],
+        description: allowed
+          ? `${description} Allowed values: ${allowed.join(', ')}.`
+          : description,
+      };
+    }
+
+    return {
+      ...tool,
+      function: {
+        ...tool.function,
+        parameters: { ...tool.function.parameters, properties: relaxed },
+      },
+    };
+  });
+}
+
+const advertisedTools = relaxParameterSchemas(toolDefinitions);
+
+// Whitelist a value the model supplied against what the handler actually supports.
+// Anything unrecognised (including null) is dropped rather than reaching SQL.
+function pickEnum(value, allowed) {
+  return typeof value === 'string' && allowed.includes(value) ? value : undefined;
+}
+
 // Get tools available for a given role
 function getToolsForRole(role) {
-  const allTools = toolDefinitions.map((t) => t.function.name);
+  const toolDefinitions = advertisedTools;
 
   if (isAdmin(role)) {
     return toolDefinitions;
@@ -1002,8 +1048,20 @@ async function listUnpaidBills(params, user) {
     return { error: 'Only admins and business officers can view outstanding balances.' };
   }
 
-  const { status, type, overdue_only, min_outstanding, sort_by, limit } = params || {};
-  const statuses = status && status !== 'all' ? [status] : ['unpaid', 'partial', 'overdue'];
+  const raw = params || {};
+  const status = pickEnum(raw.status, ['unpaid', 'partial', 'overdue', 'all']);
+  const type = pickEnum(raw.type, ['rent', 'deposit', 'utility', 'fine', 'other']);
+  const sort_by = pickEnum(raw.sort_by, ['outstanding', 'due_date', 'name']);
+  const { min_outstanding, limit } = raw;
+
+  // Bills are rarely stamped with the literal 'overdue' status — they sit at 'unpaid'
+  // or 'partial' with a due date in the past. So treat a request for overdue bills as
+  // "unsettled and past due", which is what the asker means.
+  const wantsOverdue = status === 'overdue' || !!raw.overdue_only;
+  const statuses =
+    status && status !== 'all' && status !== 'overdue'
+      ? [status]
+      : ['unpaid', 'partial', 'overdue'];
 
   // Payments are aggregated in a derived table on purpose: joining them directly
   // would multiply each bill's amount by its number of payment rows.
@@ -1035,7 +1093,7 @@ async function listUnpaidBills(params, user) {
     query += ` AND b.type = ?`;
     queryParams.push(type);
   }
-  if (overdue_only) {
+  if (wantsOverdue) {
     query += ` AND b.due_date < CURDATE()`;
   }
 
@@ -1073,7 +1131,9 @@ async function getBillDetails(params, user) {
     return { error: 'Only admins and business officers can view full bill details.' };
   }
 
-  const { bill_id, resident_name, description, type } = params || {};
+  const raw = params || {};
+  const { bill_id, resident_name, description } = raw;
+  const type = pickEnum(raw.type, ['rent', 'deposit', 'utility', 'fine', 'other']);
   if (!bill_id && !resident_name) {
     return { error: 'Provide a bill_id, or a resident name to look up their bills.' };
   }
@@ -1177,7 +1237,9 @@ async function listPendingPayments(params, user) {
     return { error: 'Only admins and business officers can view the verification queue.' };
   }
 
-  const { resident_name, payment_method, limit } = params || {};
+  const raw = params || {};
+  const { resident_name, limit } = raw;
+  const payment_method = pickEnum(raw.payment_method, ['cash', 'gcash', 'maya', 'card', 'other']);
 
   let query = `
     SELECT p.id as payment_id, p.amount, p.payment_method, p.reference_number,
@@ -1225,7 +1287,9 @@ async function getCollectionSummary(params, user) {
     return { error: 'Only admins and business officers can view collection summaries.' };
   }
 
-  const period = (params || {}).period || 'this_month';
+  const period =
+    pickEnum((params || {}).period, ['this_month', 'last_month', 'this_year', 'all_time']) ||
+    'this_month';
   // Enum-mapped, never interpolated from raw input.
   const ranges = {
     this_month: 'YEAR(#) = YEAR(CURDATE()) AND MONTH(#) = MONTH(CURDATE())',
@@ -1287,7 +1351,18 @@ async function getGatepassRequests(params, user) {
     return { error: 'Only admins, home deans, and VPSAS can view gatepass requests.' };
   }
 
-  const { status, awaiting_my_approval, resident_name, limit } = params || {};
+  const raw = params || {};
+  const { awaiting_my_approval, resident_name, limit } = raw;
+  const status = pickEnum(raw.status, [
+    'pending_parent',
+    'pending_dean',
+    'pending_vpsas',
+    'approved',
+    'active',
+    'completed',
+    'declined',
+    'cancelled',
+  ]);
 
   let query = `
     SELECT g.id as gatepass_id, g.reason, g.destination, g.status,
@@ -1338,7 +1413,10 @@ async function getRoomOccupancy(params, user) {
     return { error: 'Only admins, home deans, and VPSAS can view room occupancy.' };
   }
 
-  const { status, room_type, floor, vacant_only } = params || {};
+  const raw = params || {};
+  const { floor, vacant_only } = raw;
+  const status = pickEnum(raw.status, ['available', 'occupied', 'maintenance', 'reserved']);
+  const room_type = pickEnum(raw.room_type, ['single', 'double', 'triple', 'quad', 'suite']);
 
   let query = `
     SELECT r.id as room_id, r.room_number, r.floor, r.capacity, r.room_type, r.status,
@@ -1359,9 +1437,9 @@ async function getRoomOccupancy(params, user) {
     query += ` AND r.room_type = ?`;
     queryParams.push(room_type);
   }
-  if (floor !== undefined && floor !== null) {
+  if (Number.isFinite(Number(floor)) && floor !== null && floor !== '') {
     query += ` AND r.floor = ?`;
-    queryParams.push(floor);
+    queryParams.push(Number(floor));
   }
 
   query += ` GROUP BY r.id, r.room_number, r.floor, r.capacity, r.room_type, r.status, r.price_per_month`;
@@ -1392,7 +1470,9 @@ async function getTasks(params, user) {
     return { error: 'Only admins, home deans, and VPSAS can view assigned tasks.' };
   }
 
-  const { status, resident_name, limit } = params || {};
+  const raw = params || {};
+  const { resident_name, limit } = raw;
+  const status = pickEnum(raw.status, ['pending', 'completed', 'overdue']);
 
   let query = `
     SELECT t.id as task_id, t.title, t.description, t.due_date, t.status,
@@ -1435,7 +1515,17 @@ async function getIncidents(params, user) {
     return { error: 'Only admins, home deans, and VPSAS can view incident reports.' };
   }
 
-  const { status, severity, incident_type, days, limit } = params || {};
+  const raw = params || {};
+  const { days, limit } = raw;
+  const status = pickEnum(raw.status, ['reported', 'investigating', 'resolved', 'closed']);
+  const severity = pickEnum(raw.severity, ['low', 'medium', 'high', 'critical']);
+  const incident_type = pickEnum(raw.incident_type, [
+    'safety',
+    'maintenance',
+    'behavioral',
+    'medical',
+    'other',
+  ]);
 
   let query = `
     SELECT i.id as incident_id, i.title, i.description, i.incident_type, i.severity,
