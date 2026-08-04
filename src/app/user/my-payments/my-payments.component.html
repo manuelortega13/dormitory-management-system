@@ -265,6 +265,11 @@
           } @else {
             <span class="method-info">Contact admin for details</span>
           }
+          @if (settings()?.gcash_qr) {
+            <button type="button" class="qr-link-btn" (click)="openQrViewer('GCash', settings()?.gcash_qr)">
+              📷 Show QR code
+            </button>
+          }
         </div>
       </div>
       <div class="method-card maya">
@@ -276,6 +281,11 @@
             <span class="method-account">{{ settings()?.maya_name }}</span>
           } @else {
             <span class="method-info">Contact admin for details</span>
+          }
+          @if (settings()?.maya_qr) {
+            <button type="button" class="qr-link-btn" (click)="openQrViewer('Maya', settings()?.maya_qr)">
+              📷 Show QR code
+            </button>
           }
         </div>
       </div>
@@ -362,6 +372,14 @@
             <div class="qr-display">
               <p class="qr-label">Scan QR Code to pay via GCash:</p>
               <img [src]="settings()?.gcash_qr" alt="GCash QR Code" class="qr-image" />
+              <button
+                type="button"
+                class="qr-download-btn"
+                [disabled]="isDownloadingQr()"
+                (click)="downloadQr(settings()?.gcash_qr, 'GCash')"
+              >
+                ⬇️ Download QR Code
+              </button>
             </div>
           }
         }
@@ -373,6 +391,14 @@
             <div class="qr-display">
               <p class="qr-label">Scan QR Code to pay via Maya:</p>
               <img [src]="settings()?.maya_qr" alt="Maya QR Code" class="qr-image" />
+              <button
+                type="button"
+                class="qr-download-btn"
+                [disabled]="isDownloadingQr()"
+                (click)="downloadQr(settings()?.maya_qr, 'Maya')"
+              >
+                ⬇️ Download QR Code
+              </button>
             </div>
           }
         }
@@ -444,6 +470,34 @@
         <button class="btn-secondary" (click)="closePaymentModal()">Cancel</button>
         <button class="btn-primary" (click)="submitPayment()" [disabled]="isSubmitting()">
           {{ isSubmitting() ? 'Processing...' : 'Submit Payment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- QR Code Viewer (opened from the Available Payment Methods cards) -->
+@if (qrViewer()) {
+  <div class="modal-overlay" (click)="closeQrViewer()">
+    <div class="modal qr-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ qrViewer()!.label }} QR Code</h2>
+        <button class="btn-close" (click)="closeQrViewer()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="qr-display">
+          <p class="qr-label">Scan this QR code with your {{ qrViewer()!.label }} app:</p>
+          <img [src]="qrViewer()!.image" [alt]="qrViewer()!.label + ' QR Code'" class="qr-image" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeQrViewer()">Close</button>
+        <button
+          class="btn-primary"
+          [disabled]="isDownloadingQr()"
+          (click)="downloadQr(qrViewer()!.image, qrViewer()!.label)"
+        >
+          {{ isDownloadingQr() ? 'Saving...' : '⬇️ Download QR Code' }}
         </button>
       </div>
     </div>

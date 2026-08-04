@@ -567,6 +567,61 @@
     object-fit: contain;
     border-radius: 4px;
   }
+
+  .qr-download-btn {
+    display: block;
+    margin: 0.75rem auto 0;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4361ee;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+
+    &:hover:not(:disabled) {
+      background: #eef2ff;
+      border-color: #4361ee;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// "Show QR code" link inside the Available Payment Methods cards
+.qr-link-btn {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4361ee;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: #2f45c5;
+  }
+}
+
+// Standalone QR viewer: sized to the code rather than the wide payment form
+.qr-modal {
+  max-width: 360px;
+
+  .qr-display {
+    margin-top: 0;
+  }
 }
 
 // Receipt Upload Styles

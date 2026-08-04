@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
 import { NotificationService } from '../../services/notification.service';
+import { ToastService } from '../../services/toast.service';
+import { downloadImage } from '../../shared/utils/image.util';
 
 @Component({
   selector: 'app-my-payments',
@@ -14,6 +16,7 @@ import { NotificationService } from '../../services/notification.service';
 export class MyPaymentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
   private notificationService = inject(NotificationService);
+  private toastService = inject(ToastService);
 
   // Tab management
   activeTab = signal<'bills' | 'history'>('bills');
@@ -161,6 +164,34 @@ export class MyPaymentsComponent implements OnInit {
     this.selectedBill.set(null);
     this.receiptImage.set(null);
     this.receiptFileName.set('');
+  }
+
+  // --- Payment QR codes ---
+
+  // Standalone QR viewer, opened from the Available Payment Methods cards so the
+  // QR can be seen (and saved) without starting a payment.
+  qrViewer = signal<{ label: string; image: string } | null>(null);
+  isDownloadingQr = signal(false);
+
+  openQrViewer(label: string, image: string | null | undefined) {
+    if (!image) return;
+    this.qrViewer.set({ label, image });
+  }
+
+  closeQrViewer() {
+    this.qrViewer.set(null);
+  }
+
+  async downloadQr(image: string | null | undefined, label: string) {
+    if (!image) return;
+    this.isDownloadingQr.set(true);
+    try {
+      await downloadImage(image, `${label.toLowerCase()}-qr-code`);
+    } catch {
+      this.toastService.error('Download failed', `Could not save the ${label} QR code.`);
+    } finally {
+      this.isDownloadingQr.set(false);
+    }
   }
 
   scrollModalToTop() {

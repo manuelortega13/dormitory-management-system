@@ -36,3 +36,45 @@ export function compressImage(file: File, maxDim = 1280, quality = 0.7): Promise
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Work out a sensible file extension for a download, from a data URL's mime type
+ * or a plain URL's suffix. Falls back to png, which is what QR codes normally are.
+ */
+function imageExtension(src: string): string {
+  const dataMatch = /^data:image\/([a-z0-9.+-]+)/i.exec(src);
+  if (dataMatch) {
+    return dataMatch[1].toLowerCase() === 'jpeg' ? 'jpg' : dataMatch[1].toLowerCase();
+  }
+  const suffix = src.split('?')[0].split('#')[0].split('.').pop();
+  return suffix && /^[a-z0-9]{2,5}$/i.test(suffix) ? suffix.toLowerCase() : 'png';
+}
+
+/**
+ * Save an image to the user's device. Handles both base64 data URLs (how the
+ * payment QR codes are stored in settings) and remote URLs — the latter are
+ * fetched into a blob first, since a cross-origin href ignores `download`.
+ */
+export async function downloadImage(src: string, baseName: string): Promise<void> {
+  if (!src) throw new Error('No image to download');
+
+  let href = src;
+  let objectUrl: string | null = null;
+
+  if (!src.startsWith('data:')) {
+    const response = await fetch(src);
+    if (!response.ok) throw new Error(`Failed to fetch image (${response.status})`);
+    objectUrl = URL.createObjectURL(await response.blob());
+    href = objectUrl;
+  }
+
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = `${baseName}.${imageExtension(src)}`;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+}
