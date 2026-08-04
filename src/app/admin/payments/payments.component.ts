@@ -1,4 +1,4 @@
-import { Component, signal, inject, effect, untracked, OnInit } from '@angular/core';
+import { Component, signal, inject, effect, untracked, viewChild, ElementRef, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PaymentService, Bill, Payment, PaymentStats, Resident, CreateBillRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
@@ -254,8 +254,14 @@ export class PaymentsComponent implements OnInit {
       } else {
         this.settingsMayaQr.set(dataUrl);
       }
+      // Offer cropping straight away — screenshots usually need trimming. Cancelling
+      // keeps the image exactly as uploaded.
+      this.openQrCrop(type, dataUrl);
     };
     reader.readAsDataURL(file);
+
+    // Allow re-selecting the same file after a cancel, which otherwise fires no change event.
+    input.value = '';
   }
 
   removeQr(type: 'gcash' | 'maya') {
@@ -264,6 +270,141 @@ export class PaymentsComponent implements OnInit {
     } else {
       this.settingsMayaQr.set('');
     }
+  }
+
+  // --- QR code cropping ---
+  // Uploaded QR codes are usually screenshots with app chrome around them, so allow
+  // trimming down to the code itself. Crop box coordinates are kept in *displayed*
+  // pixels and mapped back to the image's natural size on apply.
+
+  qrCrop = signal<{ type: 'gcash' | 'maya'; src: string } | null>(null);
+  cropBox = signal({ x: 0, y: 0, w: 0, h: 0 });
+
+  private readonly cropImageRef = viewChild<ElementRef<HTMLImageElement>>('cropImage');
+  private cropDrag: {
+    mode: 'move' | 'nw' | 'ne' | 'sw' | 'se';
+    startX: number;
+    startY: number;
+    origin: { x: number; y: number; w: number; h: number };
+  } | null = null;
+
+  private static readonly MIN_CROP_PX = 24;
+  // A QR does not need more than this to stay scannable, and the result is stored
+  // base64 in system_settings, so cap the output.
+  private static readonly MAX_CROP_OUTPUT_PX = 800;
+
+  private static clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), Math.max(min, max));
+  }
+
+  openQrCrop(type: 'gcash' | 'maya', src: string) {
+    if (!src) return;
+    this.qrCrop.set({ type, src });
+  }
+
+  closeQrCrop() {
+    this.qrCrop.set(null);
+    this.cropDrag = null;
+  }
+
+  // Start with a centred square, since QR codes are square.
+  onCropImageLoad() {
+    const img = this.cropImageRef()?.nativeElement;
+    if (!img) return;
+    const side = Math.min(img.clientWidth, img.clientHeight) * 0.8;
+    this.cropBox.set({
+      x: (img.clientWidth - side) / 2,
+      y: (img.clientHeight - side) / 2,
+      w: side,
+      h: side,
+    });
+  }
+
+  startCropDrag(event: PointerEvent, mode: 'move' | 'nw' | 'ne' | 'sw' | 'se') {
+    event.preventDefault();
+    event.stopPropagation();
+    (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
+    this.cropDrag = {
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: { ...this.cropBox() },
+    };
+  }
+
+  onCropDrag(event: PointerEvent) {
+    const drag = this.cropDrag;
+    const img = this.cropImageRef()?.nativeElement;
+    if (!drag || !img) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    const boundsW = img.clientWidth;
+    const boundsH = img.clientHeight;
+    const min = PaymentsComponent.MIN_CROP_PX;
+    let { x, y, w, h } = drag.origin;
+
+    if (drag.mode === 'move') {
+      x = PaymentsComponent.clamp(x + dx, 0, boundsW - w);
+      y = PaymentsComponent.clamp(y + dy, 0, boundsH - h);
+    } else {
+      // Dragging a west/north handle moves the origin and shrinks the box by the
+      // same amount, so the opposite edge stays put.
+      if (drag.mode.includes('w')) {
+        const nx = PaymentsComponent.clamp(x + dx, 0, x + w - min);
+        w += x - nx;
+        x = nx;
+      }
+      if (drag.mode.includes('e')) {
+        w = PaymentsComponent.clamp(w + dx, min, boundsW - x);
+      }
+      if (drag.mode.includes('n')) {
+        const ny = PaymentsComponent.clamp(y + dy, 0, y + h - min);
+        h += y - ny;
+        y = ny;
+      }
+      if (drag.mode.includes('s')) {
+        h = PaymentsComponent.clamp(h + dy, min, boundsH - y);
+      }
+    }
+
+    this.cropBox.set({ x, y, w, h });
+  }
+
+  endCropDrag() {
+    this.cropDrag = null;
+  }
+
+  applyQrCrop() {
+    const target = this.qrCrop();
+    const img = this.cropImageRef()?.nativeElement;
+    const box = this.cropBox();
+    if (!target || !img || box.w < 1 || box.h < 1) return;
+
+    // Displayed pixels -> natural pixels.
+    const scaleX = img.naturalWidth / img.clientWidth;
+    const scaleY = img.naturalHeight / img.clientHeight;
+    const sw = box.w * scaleX;
+    const sh = box.h * scaleY;
+
+    const outScale = Math.min(1, PaymentsComponent.MAX_CROP_OUTPUT_PX / Math.max(sw, sh));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(sw * outScale));
+    canvas.height = Math.max(1, Math.round(sh * outScale));
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(img, box.x * scaleX, box.y * scaleY, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    // PNG, not JPEG: a QR relies on hard black/white edges, and JPEG artefacts around
+    // them can stop a scanner from reading it.
+    const cropped = canvas.toDataURL('image/png');
+    if (target.type === 'gcash') {
+      this.settingsGcashQr.set(cropped);
+    } else {
+      this.settingsMayaQr.set(cropped);
+    }
+    this.closeQrCrop();
   }
 
   // Computed filtered lists
