@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, effect } from '@angular/core';
+import { Component, signal, inject, viewChild, ElementRef, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
@@ -13,7 +13,7 @@ import { downloadImage } from '../../shared/utils/image.util';
   templateUrl: './my-payments.component.html',
   styleUrl: './my-payments.component.scss'
 })
-export class MyPaymentsComponent implements OnInit {
+export class MyPaymentsComponent implements OnInit, OnDestroy {
   private paymentService = inject(PaymentService);
   private notificationService = inject(NotificationService);
   private toastService = inject(ToastService);
@@ -160,10 +160,16 @@ export class MyPaymentsComponent implements OnInit {
   }
 
   closePaymentModal() {
+    this.closeReceiptCamera();
     this.showPaymentModal.set(false);
     this.selectedBill.set(null);
     this.receiptImage.set(null);
     this.receiptFileName.set('');
+  }
+
+  ngOnDestroy(): void {
+    // Navigating away with the camera open would otherwise leave the track live.
+    this.closeReceiptCamera();
   }
 
   // --- Payment QR codes ---
@@ -231,6 +237,94 @@ export class MyPaymentsComponent implements OnInit {
   removeReceipt() {
     this.receiptImage.set(null);
     this.receiptFileName.set('');
+  }
+
+  // --- Receipt photo capture ---
+  // Alternative to picking a file: photograph a printed or on-screen receipt. Feeds the
+  // same receiptImage() signal the upload path does, so submit and validation are unchanged.
+
+  private readonly receiptVideo = viewChild<ElementRef<HTMLVideoElement>>('receiptVideo');
+  private readonly receiptCanvas = viewChild<ElementRef<HTMLCanvasElement>>('receiptCanvas');
+  private receiptStream: MediaStream | null = null;
+
+  showReceiptCamera = signal(false);
+  isReceiptCameraReady = signal(false);
+  receiptCameraError = signal('');
+
+  async startReceiptCamera(): Promise<void> {
+    this.receiptCameraError.set('');
+    this.isReceiptCameraReady.set(false);
+    this.showReceiptCamera.set(true);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.receiptCameraError.set('This device or browser does not support camera capture.');
+      return;
+    }
+
+    // Let the @if render the <video> before we attach the stream to it.
+    await Promise.resolve();
+
+    try {
+      // Rear camera: the receipt is usually a printed slip or another phone's screen.
+      this.receiptStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      const video = this.receiptVideo()?.nativeElement;
+      if (!video) {
+        this.stopReceiptCamera();
+        return;
+      }
+      video.srcObject = this.receiptStream;
+      await video.play().catch(() => {});
+      this.isReceiptCameraReady.set(true);
+    } catch (error: any) {
+      this.receiptCameraError.set(
+        error?.name === 'NotAllowedError'
+          ? 'Camera permission was denied. Allow camera access, or upload a file instead.'
+          : 'Unable to start the camera. You can upload a file instead.'
+      );
+      this.stopReceiptCamera();
+    }
+  }
+
+  // Always release the tracks — a leaked stream leaves the camera indicator on.
+  private stopReceiptCamera(): void {
+    this.receiptStream?.getTracks().forEach((track) => track.stop());
+    this.receiptStream = null;
+    this.isReceiptCameraReady.set(false);
+  }
+
+  closeReceiptCamera(): void {
+    this.stopReceiptCamera();
+    this.showReceiptCamera.set(false);
+    this.receiptCameraError.set('');
+  }
+
+  captureReceiptPhoto(): void {
+    const video = this.receiptVideo()?.nativeElement;
+    const canvas = this.receiptCanvas()?.nativeElement;
+    if (!video || !canvas || !video.videoWidth) return;
+
+    // Downscale as we draw, so a phone photo lands in the same size range as the
+    // screenshot uploads this field was built for (it is stored base64 in the DB).
+    const maxDim = 1280;
+    const scale = Math.min(1, maxDim / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    this.receiptImage.set(canvas.toDataURL('image/jpeg', 0.7));
+    this.receiptFileName.set(`receipt-photo-${new Date().toISOString().slice(0, 10)}.jpg`);
+    this.closeReceiptCamera();
+  }
+
+  retakeReceiptPhoto(): void {
+    this.receiptImage.set(null);
+    this.receiptFileName.set('');
+    this.startReceiptCamera();
   }
 
   async submitPayment() {

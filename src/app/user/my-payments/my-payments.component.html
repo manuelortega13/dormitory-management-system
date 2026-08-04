@@ -426,25 +426,64 @@
           <div class="form-group">
             <label>Upload E-Receipt (Required) *</label>
             <div class="receipt-upload-area">
-              @if (!receiptImage()) {
-                <label class="upload-label">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    (change)="onReceiptFileSelected($event)"
-                    hidden
-                  />
-                  <span class="upload-icon">📤</span>
-                  <span class="upload-text">Click to upload receipt screenshot</span>
-                  <span class="upload-hint">PNG, JPG up to 5MB</span>
-                </label>
-              } @else {
+              @if (receiptImage()) {
                 <div class="receipt-preview">
                   <img [src]="receiptImage()" alt="Receipt preview" />
                   <div class="preview-actions">
                     <span class="file-name">{{ receiptFileName() }}</span>
-                    <button type="button" class="btn-remove" (click)="removeReceipt()">✕ Remove</button>
+                    <div class="preview-buttons">
+                      <button type="button" class="btn-retake" (click)="retakeReceiptPhoto()">
+                        📷 Retake
+                      </button>
+                      <button type="button" class="btn-remove" (click)="removeReceipt()">
+                        ✕ Remove
+                      </button>
+                    </div>
                   </div>
+                </div>
+              } @else if (showReceiptCamera()) {
+                <div class="receipt-camera">
+                  @if (receiptCameraError()) {
+                    <p class="camera-error">{{ receiptCameraError() }}</p>
+                  } @else {
+                    <video #receiptVideo class="camera-preview" playsinline muted></video>
+                    @if (!isReceiptCameraReady()) {
+                      <p class="camera-status">Starting camera…</p>
+                    }
+                  }
+                  <canvas #receiptCanvas hidden></canvas>
+                  <div class="camera-actions">
+                    <button
+                      type="button"
+                      class="btn-capture"
+                      [disabled]="!isReceiptCameraReady()"
+                      (click)="captureReceiptPhoto()"
+                    >
+                      ● Capture
+                    </button>
+                    <button type="button" class="btn-cancel-camera" (click)="closeReceiptCamera()">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div class="receipt-sources">
+                  <label class="upload-label">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      (change)="onReceiptFileSelected($event)"
+                      hidden
+                    />
+                    <span class="upload-icon">📤</span>
+                    <span class="upload-text">Upload receipt screenshot</span>
+                    <span class="upload-hint">PNG, JPG up to 5MB</span>
+                  </label>
+                  <button type="button" class="capture-label" (click)="startReceiptCamera()">
+                    <span class="upload-icon">📷</span>
+                    <span class="upload-text">Take a photo</span>
+                    <span class="upload-hint">Use your camera</span>
+                  </button>
                 </div>
               }
             </div>
