@@ -10,6 +10,8 @@ import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
 import { ResidentsService } from '../residents/data/residents.service';
 import { Resident } from '../residents/data/resident.model';
+// isDateInRange goes back in with the commented-out "Requested" range below.
+import { doesRangeOverlap } from '../../shared/utils/date-filter.util';
 
 @Component({
   selector: 'app-admin-gatepass',
@@ -58,24 +60,73 @@ export class AdminGatepassComponent implements OnInit {
     );
   }
 
+  // --- Date filter ---
+  // Matches the Leave Requests page: a single range over the out/return window.
+  // Either bound can be left empty.
+  protected readonly outFrom = signal('');
+  protected readonly outTo = signal('');
+
+  // A second range on created_at ("Requested") was dropped for now, alongside the
+  // equivalent "Submitted" range on Leave Requests. Uncomment these, the isDateInRange
+  // checks below, and the markup block to bring it back.
+  // protected readonly requestedFrom = signal('');
+  // protected readonly requestedTo = signal('');
+
+  protected readonly hasDateFilters = computed(() => !!(this.outFrom() || this.outTo()));
+
+  protected clearDateFilters(): void {
+    this.outFrom.set('');
+    this.outTo.set('');
+    // this.requestedFrom.set('');
+    // this.requestedTo.set('');
+  }
+
+  // A gatepass's window runs from when it was used (or requested, if not yet used) to
+  // when it came back (or was due back).
+  private matchesGatepassDates(g: Gatepass): boolean {
+    return doesRangeOverlap(
+      g.exit_time ?? g.created_at,
+      g.return_time ?? g.deadline ?? g.exit_time ?? g.created_at,
+      this.outFrom(),
+      this.outTo(),
+    );
+  }
+
   protected readonly filteredDeanQueue = computed(() =>
-    this.deanQueue().filter((g) => this.matchesSearch(g.occupant_name, g.student_resident_id)),
+    this.deanQueue().filter(
+      (g) =>
+        this.matchesSearch(g.occupant_name, g.student_resident_id) && this.matchesGatepassDates(g),
+    ),
   );
   protected readonly filteredVpsasQueue = computed(() =>
-    this.vpsasQueue().filter((g) => this.matchesSearch(g.occupant_name, g.student_resident_id)),
+    this.vpsasQueue().filter(
+      (g) =>
+        this.matchesSearch(g.occupant_name, g.student_resident_id) && this.matchesGatepassDates(g),
+    ),
   );
   protected readonly filteredReviews = computed(() =>
-    this.reviews().filter((r) => this.matchesSearch(r.occupant_name, r.student_resident_id)),
+    this.reviews().filter(
+      (r) =>
+        this.matchesSearch(r.occupant_name, r.student_resident_id) &&
+        // DisciplinaryReview carries no created_at, so only the out/return window can be
+        // matched here — the "requested" range is not applicable to this tab.
+        doesRangeOverlap(r.deadline, r.return_time ?? r.deadline, this.outFrom(), this.outTo()),
+    ),
   );
   protected readonly filteredTasks = computed(() =>
     this.tasks().filter(
       (t) =>
         this.matchesSearch(t.occupant_name, t.student_resident_id) &&
-        (this.taskStatusFilter() === 'all' || t.status === this.taskStatusFilter()),
+        (this.taskStatusFilter() === 'all' || t.status === this.taskStatusFilter()) &&
+        // A task's "window" is its due date.
+        doesRangeOverlap(t.due_date, t.due_date, this.outFrom(), this.outTo()),
     ),
   );
   protected readonly filteredPasses = computed(() =>
-    this.passes().filter((g) => this.matchesSearch(g.occupant_name, g.student_resident_id)),
+    this.passes().filter(
+      (g) =>
+        this.matchesSearch(g.occupant_name, g.student_resident_id) && this.matchesGatepassDates(g),
+    ),
   );
 
   // Decline modal

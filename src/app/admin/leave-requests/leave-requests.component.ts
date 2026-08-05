@@ -6,6 +6,8 @@ import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../auth/auth.service';
 import { ResidentsService } from '../residents/data/residents.service';
 import { Resident } from '../residents/data/resident.model';
+// isDateInRange goes back in with the commented-out "Submitted" range below.
+import { doesRangeOverlap } from '../../shared/utils/date-filter.util';
 import { ToastService } from '../../services/toast.service';
 
 type TabFilter = 'pending' | 'all';
@@ -281,17 +283,46 @@ export class LeaveRequestsComponent implements OnInit {
     w.document.close();
   }
 
+  // --- Date filter ---
+  // Filters on the leave period itself, so a range answers "who is away this week".
+  // Either bound can be left empty for an open-ended range.
+  leaveFrom = signal('');
+  leaveTo = signal('');
+
+  // A second range on created_at ("Submitted") was dropped for now — uncomment these,
+  // the isDateInRange check below, and the markup block to bring it back.
+  // submittedFrom = signal('');
+  // submittedTo = signal('');
+
+  hasDateFilters = computed(() => !!(this.leaveFrom() || this.leaveTo()));
+
+  clearDateFilters() {
+    this.leaveFrom.set('');
+    this.leaveTo.set('');
+    // this.submittedFrom.set('');
+    // this.submittedTo.set('');
+  }
+
   filteredRequests() {
     const query = this.searchQuery().toLowerCase().trim();
-    if (!query) return this.requests();
+    const leaveFrom = this.leaveFrom();
+    const leaveTo = this.leaveTo();
 
-    return this.requests().filter(
-      (req) =>
+    return this.requests().filter((req) => {
+      const matchesQuery =
+        !query ||
         req.user_name?.toLowerCase().includes(query) ||
         req.destination?.toLowerCase().includes(query) ||
         req.reason?.toLowerCase().includes(query) ||
-        req.room_number?.toLowerCase().includes(query),
-    );
+        req.room_number?.toLowerCase().includes(query);
+      if (!matchesQuery) return false;
+
+      // A leave spanning the window counts, not only one starting inside it.
+      if (!doesRangeOverlap(req.start_date, req.end_date, leaveFrom, leaveTo)) return false;
+      // if (!isDateInRange(req.created_at, this.submittedFrom(), this.submittedTo())) return false;
+
+      return true;
+    });
   }
 
   getStatusClass(status: string): string {

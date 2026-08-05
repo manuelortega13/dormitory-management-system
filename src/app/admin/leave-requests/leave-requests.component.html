@@ -31,6 +31,38 @@
     </div>
   </div>
 
+  <div class="date-filters">
+    <div class="date-filter-group">
+      <span class="date-filter-label">Leave dates</span>
+      <label class="date-field">
+        From
+        <input type="date" [ngModel]="leaveFrom()" (ngModelChange)="leaveFrom.set($event)" />
+      </label>
+      <label class="date-field">
+        To
+        <input type="date" [ngModel]="leaveTo()" (ngModelChange)="leaveTo.set($event)" />
+      </label>
+    </div>
+
+    <!-- "Submitted" (created_at) range dropped for now; uncomment with the matching
+         signals and filter check in the component to restore it. -->
+    <!--    <div class="date-filter-group">-->
+    <!--      <span class="date-filter-label">Submitted</span>-->
+    <!--      <label class="date-field">-->
+    <!--        From-->
+    <!--        <input type="date" [ngModel]="submittedFrom()" (ngModelChange)="submittedFrom.set($event)" />-->
+    <!--      </label>-->
+    <!--      <label class="date-field">-->
+    <!--        To-->
+    <!--        <input type="date" [ngModel]="submittedTo()" (ngModelChange)="submittedTo.set($event)" />-->
+    <!--      </label>-->
+    <!--    </div>-->
+
+    @if (hasDateFilters()) {
+      <button class="date-filter-clear" (click)="clearDateFilters()">✕ Clear dates</button>
+    }
+  </div>
+
   @if (errorMessage()) {
     <div class="alert alert-error">
       <span class="alert-icon">⚠️</span>

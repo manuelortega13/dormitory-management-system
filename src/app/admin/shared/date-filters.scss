@@ -1,0 +1,96 @@
+// Shared date-range filter bar for the admin Leave Requests and Gatepass pages.
+// Kept here rather than copied into both component stylesheets so the two toolbars
+// stay visually identical.
+
+.date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.date-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-filter-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #64748b;
+
+  input[type='date'] {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: #1e293b;
+    background: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #4361ee;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+  }
+}
+
+.date-filter-clear {
+  margin-left: auto;
+  padding: 0.4rem 0.75rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #fecaca;
+  }
+}
+
+@media (max-width: 768px) {
+  .date-filters {
+    gap: 0.75rem;
+  }
+
+  // Stack the label above its inputs so both ranges fit a phone width.
+  .date-filter-group {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .date-field {
+    flex: 1 1 45%;
+
+    input[type='date'] {
+      width: 100%;
+    }
+  }
+
+  .date-filter-clear {
+    margin-left: 0;
+    flex: 1 1 100%;
+  }
+}
