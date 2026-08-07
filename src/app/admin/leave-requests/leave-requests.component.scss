@@ -984,12 +984,32 @@
     padding-top: 0.75rem !important;
     margin-top: 0.25rem;
     flex-direction: row !important;
+    // Without these the row stretches its children to equal height and cannot break,
+    // so Print QR ends up taller than its content and jammed against the review text.
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
 
     .btn-approve,
     .btn-decline,
     .btn-view {
       flex: 1;
       justify-content: center;
+      // Spacing comes from the gap above; the desktop margin would double it.
+      margin-right: 0;
+    }
+
+    // "Reviewed <date>" takes its own line so the button below it can be full width.
+    .processed-info {
+      flex: 1 1 100%;
+    }
+
+    .btn-print-qr {
+      flex: 1;
+      justify-content: center;
+      // The desktop layout stacks this under the approve/decline buttons and uses the
+      // top margin for that gap; in this row it just pushes the button out of line.
+      margin-top: 0;
     }
   }
 
