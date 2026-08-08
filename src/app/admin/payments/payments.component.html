@@ -435,9 +435,6 @@
             <div class="qr-preview">
               <img [src]="settingsGcashQr()" alt="GCash QR Code" />
               <div class="qr-preview-actions">
-                <button class="btn-crop-qr" (click)="openQrCrop('gcash', settingsGcashQr())">
-                  ✂️ Crop
-                </button>
                 <button class="btn-remove-qr" (click)="removeQr('gcash')">Remove</button>
               </div>
             </div>
@@ -446,6 +443,13 @@
               <input type="file" accept="image/*" (change)="onQrSelected($event, 'gcash')" hidden />
               <span>📷 Upload QR Code</span>
             </label>
+          }
+          @if (isCheckingQr()) {
+            <p class="qr-check checking">Checking the image for a QR code…</p>
+          } @else if (qrCheck('gcash'); as check) {
+            <p class="qr-check" [class.ok]="check.ok" [class.warn]="!check.ok">
+              {{ check.ok ? '✓' : '⚠️' }} {{ check.message }}
+            </p>
           }
         </div>
       </div>
@@ -480,9 +484,6 @@
             <div class="qr-preview">
               <img [src]="settingsMayaQr()" alt="Maya QR Code" />
               <div class="qr-preview-actions">
-                <button class="btn-crop-qr" (click)="openQrCrop('maya', settingsMayaQr())">
-                  ✂️ Crop
-                </button>
                 <button class="btn-remove-qr" (click)="removeQr('maya')">Remove</button>
               </div>
             </div>
@@ -491,6 +492,13 @@
               <input type="file" accept="image/*" (change)="onQrSelected($event, 'maya')" hidden />
               <span>📷 Upload QR Code</span>
             </label>
+          }
+          @if (isCheckingQr()) {
+            <p class="qr-check checking">Checking the image for a QR code…</p>
+          } @else if (qrCheck('maya'); as check) {
+            <p class="qr-check" [class.ok]="check.ok" [class.warn]="!check.ok">
+              {{ check.ok ? '✓' : '⚠️' }} {{ check.message }}
+            </p>
           }
         </div>
       </div>
@@ -733,57 +741,6 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closePaymentDetailModal()">Close</button>
-      </div>
-    </div>
-  </div>
-}
-
-<!-- QR Code Cropper -->
-@if (qrCrop()) {
-  <div class="modal-overlay" (click)="closeQrCrop()">
-    <div class="modal crop-modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Crop {{ qrCrop()!.type === 'gcash' ? 'GCash' : 'Maya' }} QR Code</h2>
-        <button class="close-btn" (click)="closeQrCrop()">×</button>
-      </div>
-      <div class="modal-body">
-        <p class="crop-hint">
-          Drag the box to reposition it, or drag a corner to resize. Everything outside the
-          box is trimmed away.
-        </p>
-        <div
-          class="crop-stage"
-          (pointermove)="onCropDrag($event)"
-          (pointerup)="endCropDrag()"
-          (pointercancel)="endCropDrag()"
-          (pointerleave)="endCropDrag()"
-        >
-          <img
-            #cropImage
-            class="crop-image"
-            [src]="qrCrop()!.src"
-            alt="QR code being cropped"
-            (load)="onCropImageLoad()"
-            draggable="false"
-          />
-          <div
-            class="crop-box"
-            [style.left.px]="cropBox().x"
-            [style.top.px]="cropBox().y"
-            [style.width.px]="cropBox().w"
-            [style.height.px]="cropBox().h"
-            (pointerdown)="startCropDrag($event, 'move')"
-          >
-            <span class="crop-handle nw" (pointerdown)="startCropDrag($event, 'nw')"></span>
-            <span class="crop-handle ne" (pointerdown)="startCropDrag($event, 'ne')"></span>
-            <span class="crop-handle sw" (pointerdown)="startCropDrag($event, 'sw')"></span>
-            <span class="crop-handle se" (pointerdown)="startCropDrag($event, 'se')"></span>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeQrCrop()">Cancel</button>
-        <button class="btn-primary" (click)="applyQrCrop()">Apply Crop</button>
       </div>
     </div>
   </div>

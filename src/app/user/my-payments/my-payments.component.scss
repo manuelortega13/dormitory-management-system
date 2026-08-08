@@ -624,6 +624,91 @@
   }
 }
 
+// Branded QR card, so the code is identifiable as GCash or Maya and the occupant can
+// confirm the account before scanning.
+.qr-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+
+  // Brand colours are applied to the header only, so the QR itself stays on plain
+  // white — a tinted background behind a QR can defeat scanners.
+  &.gcash .qr-card-header {
+    background: linear-gradient(135deg, #0057ff, #1f8bff);
+  }
+
+  &.maya .qr-card-header {
+    background: linear-gradient(135deg, #00a850, #35c46f);
+  }
+
+  .qr-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #334155;
+  }
+
+  .qr-card-logo {
+    height: 22px;
+    width: auto;
+    border-radius: 4px;
+    background: #fff;
+    padding: 2px;
+  }
+
+  .qr-card-brand {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.01em;
+  }
+
+  .qr-card-body {
+    display: flex;
+    justify-content: center;
+    padding: 1.25rem 1rem 0.75rem;
+    background: #fff;
+
+    .qr-image {
+      max-width: 240px;
+      max-height: 240px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+  }
+
+  .qr-card-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0 1rem 1.1rem;
+    text-align: center;
+
+    .qr-account-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .qr-account-number {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: 0.03em;
+    }
+
+    .qr-card-hint {
+      margin-top: 0.35rem;
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+  }
+}
+
 // Receipt Upload Styles
 .receipt-upload-area {
   border: 2px dashed #d1d5db;

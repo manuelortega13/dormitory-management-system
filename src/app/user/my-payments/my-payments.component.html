@@ -376,7 +376,7 @@
                 type="button"
                 class="qr-download-btn"
                 [disabled]="isDownloadingQr()"
-                (click)="downloadQr(settings()?.gcash_qr, 'GCash')"
+                (click)="downloadQr('gcash')"
               >
                 ⬇️ Download QR Code
               </button>
@@ -395,7 +395,7 @@
                 type="button"
                 class="qr-download-btn"
                 [disabled]="isDownloadingQr()"
-                (click)="downloadQr(settings()?.maya_qr, 'Maya')"
+                (click)="downloadQr('maya')"
               >
                 ⬇️ Download QR Code
               </button>
@@ -524,9 +524,29 @@
         <button class="btn-close" (click)="closeQrViewer()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="qr-display">
-          <p class="qr-label">Scan this QR code with your {{ qrViewer()!.label }} app:</p>
-          <img [src]="qrViewer()!.image" [alt]="qrViewer()!.label + ' QR Code'" class="qr-image" />
+        <div class="qr-card" [class.gcash]="qrViewer()!.brand === 'gcash'" [class.maya]="qrViewer()!.brand === 'maya'">
+          <div class="qr-card-header">
+            <img
+              class="qr-card-logo"
+              [src]="qrViewer()!.brand === 'gcash' ? 'icons/gcash.png' : 'icons/maya.png'"
+              [alt]="qrViewer()!.label"
+            />
+            <span class="qr-card-brand">{{ qrViewer()!.label }}</span>
+          </div>
+
+          <div class="qr-card-body">
+            <img [src]="qrViewer()!.image" [alt]="qrViewer()!.label + ' QR Code'" class="qr-image" />
+          </div>
+
+          <div class="qr-card-footer">
+            @if (qrViewer()!.accountName) {
+              <span class="qr-account-name">{{ qrViewer()!.accountName }}</span>
+            }
+            @if (qrViewer()!.accountNumber) {
+              <span class="qr-account-number">{{ qrViewer()!.accountNumber }}</span>
+            }
+            <span class="qr-card-hint">Scan with your {{ qrViewer()!.label }} app</span>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -534,7 +554,7 @@
         <button
           class="btn-primary"
           [disabled]="isDownloadingQr()"
-          (click)="downloadQr(qrViewer()!.image, qrViewer()!.label)"
+          (click)="downloadQr(qrViewer()!.brand)"
         >
           {{ isDownloadingQr() ? 'Saving...' : '⬇️ Download QR Code' }}
         </button>

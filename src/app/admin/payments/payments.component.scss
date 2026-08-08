@@ -557,23 +557,6 @@
   gap: 0.5rem;
 }
 
-.btn-crop-qr {
-  padding: 0.5rem 1rem;
-  background: #e0e7ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #c7d2fe;
-  }
-}
-
 .btn-remove-qr {
   padding: 0.5rem 1rem;
   background: #fee2e2;
@@ -893,75 +876,26 @@
   color: #6c757d;
 }
 
-// ── QR Code Cropper ──
-.crop-modal {
-  max-width: 560px;
+// Result of the uploaded-QR check
+.qr-check {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
 
-  .crop-hint {
-    margin: 0 0 0.75rem;
-    font-size: 0.85rem;
+  &.checking {
+    background: #f1f5f9;
     color: #64748b;
   }
 
-  // The stage is sized by the image; the crop box is absolutely positioned over it,
-  // so box coordinates are in the image's displayed pixels.
-  .crop-stage {
-    position: relative;
-    display: inline-block;
-    max-width: 100%;
-    line-height: 0;
-    background: #0f172a;
-    touch-action: none; // let pointer drags work on touch without scrolling the modal
-    user-select: none;
+  &.ok {
+    background: #dcfce7;
+    color: #15803d;
   }
 
-  .crop-image {
-    display: block;
-    max-width: 100%;
-    max-height: 420px;
-    object-fit: contain;
-    -webkit-user-drag: none;
-  }
-
-  .crop-box {
-    position: absolute;
-    border: 2px solid #4361ee;
-    // The shading outside the selection is a huge shadow rather than four overlay
-    // divs, which keeps the box a single element to drag.
-    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
-    cursor: move;
-  }
-
-  .crop-handle {
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    background: #fff;
-    border: 2px solid #4361ee;
-    border-radius: 3px;
-
-    &.nw {
-      top: -8px;
-      left: -8px;
-      cursor: nwse-resize;
-    }
-
-    &.ne {
-      top: -8px;
-      right: -8px;
-      cursor: nesw-resize;
-    }
-
-    &.sw {
-      bottom: -8px;
-      left: -8px;
-      cursor: nesw-resize;
-    }
-
-    &.se {
-      bottom: -8px;
-      right: -8px;
-      cursor: nwse-resize;
-    }
+  &.warn {
+    background: #fef3c7;
+    color: #92400e;
   }
 }

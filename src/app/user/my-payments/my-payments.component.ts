@@ -5,6 +5,7 @@ import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, Pag
 import { NotificationService } from '../../services/notification.service';
 import { ToastService } from '../../services/toast.service';
 import { downloadImage } from '../../shared/utils/image.util';
+import { composeQrCard } from '../../shared/utils/qr-card.util';
 
 @Component({
   selector: 'app-my-payments',
@@ -176,23 +177,57 @@ export class MyPaymentsComponent implements OnInit, OnDestroy {
 
   // Standalone QR viewer, opened from the Available Payment Methods cards so the
   // QR can be seen (and saved) without starting a payment.
-  qrViewer = signal<{ label: string; image: string } | null>(null);
+  qrViewer = signal<{
+    label: string;
+    image: string;
+    brand: 'gcash' | 'maya';
+    accountName: string;
+    accountNumber: string;
+  } | null>(null);
   isDownloadingQr = signal(false);
 
   openQrViewer(label: string, image: string | null | undefined) {
     if (!image) return;
-    this.qrViewer.set({ label, image });
+    const s = this.settings();
+    const isGcash = label.toLowerCase() === 'gcash';
+    this.qrViewer.set({
+      label,
+      image,
+      // Shown alongside the code so the occupant can confirm they are paying the right
+      // account before they scan, instead of a bare unlabelled image.
+      brand: isGcash ? 'gcash' : 'maya',
+      accountName: (isGcash ? s?.gcash_name : s?.maya_name) || '',
+      accountNumber: (isGcash ? s?.gcash_number : s?.maya_number) || '',
+    });
   }
 
   closeQrViewer() {
     this.qrViewer.set(null);
   }
 
-  async downloadQr(image: string | null | undefined, label: string) {
+  /**
+   * Save the QR as a labelled card (brand header, account name and number) rather than a
+   * bare image, so it is still identifiable once it is sitting in a photo gallery.
+   * Falls back to the plain image if the card cannot be composed.
+   */
+  async downloadQr(brand: 'gcash' | 'maya') {
+    const s = this.settings();
+    const isGcash = brand === 'gcash';
+    const image = (isGcash ? s?.gcash_qr : s?.maya_qr) || '';
+    const label = isGcash ? 'GCash' : 'Maya';
     if (!image) return;
+
     this.isDownloadingQr.set(true);
     try {
-      await downloadImage(image, `${label.toLowerCase()}-qr-code`);
+      const card = await composeQrCard({
+        image,
+        brand,
+        label,
+        accountName: (isGcash ? s?.gcash_name : s?.maya_name) || '',
+        accountNumber: (isGcash ? s?.gcash_number : s?.maya_number) || '',
+        logo: isGcash ? 'icons/gcash.png' : 'icons/maya.png',
+      });
+      await downloadImage(card || image, `${brand}-qr-code`);
     } catch {
       this.toastService.error('Download failed', `Could not save the ${label} QR code.`);
     } finally {
