@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
 import { ParentService } from '../data/parent.service';
+import { resolveQrImage } from '../../shared/utils/qr-render.util';
 
 interface ChildBills {
   child_name: string;
@@ -76,9 +77,21 @@ export class ParentPaymentsComponent implements OnInit {
     }
   }
 
+  // Payment QR sources. The stored value may be a decoded payload (re-rendered here) or
+  // a legacy/fallback image, so both go through resolveQrImage.
+  gcashQrSrc = signal('');
+  mayaQrSrc = signal('');
+
+  private async refreshQrSources(): Promise<void> {
+    const s = this.settings();
+    this.gcashQrSrc.set(await resolveQrImage(s?.gcash_qr, 512));
+    this.mayaQrSrc.set(await resolveQrImage(s?.maya_qr, 512));
+  }
+
   async loadSettings() {
     await this.paymentService.getPaymentSettings();
     this.settings.set(this.paymentService.settings());
+    await this.refreshQrSources();
   }
 
   async loadChildBills() {

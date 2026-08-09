@@ -266,7 +266,7 @@
             <span class="method-info">Contact admin for details</span>
           }
           @if (settings()?.gcash_qr) {
-            <button type="button" class="qr-link-btn" (click)="openQrViewer('GCash', settings()?.gcash_qr)">
+            <button type="button" class="qr-link-btn" (click)="openQrViewer('GCash')">
               📷 Show QR code
             </button>
           }
@@ -283,7 +283,7 @@
             <span class="method-info">Contact admin for details</span>
           }
           @if (settings()?.maya_qr) {
-            <button type="button" class="qr-link-btn" (click)="openQrViewer('Maya', settings()?.maya_qr)">
+            <button type="button" class="qr-link-btn" (click)="openQrViewer('Maya')">
               📷 Show QR code
             </button>
           }
@@ -371,7 +371,7 @@
           @if (settings()?.gcash_qr) {
             <div class="qr-display">
               <p class="qr-label">Scan QR Code to pay via GCash:</p>
-              <img [src]="settings()?.gcash_qr" alt="GCash QR Code" class="qr-image" />
+              <img [src]="gcashQrSrc()" alt="GCash QR Code" class="qr-image" />
               <button
                 type="button"
                 class="qr-download-btn"
@@ -390,7 +390,7 @@
           @if (settings()?.maya_qr) {
             <div class="qr-display">
               <p class="qr-label">Scan QR Code to pay via Maya:</p>
-              <img [src]="settings()?.maya_qr" alt="Maya QR Code" class="qr-image" />
+              <img [src]="mayaQrSrc()" alt="Maya QR Code" class="qr-image" />
               <button
                 type="button"
                 class="qr-download-btn"

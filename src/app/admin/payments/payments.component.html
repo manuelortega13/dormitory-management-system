@@ -433,7 +433,7 @@
           <p class="settings-description">Upload a QR code image so occupants/parents can scan to pay.</p>
           @if (settingsGcashQr()) {
             <div class="qr-preview">
-              <img [src]="settingsGcashQr()" alt="GCash QR Code" />
+              <img [src]="gcashQrPreview()" alt="GCash QR Code" />
               <div class="qr-preview-actions">
                 <button class="btn-remove-qr" (click)="removeQr('gcash')">Remove</button>
               </div>
@@ -482,7 +482,7 @@
           <p class="settings-description">Upload a QR code image so occupants/parents can scan to pay.</p>
           @if (settingsMayaQr()) {
             <div class="qr-preview">
-              <img [src]="settingsMayaQr()" alt="Maya QR Code" />
+              <img [src]="mayaQrPreview()" alt="Maya QR Code" />
               <div class="qr-preview-actions">
                 <button class="btn-remove-qr" (click)="removeQr('maya')">Remove</button>
               </div>

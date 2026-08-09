@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { PaymentService, Bill, Payment, PaymentStats, Resident, CreateBillRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
 import { ToastService } from '../../services/toast.service';
 import { decodeQrFromImage } from '../../shared/utils/qr-decode.util';
+import { resolveQrImage } from '../../shared/utils/qr-render.util';
 import { NotificationService } from '../../services/notification.service';
 
 interface QrCheck {
@@ -24,6 +25,17 @@ export class PaymentsComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   constructor() {
+    // Re-render the previews whenever the stored QR values change, so the settings page
+    // shows the same code occupants will see rather than a raw payload string.
+    effect(() => {
+      const gcash = this.settingsGcashQr();
+      untracked(async () => this.gcashQrPreview.set(await resolveQrImage(gcash, 320)));
+    });
+    effect(() => {
+      const maya = this.settingsMayaQr();
+      untracked(async () => this.mayaQrPreview.set(await resolveQrImage(maya, 320)));
+    });
+
     // Keep the page live. Any 'payment' notification — most importantly an occupant
     // submitting a payment — increments this trigger, so refresh in place instead of
     // leaving the lists and the "Pending Verification" tile stale until a manual reload.
@@ -254,13 +266,7 @@ export class PaymentsComponent implements OnInit {
 
     const reader = new FileReader();
     reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      if (type === 'gcash') {
-        this.settingsGcashQr.set(dataUrl);
-      } else {
-        this.settingsMayaQr.set(dataUrl);
-      }
-      await this.checkUploadedQr(type, dataUrl);
+      await this.acceptQrUpload(type, reader.result as string);
     };
     reader.readAsDataURL(file);
 
@@ -282,6 +288,11 @@ export class PaymentsComponent implements OnInit {
   // that the upload was a QR code at all — a wrong image would sit in the payment
   // dialog looking official and simply fail to scan.
 
+  // Preview sources. A stored payload is rendered to an image here so the settings page
+  // shows the same QR occupants will see, not a raw string.
+  gcashQrPreview = signal('');
+  mayaQrPreview = signal('');
+
   qrCheckGcash = signal<QrCheck | null>(null);
   qrCheckMaya = signal<QrCheck | null>(null);
   isCheckingQr = signal(false);
@@ -295,22 +306,35 @@ export class PaymentsComponent implements OnInit {
   }
 
   /**
-   * Decode the uploaded image and report whether it contains a scannable QR.
+   * Decode the upload and store the payload when possible, so what gets saved is the QR
+   * itself rather than a picture of one: a few hundred bytes instead of hundreds of
+   * kilobytes, re-rendered crisply for every occupant and parent who views it.
    *
-   * This warns rather than blocks. jsQR has no perspective correction, so a valid QR
-   * photographed even slightly askew fails to decode — rejecting on that basis would
-   * turn a false negative into a blocked upload. A clear warning catches the case that
-   * actually matters (an image that is not a QR at all) without that risk.
+   * When the image cannot be decoded we keep it as-is and warn, rather than rejecting.
+   * jsQR has no perspective correction, so a valid QR photographed even slightly askew
+   * fails to decode — refusing on that basis would turn a false negative into a blocked
+   * upload. The warning still catches what matters: an image that is not a QR at all.
    */
-  private async checkUploadedQr(type: 'gcash' | 'maya', dataUrl: string): Promise<void> {
+  private async acceptQrUpload(type: 'gcash' | 'maya', dataUrl: string): Promise<void> {
+    const target = type === 'gcash' ? this.settingsGcashQr : this.settingsMayaQr;
+    // Show the upload immediately; it is replaced by the payload if decoding succeeds.
+    target.set(dataUrl);
     this.setQrCheck(type, null);
     this.isCheckingQr.set(true);
     try {
       const decoded = await decodeQrFromImage(dataUrl);
+      if (decoded) {
+        target.set(decoded);
+      }
       this.setQrCheck(
         type,
         decoded
-          ? { ok: true, message: 'QR code detected — occupants will be able to scan this.' }
+          ? {
+              ok: true,
+              message:
+                'QR code read successfully. It will be re-rendered for occupants, so it stays ' +
+                'sharp and scannable.',
+            }
           : {
               ok: false,
               message:

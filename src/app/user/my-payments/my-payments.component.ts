@@ -6,6 +6,7 @@ import { NotificationService } from '../../services/notification.service';
 import { ToastService } from '../../services/toast.service';
 import { downloadImage } from '../../shared/utils/image.util';
 import { composeQrCard } from '../../shared/utils/qr-card.util';
+import { resolveQrImage } from '../../shared/utils/qr-render.util';
 
 @Component({
   selector: 'app-my-payments',
@@ -98,6 +99,7 @@ export class MyPaymentsComponent implements OnInit, OnDestroy {
   async loadSettings() {
     await this.paymentService.getPaymentSettings();
     this.settings.set(this.paymentService.settings());
+    await this.refreshQrSources();
   }
 
   calculateStats() {
@@ -175,6 +177,18 @@ export class MyPaymentsComponent implements OnInit, OnDestroy {
 
   // --- Payment QR codes ---
 
+  // Displayable QR sources. A stored value may be a decoded payload (re-rendered here)
+  // or a legacy/fallback image, so every view goes through resolveQrImage.
+  gcashQrSrc = signal('');
+  mayaQrSrc = signal('');
+
+  private async refreshQrSources(): Promise<void> {
+    const s = this.settings();
+    this.gcashQrSrc.set(await resolveQrImage(s?.gcash_qr, 512));
+    this.mayaQrSrc.set(await resolveQrImage(s?.maya_qr, 512));
+  }
+
+
   // Standalone QR viewer, opened from the Available Payment Methods cards so the
   // QR can be seen (and saved) without starting a payment.
   qrViewer = signal<{
@@ -186,10 +200,11 @@ export class MyPaymentsComponent implements OnInit, OnDestroy {
   } | null>(null);
   isDownloadingQr = signal(false);
 
-  openQrViewer(label: string, image: string | null | undefined) {
-    if (!image) return;
+  openQrViewer(label: string, _image?: string | null) {
     const s = this.settings();
     const isGcash = label.toLowerCase() === 'gcash';
+    const image = isGcash ? this.gcashQrSrc() : this.mayaQrSrc();
+    if (!image) return;
     this.qrViewer.set({
       label,
       image,
@@ -213,7 +228,7 @@ export class MyPaymentsComponent implements OnInit, OnDestroy {
   async downloadQr(brand: 'gcash' | 'maya') {
     const s = this.settings();
     const isGcash = brand === 'gcash';
-    const image = (isGcash ? s?.gcash_qr : s?.maya_qr) || '';
+    const image = (isGcash ? this.gcashQrSrc() : this.mayaQrSrc()) || '';
     const label = isGcash ? 'GCash' : 'Maya';
     if (!image) return;
 
