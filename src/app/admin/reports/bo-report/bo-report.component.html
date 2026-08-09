@@ -294,7 +294,10 @@
       <header class="card-head">
         <div>
           <h2>Payment channels</h2>
-          <p class="card-sub">How payment value arrived each month</p>
+          <p class="card-sub">
+            Verified payments only, by channel. Pending and rejected money is not confirmed, so
+            neither is counted here.
+          </p>
         </div>
         <div class="view-toggle" role="group" aria-label="Payment channel view">
           <button
@@ -326,7 +329,7 @@
             class="chart-svg"
             [attr.viewBox]="'0 0 ' + methodGeo.w + ' ' + methodGeo.h"
             role="img"
-            aria-label="Horizontal stacked bars of payment value by channel for each month. Switch to the table view for exact values."
+            aria-label="Horizontal stacked bars of verified payment value by channel for each month. Switch to the table view for exact values."
           >
             @for (bar of methodGeo.rows; track bar.index) {
               @if (methodIndex() === bar.index) {
@@ -380,7 +383,7 @@
                 (focus)="showMethodTip(bar.index)"
                 (blur)="clearMethodTip()"
               >
-                <title>{{ bar.label }}: {{ fmtPeso(bar.total) }} received</title>
+                <title>{{ bar.label }}: {{ fmtPeso(bar.total) }} verified</title>
               </rect>
             }
           </svg>
@@ -417,7 +420,7 @@
                 @for (series of methodSeries; track series.key) {
                   <th scope="col" class="num">{{ series.label }}</th>
                 }
-                <th scope="col" class="num">Total</th>
+                <th scope="col" class="num">Verified</th>
               </tr>
             </thead>
             <tbody>
@@ -428,7 +431,7 @@
                   <td class="num">{{ fmtPeso(row.methods.maya) }}</td>
                   <td class="num">{{ fmtPeso(row.methods.cash) }}</td>
                   <td class="num">{{ fmtPeso(row.methods.other) }}</td>
-                  <td class="num">{{ fmtPeso(row.submitted) }}</td>
+                  <td class="num">{{ fmtPeso(row.verified) }}</td>
                 </tr>
               }
             </tbody>
@@ -616,7 +619,10 @@
     <header class="card-head">
       <div>
         <h2>Recent transactions</h2>
-        <p class="card-sub">Latest e-receipts submitted by occupants, newest last</p>
+        <p class="card-sub">
+          {{ logCaption() }} — the charts above cover every payment in the period, so this list will
+          not add up to them.
+        </p>
       </div>
     </header>
 

@@ -68,6 +68,16 @@ export class VpsasReportComponent extends ReportBase {
 
   protected readonly decisionLog = computed(() => this.report()?.log ?? []);
 
+  /** "Latest 12 of 40 decisions" — the charts above cover every decision in the window. */
+  protected readonly logCaption = computed(() => {
+    const report = this.report();
+    if (!report) return '';
+    const shown = Math.min(report.logLimit, report.logTotal);
+    return report.logTotal > shown
+      ? `Latest ${this.fmtInt(shown)} of ${this.fmtInt(report.logTotal)} decisions`
+      : `All ${this.fmtInt(report.logTotal)} decisions`;
+  });
+
   /** True when this VP has signed nothing at all in the last 12 months. */
   protected readonly isEmpty = computed(() =>
     (this.report()?.combined ?? []).every((row) => row.total === 0),

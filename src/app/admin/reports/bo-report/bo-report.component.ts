@@ -88,6 +88,19 @@ export class BoReportComponent extends ReportBase {
 
   protected readonly transactionLog = computed(() => this.report()?.log ?? []);
 
+  /**
+   * "Latest 12 of 26 transactions". The charts above aggregate every payment in the window,
+   * so without this the truncated list reads as the full set and will not reconcile.
+   */
+  protected readonly logCaption = computed(() => {
+    const report = this.report();
+    if (!report) return '';
+    const shown = Math.min(report.logLimit, report.logTotal);
+    return report.logTotal > shown
+      ? `Latest ${this.fmtInt(shown)} of ${this.fmtInt(report.logTotal)} transactions`
+      : `All ${this.fmtInt(report.logTotal)} transactions`;
+  });
+
   /** True when nothing has been billed or paid in the last 12 months. */
   protected readonly isEmpty = computed(() =>
     (this.report()?.months ?? []).every((m) => m.billed === 0 && m.submitted === 0),
@@ -299,7 +312,7 @@ export class BoReportComponent extends ReportBase {
       top: (bar.y / geo.h) * 100,
       align: 'center',
       below: bar.y / geo.h < 0.3,
-      title: `${bar.label} · ${this.compactPeso(bar.total)} received`,
+      title: `${bar.label} · ${this.compactPeso(bar.total)} verified`,
       rows: bar.segments.map((s) => ({
         label: s.label,
         value: this.fmtPeso(s.value),

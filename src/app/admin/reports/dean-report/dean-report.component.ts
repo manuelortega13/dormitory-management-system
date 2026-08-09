@@ -370,6 +370,19 @@ export class DeanReportComponent extends ReportBase {
 
   protected readonly decisionLog = computed(() => this.report()?.log ?? []);
 
+  /**
+   * "Latest 12 of 40 decisions". The charts above aggregate every decision in the window,
+   * so without this the truncated list reads as the full set and will not reconcile.
+   */
+  protected readonly logCaption = computed(() => {
+    const report = this.report();
+    if (!report) return '';
+    const shown = Math.min(report.logLimit, report.logTotal);
+    return report.logTotal > shown
+      ? `Latest ${this.fmtInt(shown)} of ${this.fmtInt(report.logTotal)} decisions`
+      : `All ${this.fmtInt(report.logTotal)} decisions`;
+  });
+
   // Screen-reader text for a mark. Built here rather than in the template because Angular
   // control flow is not parsed inside an SVG <title>, whose content is plain text.
   protected volumeTitle(entry: {

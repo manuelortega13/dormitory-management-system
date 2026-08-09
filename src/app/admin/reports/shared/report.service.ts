@@ -30,12 +30,16 @@ interface ApiDecisions {
   months: (MonthMeta & { wings: Record<string, ApiDecisionWing> })[];
   wings: Gender[];
   log: (Omit<DecisionLogEntry, 'filed' | 'decided'> & { filed: string; decided: string })[];
+  logLimit: number;
+  logTotal: number;
   level: 'dean' | 'vpsas';
 }
 
 interface ApiPayments {
   months: (MonthMeta & Omit<PaymentRow, keyof MonthMeta | 'submitted' | 'collectRate'>)[];
   log: (Omit<TransactionLogEntry, 'submitted'> & { submitted: string })[];
+  logLimit: number;
+  logTotal: number;
 }
 
 interface ApiOverview {
@@ -53,11 +57,19 @@ export interface DecisionReport {
   /** The visible wings summed — the report's own totals, never the whole dorm's. */
   combined: DecisionRow[];
   log: DecisionLogEntry[];
+  /**
+   * The log is a capped sample while the charts aggregate the whole window, so the view
+   * states both numbers. Without them a truncated list reads as a complete one.
+   */
+  logLimit: number;
+  logTotal: number;
 }
 
 export interface PaymentReport {
   months: PaymentRow[];
   log: TransactionLogEntry[];
+  logLimit: number;
+  logTotal: number;
 }
 
 export interface OverviewReport {
@@ -150,6 +162,8 @@ export class ReportService {
         filed: formatDay(entry.filed),
         decided: formatDay(entry.decided),
       })),
+      logLimit: data.logLimit,
+      logTotal: data.logTotal,
     };
   }
 
@@ -168,6 +182,8 @@ export class ReportService {
         };
       }),
       log: res.data.log.map((entry) => ({ ...entry, submitted: formatDay(entry.submitted) })),
+      logLimit: res.data.logLimit,
+      logTotal: res.data.logTotal,
     };
   }
 

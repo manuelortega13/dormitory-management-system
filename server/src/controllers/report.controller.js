@@ -47,6 +47,66 @@ const toDateTime = (date) => date.toISOString().slice(0, 19).replace('T', ' ');
 
 const numeric = (value) => (value === null || value === undefined ? 0 : Number(value));
 
+/** The channels `payments.payment_method` records; anything else folds into "other". */
+const PAYMENT_METHODS = ['gcash', 'maya', 'cash'];
+
+/**
+ * How many individual records the log tables carry. The charts aggregate everything in the
+ * window, so the log is a sample, not a total — the response reports the full count
+ * alongside it and the UI states the cap. Silently truncating a list that sits under a
+ * chart invites exactly the wrong conclusion: that the two should add up.
+ */
+const LOG_LIMIT = 12;
+
+const emptyPaymentBucket = () => ({
+  billed: 0,
+  verified: 0,
+  pending: 0,
+  rejected: 0,
+  verifiedCount: 0,
+  pendingCount: 0,
+  rejectedCount: 0,
+  methods: { gcash: 0, maya: 0, cash: 0, other: 0 },
+});
+
+/**
+ * Folds one `(month, status, method)` aggregate row into its bucket.
+ *
+ * The channel mix counts VERIFIED payments only. A rejected payment was returned, and a
+ * pending one has not been checked yet — neither is confirmed money, so neither belongs in
+ * a breakdown of what came in through each channel. Both are still counted in their own
+ * buckets, which is what the verification-state chart and the tiles report.
+ *
+ * Invariant: sum(methods) === verified.
+ */
+const absorbPayment = (bucket, row) => {
+  const amount = numeric(row.amount);
+  const count = numeric(row.n);
+
+  if (row.status === 'pending') {
+    bucket.pending += amount;
+    bucket.pendingCount += count;
+    return bucket;
+  }
+
+  if (row.status === 'rejected') {
+    bucket.rejected += amount;
+    bucket.rejectedCount += count;
+    return bucket;
+  }
+
+  if (row.status !== 'verified') return bucket;
+
+  bucket.verified += amount;
+  bucket.verifiedCount += count;
+
+  const method = PAYMENT_METHODS.includes(row.method) ? row.method : 'other';
+  bucket.methods[method] += amount;
+  return bucket;
+};
+
+exports.__test__ = { emptyPaymentBucket, absorbPayment };
+
 /**
  * Which wings the viewer may see. A home dean is bound to one wing by `dean_type`, exactly
  * as leave-request.controller.js scopes their queue — the report must not leak the other
@@ -169,7 +229,14 @@ exports.getDecisions = async (req, res) => {
 
     res.json({
       success: true,
-      data: { months: series, wings, log, level: isVpsas ? 'vpsas' : 'dean' },
+      data: {
+        months: series,
+        wings,
+        log: log.entries,
+        logLimit: LOG_LIMIT,
+        logTotal: log.total,
+        level: isVpsas ? 'vpsas' : 'dean',
+      },
     });
   } catch (error) {
     console.error('getDecisions error:', error);
@@ -206,22 +273,17 @@ const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId }) => 
       ${reviewer.replace('{by}', cols.by)}
   `;
 
-  const sql = `
+  const union = `
     ${select('leave_requests', leave, 'Leave request', 't.reason')}
     UNION ALL
     ${select('gatepasses', gatepass, 'Gatepass', 't.reason')}
-    ORDER BY decided DESC
-    LIMIT 12
   `;
+  const params = [...scopeParams, ...reviewerParams, ...scopeParams, ...reviewerParams];
 
-  const [rows] = await pool.query(sql, [
-    ...scopeParams,
-    ...reviewerParams,
-    ...scopeParams,
-    ...reviewerParams,
-  ]);
+  const [rows] = await pool.query(`${union} ORDER BY decided DESC LIMIT ${LOG_LIMIT}`, params);
+  const [[counted]] = await pool.query(`SELECT COUNT(*) AS n FROM (${union}) counted`, params);
 
-  return rows.map((row) => ({
+  const entries = rows.map((row) => ({
     reference: `${row.type === 'Gatepass' ? 'GP' : 'LR'}-${row.id}`,
     occupant: row.occupant,
     gender: row.gender,
@@ -233,13 +295,16 @@ const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId }) => 
     outcome: row.outcome === 'approved' ? 'Approved' : 'Rejected',
     note: row.note,
   }));
+
+  return { entries, total: numeric(counted.n) };
 };
 
 /**
  * GET /api/reports/payments
  *
  * Payment transactions by month: what was billed, what has been verified, what is still
- * queued for verification, what was rejected, and the channel mix.
+ * queued for verification, what was rejected, and the channel mix. The channel mix counts
+ * verified payments only — pending and rejected money is not confirmed.
  */
 exports.getPayments = async (req, res) => {
   try {
@@ -266,17 +331,7 @@ exports.getPayments = async (req, res) => {
       [from],
     );
 
-    const empty = () => ({
-      billed: 0,
-      verified: 0,
-      pending: 0,
-      rejected: 0,
-      verifiedCount: 0,
-      pendingCount: 0,
-      rejectedCount: 0,
-      methods: { gcash: 0, maya: 0, cash: 0, other: 0 },
-    });
-    const buckets = new Map(months.map((m) => [m.key, empty()]));
+    const buckets = new Map(months.map((m) => [m.key, emptyPaymentBucket()]));
 
     for (const row of billRows) {
       const bucket = buckets.get(row.ym);
@@ -285,22 +340,7 @@ exports.getPayments = async (req, res) => {
 
     for (const row of paymentRows) {
       const bucket = buckets.get(row.ym);
-      if (!bucket) continue;
-      const amount = numeric(row.amount);
-      const count = numeric(row.n);
-      if (row.status === 'verified') {
-        bucket.verified += amount;
-        bucket.verifiedCount += count;
-      } else if (row.status === 'pending') {
-        bucket.pending += amount;
-        bucket.pendingCount += count;
-      } else if (row.status === 'rejected') {
-        bucket.rejected += amount;
-        bucket.rejectedCount += count;
-      }
-      // The channel mix covers everything submitted, whatever its verification state.
-      const method = ['gcash', 'maya', 'cash'].includes(row.method) ? row.method : 'other';
-      bucket.methods[method] += amount;
+      if (bucket) absorbPayment(bucket, row);
     }
 
     const series = months.map((month) => ({
@@ -326,13 +366,17 @@ exports.getPayments = async (req, res) => {
        LEFT JOIN rooms r ON r.id = ra.room_id
        LEFT JOIN users v ON v.id = p.verified_by
        ORDER BY p.payment_date DESC
-       LIMIT 12`,
+       LIMIT ${LOG_LIMIT}`,
     );
+
+    const [[logCount]] = await pool.query(`SELECT COUNT(*) AS n FROM payments`);
 
     res.json({
       success: true,
       data: {
         months: series,
+        logLimit: LOG_LIMIT,
+        logTotal: numeric(logCount.n),
         log: log.map((row) => ({
           reference: row.reference || `PMT-${row.id}`,
           occupant: row.occupant,
