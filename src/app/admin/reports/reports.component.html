@@ -1,92 +1,54 @@
-<div class="page-container">
-  <div class="coming-soon-banner">
-    <span class="banner-icon">🚧</span>
-    <div class="banner-content">
-      <strong>Feature Coming Soon</strong>
-      <p>This feature is under development. All data shown below is static/mock data for preview purposes.</p>
-    </div>
-  </div>
-
-  <div class="page-header">
+<div class="page-container reports">
+  <header class="page-header">
     <div class="header-content">
-      <h1>📈 Reports</h1>
-      <p class="subtitle">Generate and view dormitory reports</p>
+      <h1>📈 {{ copy().title }}</h1>
+      <p class="subtitle">
+        {{ copy().subtitle }}
+        <span class="role-badge">{{ copy().badge }}</span>
+      </p>
     </div>
-    <button class="btn-primary" disabled>
-      <span>➕</span> Create Report
-    </button>
-  </div>
+    <div class="header-actions">
+      <button class="btn-ghost" type="button" (click)="exportCsv()">⬇ Export CSV</button>
+      <button class="btn-primary" type="button" (click)="printReport()">🖨 Print / PDF</button>
+    </div>
+  </header>
 
-  <div class="stats-container">
-    <div class="stat-card">
-      <div class="stat-icon total">📋</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ stats.totalReports }}</span>
-        <span class="stat-label">Available Reports</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon active">📁</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ stats.categories }}</span>
-        <span class="stat-label">Categories</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon pending">🔄</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ stats.scheduledReports }}</span>
-        <span class="stat-label">Scheduled</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon completed">✓</div>
-      <div class="stat-info">
-        <span class="stat-value">{{ stats.generatedToday }}</span>
-        <span class="stat-label">Generated Today</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="filters-bar">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="Search reports..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
-    </div>
+  <!-- One filter row above everything it scopes: every chart re-renders on the same slice. -->
+  <section class="filter-bar" aria-label="Report filters">
     <div class="filter-group">
-      <select disabled>
-        <option>All Categories</option>
-      </select>
-      <select disabled>
-        <option>All Frequencies</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="cards-grid">
-    @for (report of mockReports; track report.id) {
-      <div class="report-card">
-        <div class="report-icon">{{ getCategoryIcon(report.category) }}</div>
-        <div class="report-content">
-          <h3>{{ report.name }}</h3>
-          <p class="description">{{ report.description }}</p>
-          <div class="report-meta">
-            <span class="format-badge">{{ report.format }}</span>
-            <span class="frequency-badge {{ getFrequencyClass(report.frequency) }}">
-              {{ report.frequency }}
-            </span>
-          </div>
-          <p class="last-generated">Last generated: {{ formatDate(report.lastGenerated) }}</p>
-        </div>
-        <div class="report-actions">
-          <button class="btn-generate" disabled>
-            📄 Generate
+      <span class="filter-label">Period</span>
+      <div class="segmented" role="group" aria-label="Reporting period">
+        @for (option of ranges; track option.key) {
+          <button
+            type="button"
+            [class.is-active]="range() === option.key"
+            [attr.aria-pressed]="range() === option.key"
+            (click)="range.set(option.key)"
+          >
+            {{ option.label }}
           </button>
-          <button class="btn-schedule" disabled>
-            ⏰ Schedule
-          </button>
-        </div>
+        }
       </div>
+    </div>
+
+    <p class="filter-summary">
+      <strong>{{ periodLabel() }}</strong>
+      <span>deltas {{ comparisonLabel() }}</span>
+    </p>
+  </section>
+
+  @switch (role()) {
+    @case ('home_dean') {
+      <app-dean-report [range]="range()" />
     }
-  </div>
+    @case ('vpsas') {
+      <app-vpsas-report [range]="range()" />
+    }
+    @case ('business_officer') {
+      <app-bo-report [range]="range()" />
+    }
+    @default {
+      <app-overview-report [range]="range()" />
+    }
+  }
 </div>

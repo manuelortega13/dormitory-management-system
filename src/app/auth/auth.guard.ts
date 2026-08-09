@@ -88,6 +88,14 @@ export const manageGuard: CanActivateFn = roleGuard([
   'vpsas',
   'business_officer',
 ]);
+// Reports renders a different view per role, so every /manage role is admitted and the
+// page itself decides which report to show.
+export const reportsGuard: CanActivateFn = roleGuard([
+  'admin',
+  'home_dean',
+  'vpsas',
+  'business_officer',
+]);
 // Payments is limited to admin + business_officer (home_dean/vpsas are blocked).
 export const paymentsGuard: CanActivateFn = roleGuard(['admin', 'business_officer']);
 // Settings page is reachable by admins and business_officer (BO only sees Payment Settings).

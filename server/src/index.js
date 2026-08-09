@@ -23,6 +23,7 @@ const notificationRoutes = require('./routes/notification.routes');
 const parentRegistrationRoutes = require('./routes/parent-registration.routes');
 const announcementRoutes = require('./routes/announcement.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const reportRoutes = require('./routes/report.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
 const pushRoutes = require('./routes/push.routes');
@@ -59,6 +60,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/parent-registrations', parentRegistrationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/push', pushRoutes);
@@ -108,8 +110,8 @@ app.post('/api/admin/run-seed', async (req, res) => {
   try {
     const seedPath = path.join(__dirname, 'config', 'seed.sql');
     const seedSql = fs.readFileSync(seedPath, 'utf8').replace(/USE railway;/g, '');
-    
-    const statements = seedSql.split(';').filter(s => s.trim().length > 0);
+
+    const statements = seedSql.split(';').filter((s) => s.trim().length > 0);
     for (const stmt of statements) {
       try {
         await pool.query(stmt);
@@ -136,7 +138,7 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 });
 
@@ -145,16 +147,16 @@ const startServer = async () => {
   await testConnection();
   await initDatabase();
   await migrate();
-  
+
   // Pre-load face recognition models (optional but improves first verification speed)
-  initializeFaceVerification().then(success => {
+  initializeFaceVerification().then((success) => {
     if (success) {
       console.log('✅ Face recognition models loaded');
     } else {
       console.warn('⚠️ Face recognition models failed to load - verification may fail');
     }
   });
-  
+
   server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);

@@ -1,0 +1,700 @@
+@if (status() === 'loading') {
+  <div class="report-skeleton" aria-busy="true" aria-live="polite">
+    <div class="skeleton-row">
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+    </div>
+    <div class="skeleton-block is-chart"></div>
+  </div>
+} @else if (status() === 'error') {
+  <div class="report-state" role="alert">
+    <h2>Could not load the decisions report</h2>
+    <p>The server did not return the decision history. Check your connection and try again.</p>
+    <button type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (isEmpty()) {
+  <div class="report-state">
+    <h2>No decisions recorded yet</h2>
+    <p>
+      Nothing has been approved or rejected for {{ wingLabel() }} in the last 12 months. Once leave
+      requests and gatepasses are signed off, they will appear here.
+    </p>
+  </div>
+} @else {
+  <!-- Hero figure + supporting stat tiles -->
+  <section class="headline" aria-label="Headline figures">
+    @let heroFigure = hero();
+    <article class="hero-card">
+      <span class="tile-label">Decisions recorded</span>
+      <p class="hero-value">{{ heroFigure.value }}</p>
+      <p class="hero-detail">{{ heroFigure.detail }}</p>
+      <p class="hero-detail hero-split">{{ heroFigure.split }}</p>
+      <div class="tile-foot">
+        @if (heroFigure.delta) {
+          <span
+            class="delta"
+            [class.is-good]="heroFigure.delta.good === true"
+            [class.is-bad]="heroFigure.delta.good === false"
+          >
+            {{ heroFigure.delta.text }}
+          </span>
+        } @else {
+          <span class="delta is-flat">no prior period</span>
+        }
+        <svg
+          class="spark"
+          [attr.viewBox]="'0 0 ' + heroFigure.spark.w + ' ' + heroFigure.spark.h"
+          [attr.width]="heroFigure.spark.w"
+          [attr.height]="heroFigure.spark.h"
+          aria-hidden="true"
+        >
+          <path
+            [attr.d]="heroFigure.spark.base"
+            fill="none"
+            [style.stroke]="palette.deemph"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            [attr.d]="heroFigure.spark.accent"
+            fill="none"
+            [style.stroke]="palette.blue"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <circle
+            [attr.cx]="heroFigure.spark.end.x"
+            [attr.cy]="heroFigure.spark.end.y"
+            r="3"
+            [style.fill]="palette.blue"
+          />
+        </svg>
+      </div>
+    </article>
+
+    @for (tile of tiles(); track tile.key) {
+      <article class="tile">
+        <span class="tile-label">{{ tile.label }}</span>
+        <p class="tile-value">{{ tile.value }}</p>
+        <p class="tile-detail">{{ tile.detail }}</p>
+        <div class="tile-foot">
+          @if (tile.delta) {
+            <span
+              class="delta"
+              [class.is-good]="tile.delta.good === true"
+              [class.is-bad]="tile.delta.good === false"
+            >
+              {{ tile.delta.text }}
+            </span>
+          } @else {
+            <span class="delta is-flat">—</span>
+          }
+          <svg
+            class="spark"
+            [attr.viewBox]="'0 0 ' + tile.spark.w + ' ' + tile.spark.h"
+            [attr.width]="tile.spark.w"
+            [attr.height]="tile.spark.h"
+            aria-hidden="true"
+          >
+            <path
+              [attr.d]="tile.spark.base"
+              fill="none"
+              [style.stroke]="palette.deemph"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              [attr.d]="tile.spark.accent"
+              fill="none"
+              [style.stroke]="palette.blue"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <circle
+              [attr.cx]="tile.spark.end.x"
+              [attr.cy]="tile.spark.end.y"
+              r="3"
+              [style.fill]="palette.blue"
+            />
+          </svg>
+        </div>
+      </article>
+    }
+  </section>
+
+  <!-- Decisions per month: part-to-whole of everything decided, fixed outcome order. -->
+  @let volumeGeo = volume();
+  <article class="chart-card is-wide">
+    <header class="card-head">
+      <div>
+        <h2>Decisions per month</h2>
+        <p class="card-sub">
+          Leave requests and gatepasses signed off by the dean's office — {{ wingLabel() }}
+        </p>
+      </div>
+      <div class="view-toggle" role="group" aria-label="Decisions per month view">
+        <button
+          type="button"
+          [class.is-active]="volumeView() === 'chart'"
+          (click)="volumeView.set('chart')"
+        >
+          Chart
+        </button>
+        <button
+          type="button"
+          [class.is-active]="volumeView() === 'table'"
+          (click)="volumeView.set('table')"
+        >
+          Table
+        </button>
+      </div>
+    </header>
+
+    <ul class="legend">
+      @for (series of outcomeSeries; track series.key) {
+        <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+      }
+    </ul>
+
+    @if (volumeView() === 'chart') {
+      <div class="plot" (mouseleave)="clearVolumeTip()">
+        <svg
+          class="chart-svg is-wide-plot"
+          [attr.viewBox]="'0 0 ' + volumeGeo.w + ' ' + volumeGeo.h"
+          role="img"
+          aria-label="Stacked column chart of approved and rejected decisions each month. Switch to the table view for exact values."
+        >
+          @for (tick of volumeGeo.yTicks; track tick.y) {
+            <line
+              [attr.x1]="volumeGeo.pad.l"
+              [attr.x2]="volumeGeo.w - volumeGeo.pad.r"
+              [attr.y1]="tick.y"
+              [attr.y2]="tick.y"
+              [style.stroke]="palette.grid"
+              stroke-width="1"
+            />
+            <text
+              class="axis-text"
+              [attr.x]="volumeGeo.pad.l - 10"
+              [attr.y]="tick.y + 4"
+              text-anchor="end"
+            >
+              {{ tick.label }}
+            </text>
+          }
+
+          @for (column of volumeGeo.columns; track column.index) {
+            @if (volumeIndex() === column.index) {
+              <rect
+                class="hover-band"
+                [attr.x]="column.hit.x"
+                [attr.y]="volumeGeo.pad.t"
+                [attr.width]="column.hit.w"
+                [attr.height]="volumeGeo.plotH"
+              />
+            }
+            <!-- Colour stays on the outcome; the wing is carried by position plus the M/F
+               mark under each bar. Twelve cap totals at this width would collide, so exact
+               values live in the axis, the tooltip and the table view instead. -->
+            @for (bar of column.bars; track bar.groupKey) {
+              @for (segment of bar.segments; track segment.key) {
+                <path [attr.d]="segment.path" [style.fill]="segment.color" />
+              }
+              @if (isSplit()) {
+                <text
+                  class="axis-text wing-mark"
+                  [attr.x]="bar.centre"
+                  [attr.y]="volumeGeo.h - 36"
+                  text-anchor="middle"
+                >
+                  {{ bar.short }}
+                </text>
+              }
+            }
+            <text
+              class="axis-text"
+              [attr.x]="column.centre"
+              [attr.y]="volumeGeo.h - 14"
+              text-anchor="middle"
+            >
+              {{ column.row.row.label }}
+            </text>
+            <rect
+              class="hit"
+              [attr.x]="column.hit.x"
+              [attr.y]="volumeGeo.pad.t"
+              [attr.width]="column.hit.w"
+              [attr.height]="volumeGeo.plotH"
+              tabindex="0"
+              (mouseenter)="showVolumeTip(column.index)"
+              (focus)="showVolumeTip(column.index)"
+              (blur)="clearVolumeTip()"
+            >
+              <title>{{ volumeTitle(column.row) }}</title>
+            </rect>
+          }
+        </svg>
+
+        @if (volumeTip(); as tip) {
+          <div
+            class="tip"
+            [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+            [style.left.%]="tip.left"
+            [style.top.%]="tip.top"
+          >
+            <p class="tip-title">{{ tip.title }}</p>
+            @for (row of tip.rows; track row.label) {
+              <p class="tip-row">
+                @if (row.color) {
+                  <span class="swatch" [style.background]="row.color"></span>
+                }
+                <span class="tip-key">{{ row.label }}</span>
+                <span class="tip-value">{{ row.value }}</span>
+              </p>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption class="sr-only">
+            Decisions per month by wing and outcome
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col">Wing</th>
+              <th scope="col" class="num">Approved</th>
+              <th scope="col" class="num">Rejected</th>
+              <th scope="col" class="num">Total</th>
+              <th scope="col" class="num">Approval rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of wingRows(); track entry.row.longLabel) {
+              @for (w of entry.wings; track w.wing.key) {
+                <tr>
+                  @if ($first) {
+                    <th scope="row" [attr.rowspan]="entry.wings.length">
+                      {{ entry.row.longLabel }}
+                    </th>
+                  }
+                  <td>{{ w.wing.label }}</td>
+                  <td class="num">{{ fmtInt(w.row.approved) }}</td>
+                  <td class="num">{{ fmtInt(w.row.rejected) }}</td>
+                  <td class="num">{{ fmtInt(w.row.total) }}</td>
+                  <td class="num">{{ fmtPct(rateOf(w.row)) }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+
+  <div class="chart-row">
+    <!-- Request type: part-to-whole with long row names, so the bars run horizontally. -->
+    @let typeGeo = byType();
+    <article class="chart-card">
+      <header class="card-head">
+        <div>
+          <h2>{{ isSplit() ? 'Request type by wing' : 'Request type' }}</h2>
+          <p class="card-sub">
+            Leave requests and gatepasses — {{ wingLabel() }}, {{ periodLabel() }}
+          </p>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Request type view">
+          <button
+            type="button"
+            [class.is-active]="typeView() === 'chart'"
+            (click)="typeView.set('chart')"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            [class.is-active]="typeView() === 'table'"
+            (click)="typeView.set('table')"
+          >
+            Table
+          </button>
+        </div>
+      </header>
+
+      <ul class="legend">
+        @for (series of outcomeSeries; track series.key) {
+          <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+        }
+      </ul>
+
+      @if (typeView() === 'chart') {
+        <div class="plot" (mouseleave)="clearTypeTip()">
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + typeGeo.w + ' ' + typeGeo.h"
+            role="img"
+            aria-label="Horizontal stacked bars comparing approved and rejected decisions for leave requests and gatepasses. Switch to the table view for exact values."
+          >
+            @for (bar of typeGeo.rows; track bar.index) {
+              @if (typeIndex() === bar.index) {
+                <rect
+                  class="hover-band"
+                  [attr.x]="typeGeo.pad.l"
+                  [attr.y]="bar.hit.y"
+                  [attr.width]="typeGeo.plotW"
+                  [attr.height]="bar.hit.h"
+                />
+              }
+              <text
+                class="row-text"
+                [attr.x]="typeGeo.pad.l - 12"
+                [attr.y]="bar.centreY + 4"
+                text-anchor="end"
+              >
+                {{ bar.label }}
+              </text>
+              @for (segment of bar.segments; track segment.key) {
+                <path [attr.d]="segment.path" [style.fill]="segment.color" />
+                <!-- Only label inside the fill when the text actually fits with padding. -->
+                @if (segment.fits) {
+                  <text
+                    class="inline-label"
+                    [attr.x]="segment.centre"
+                    [attr.y]="bar.centreY + 4"
+                    [style.fill]="segment.ink"
+                    text-anchor="middle"
+                  >
+                    {{ fmtInt(segment.value) }}
+                  </text>
+                }
+              }
+              <text
+                class="point-label"
+                [attr.x]="bar.endX + 10"
+                [attr.y]="bar.centreY + 4"
+                text-anchor="start"
+              >
+                {{ fmtInt(bar.total) }}
+              </text>
+              <rect
+                class="hit"
+                [attr.x]="typeGeo.pad.l"
+                [attr.y]="bar.hit.y"
+                [attr.width]="typeGeo.plotW"
+                [attr.height]="bar.hit.h"
+                tabindex="0"
+                (mouseenter)="showTypeTip(bar.index)"
+                (focus)="showTypeTip(bar.index)"
+                (blur)="clearTypeTip()"
+              >
+                <title>{{ bar.label }}: {{ fmtInt(bar.total) }} decided</title>
+              </rect>
+            }
+          </svg>
+
+          @if (typeTip(); as tip) {
+            <div
+              class="tip"
+              [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+              [style.left.%]="tip.left"
+              [style.top.%]="tip.top"
+            >
+              <p class="tip-title">{{ tip.title }}</p>
+              @for (row of tip.rows; track row.label) {
+                <p class="tip-row">
+                  @if (row.color) {
+                    <span class="swatch" [style.background]="row.color"></span>
+                  }
+                  <span class="tip-key">{{ row.label }}</span>
+                  <span class="tip-value">{{ row.value }}</span>
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">
+              Outcomes by request type and wing
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Request type · wing</th>
+                <th scope="col" class="num">Approved</th>
+                <th scope="col" class="num">Rejected</th>
+                <th scope="col" class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (bar of typeGeo.rows; track bar.index) {
+                <tr>
+                  <th scope="row">{{ bar.label }}</th>
+                  <td class="num">{{ fmtInt(bar.segments[0].value) }}</td>
+                  <td class="num">
+                    {{ fmtInt(bar.segments.length > 1 ? bar.segments[1].value : 0) }}
+                  </td>
+                  <td class="num">{{ fmtInt(bar.total) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+
+    <!-- Approval rate over time. Two series here, so the wing owns the colour channel and a
+       legend is mandatory; direct end labels supplement it. No area wash — a fill only reads
+       honestly with a single series. -->
+    @let rateGeo = rateTrend();
+    <article class="chart-card">
+      <header class="card-head">
+        <div>
+          <h2>{{ isSplit() ? 'Approval rate by wing' : 'Approval rate' }}</h2>
+          <p class="card-sub">
+            Share of decisions that were approved, month by month — {{ wingLabel() }}
+          </p>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Approval rate view">
+          <button
+            type="button"
+            [class.is-active]="rateView() === 'chart'"
+            (click)="rateView.set('chart')"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            [class.is-active]="rateView() === 'table'"
+            (click)="rateView.set('table')"
+          >
+            Table
+          </button>
+        </div>
+      </header>
+
+      <!-- A single series needs no legend box: the title already says what is plotted. -->
+      @if (isSplit()) {
+        <ul class="legend">
+          @for (wing of shownWings(); track wing.key) {
+            <li>
+              <span class="swatch" [style.background]="wingColors[wing.key]"></span>{{ wing.label }}
+            </li>
+          }
+        </ul>
+      }
+
+      @if (rateView() === 'chart') {
+        <div class="plot" (mouseleave)="clearRateTip()">
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + rateGeo.w + ' ' + rateGeo.h"
+            role="img"
+            aria-label="Line chart comparing the monthly approval rate of the men's and women's wings. Switch to the table view for exact values."
+          >
+            @for (tick of rateGeo.yTicks; track tick.y) {
+              <line
+                [attr.x1]="rateGeo.pad.l"
+                [attr.x2]="rateGeo.w - rateGeo.pad.r"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
+                [style.stroke]="palette.grid"
+                stroke-width="1"
+              />
+              <text
+                class="axis-text"
+                [attr.x]="rateGeo.pad.l - 10"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            }
+
+            @if (rateIndex() !== null) {
+              <line
+                [attr.x1]="rateGeo.series[0].points[rateIndex()!].x"
+                [attr.x2]="rateGeo.series[0].points[rateIndex()!].x"
+                [attr.y1]="rateGeo.pad.t"
+                [attr.y2]="rateGeo.pad.t + rateGeo.plotH"
+                [style.stroke]="palette.axis"
+                stroke-width="1"
+              />
+            }
+
+            @for (line of rateGeo.series; track line.key) {
+              <path
+                [attr.d]="line.line"
+                fill="none"
+                [style.stroke]="line.color"
+                stroke-width="2"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+              @if (line.last; as endPoint) {
+                <circle
+                  [attr.cx]="endPoint.x"
+                  [attr.cy]="endPoint.y"
+                  r="5"
+                  [style.fill]="line.color"
+                  [style.stroke]="palette.surface"
+                  stroke-width="2"
+                />
+                <text
+                  class="point-label"
+                  [attr.x]="endPoint.x + 12"
+                  [attr.y]="endPoint.y + 4"
+                  text-anchor="start"
+                >
+                  {{ fmtPct(rateOf(rowForWing(endPoint.row, line.key))) }}
+                </text>
+              }
+            }
+
+            @for (point of rateGeo.series[0].points; track point.index) {
+              <text
+                class="axis-text"
+                [attr.x]="point.x"
+                [attr.y]="rateGeo.h - 14"
+                text-anchor="middle"
+              >
+                {{ point.row.row.label }}
+              </text>
+            }
+
+            @for (band of rateGeo.hit; track band.index) {
+              <rect
+                class="hit"
+                [attr.x]="band.x"
+                [attr.y]="rateGeo.pad.t"
+                [attr.width]="band.w"
+                [attr.height]="rateGeo.plotH"
+                tabindex="0"
+                (mouseenter)="showRateTip(band.index)"
+                (focus)="showRateTip(band.index)"
+                (blur)="clearRateTip()"
+              >
+                <title>{{ rateTitle(rateGeo.rows[band.index]) }}</title>
+              </rect>
+            }
+          </svg>
+
+          @if (rateTip(); as tip) {
+            <div
+              class="tip"
+              [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+              [style.left.%]="tip.left"
+              [style.top.%]="tip.top"
+            >
+              <p class="tip-title">{{ tip.title }}</p>
+              @for (row of tip.rows; track row.label) {
+                <p class="tip-row">
+                  @if (row.color) {
+                    <span class="swatch" [style.background]="row.color"></span>
+                  }
+                  <span class="tip-key">{{ row.label }}</span>
+                  <span class="tip-value">{{ row.value }}</span>
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">
+              Monthly approval rate by wing
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                @for (wing of shownWings(); track wing.key) {
+                  <th scope="col" class="num">{{ wing.label }}</th>
+                }
+                <th scope="col" class="num">Decisions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of wingRows(); track entry.row.longLabel) {
+                <tr>
+                  <th scope="row">{{ entry.row.longLabel }}</th>
+                  @for (w of entry.wings; track w.wing.key) {
+                    <td class="num">{{ fmtPct(rateOf(w.row)) }}</td>
+                  }
+                  <td class="num">{{ fmtInt(entry.row.total) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  </div>
+
+  <!-- Decision log: the record behind the charts. -->
+  <article class="chart-card is-wide">
+    <header class="card-head">
+      <div>
+        <h2>Recent decisions</h2>
+        <p class="card-sub">
+          Latest leave request and gatepass sign-offs from the dean's office — {{ wingLabel() }}
+        </p>
+      </div>
+    </header>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">
+          Recent dean decisions
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Occupant</th>
+            @if (isSplit()) {
+              <th scope="col">Wing</th>
+            }
+            <th scope="col">Room</th>
+            <th scope="col">Type</th>
+            <th scope="col">Reason</th>
+            <th scope="col">Filed</th>
+            <th scope="col">Decided</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of decisionLog(); track entry.reference) {
+            <tr>
+              <th scope="row">{{ entry.reference }}</th>
+              <td>{{ entry.occupant }}</td>
+              @if (isSplit()) {
+                <td>{{ entry.gender === 'male' ? "Men's" : "Women's" }}</td>
+              }
+              <td>{{ entry.room }}</td>
+              <td>{{ entry.type }}</td>
+              <td>{{ entry.reason }}</td>
+              <td>{{ entry.filed }}</td>
+              <td>{{ entry.decided }}</td>
+              <td>
+                <span
+                  class="pill"
+                  [class.is-approved]="entry.outcome === 'Approved'"
+                  [class.is-rejected]="entry.outcome === 'Rejected'"
+                >
+                  {{ entry.outcome }}
+                </span>
+              </td>
+              <td>{{ entry.note }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+}

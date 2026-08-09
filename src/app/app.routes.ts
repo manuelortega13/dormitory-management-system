@@ -6,6 +6,7 @@ import {
   parentGuard,
   manageGuard,
   paymentsGuard,
+  reportsGuard,
   settingsGuard,
   maintenanceGuard,
 } from './auth/auth.guard';
@@ -196,7 +197,7 @@ export const routes: Routes = [
       },
       {
         path: 'reports',
-        canActivate: [adminGuard],
+        canActivate: [reportsGuard],
         loadComponent: () =>
           import('./admin/reports/reports.component').then((m) => m.ReportsComponent),
       },

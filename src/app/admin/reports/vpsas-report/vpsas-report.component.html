@@ -1,0 +1,662 @@
+@if (status() === 'loading') {
+  <div class="report-skeleton" aria-busy="true" aria-live="polite">
+    <div class="skeleton-row">
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+    </div>
+    <div class="skeleton-block is-chart"></div>
+  </div>
+} @else if (status() === 'error') {
+  <div class="report-state" role="alert">
+    <h2>Could not load your decisions</h2>
+    <p>The server did not return your decision history. Check your connection and try again.</p>
+    <button type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (isEmpty()) {
+  <div class="report-state">
+    <h2>No decisions recorded yet</h2>
+    <p>
+      You have not approved or rejected any escalated leave requests or gatepasses in the last 12
+      months. Anything you sign will appear here.
+    </p>
+  </div>
+} @else {
+  <!-- Hero figure + supporting stat tiles -->
+  <section class="headline" aria-label="Headline figures">
+    @let heroFigure = hero();
+    <article class="hero-card">
+      <span class="tile-label">Decisions I signed off</span>
+      <p class="hero-value">{{ heroFigure.value }}</p>
+      <p class="hero-detail">{{ heroFigure.detail }}</p>
+      <div class="tile-foot">
+        @if (heroFigure.delta) {
+          <span
+            class="delta"
+            [class.is-good]="heroFigure.delta.good === true"
+            [class.is-bad]="heroFigure.delta.good === false"
+          >
+            {{ heroFigure.delta.text }}
+          </span>
+        } @else {
+          <span class="delta is-flat">no prior period</span>
+        }
+        <svg
+          class="spark"
+          [attr.viewBox]="'0 0 ' + heroFigure.spark.w + ' ' + heroFigure.spark.h"
+          [attr.width]="heroFigure.spark.w"
+          [attr.height]="heroFigure.spark.h"
+          aria-hidden="true"
+        >
+          <path
+            [attr.d]="heroFigure.spark.base"
+            fill="none"
+            [style.stroke]="palette.deemph"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            [attr.d]="heroFigure.spark.accent"
+            fill="none"
+            [style.stroke]="palette.blue"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <circle
+            [attr.cx]="heroFigure.spark.end.x"
+            [attr.cy]="heroFigure.spark.end.y"
+            r="3"
+            [style.fill]="palette.blue"
+          />
+        </svg>
+      </div>
+    </article>
+
+    @for (tile of tiles(); track tile.key) {
+      <article class="tile">
+        <span class="tile-label">{{ tile.label }}</span>
+        <p class="tile-value">{{ tile.value }}</p>
+        <p class="tile-detail">{{ tile.detail }}</p>
+        <div class="tile-foot">
+          @if (tile.delta) {
+            <span
+              class="delta"
+              [class.is-good]="tile.delta.good === true"
+              [class.is-bad]="tile.delta.good === false"
+            >
+              {{ tile.delta.text }}
+            </span>
+          } @else {
+            <span class="delta is-flat">—</span>
+          }
+          <svg
+            class="spark"
+            [attr.viewBox]="'0 0 ' + tile.spark.w + ' ' + tile.spark.h"
+            [attr.width]="tile.spark.w"
+            [attr.height]="tile.spark.h"
+            aria-hidden="true"
+          >
+            <path
+              [attr.d]="tile.spark.base"
+              fill="none"
+              [style.stroke]="palette.deemph"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              [attr.d]="tile.spark.accent"
+              fill="none"
+              [style.stroke]="palette.blue"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <circle
+              [attr.cx]="tile.spark.end.x"
+              [attr.cy]="tile.spark.end.y"
+              r="3"
+              [style.fill]="palette.blue"
+            />
+          </svg>
+        </div>
+      </article>
+    }
+  </section>
+
+  <!-- Decisions per month: part-to-whole of everything decided, fixed outcome order. -->
+  @let volumeGeo = volume();
+  <article class="chart-card is-wide">
+    <header class="card-head">
+      <div>
+        <h2>My decisions per month</h2>
+        <p class="card-sub">Escalated leave requests and gatepasses I decided personally</p>
+      </div>
+      <div class="view-toggle" role="group" aria-label="My decisions per month view">
+        <button
+          type="button"
+          [class.is-active]="volumeView() === 'chart'"
+          (click)="volumeView.set('chart')"
+        >
+          Chart
+        </button>
+        <button
+          type="button"
+          [class.is-active]="volumeView() === 'table'"
+          (click)="volumeView.set('table')"
+        >
+          Table
+        </button>
+      </div>
+    </header>
+
+    <ul class="legend">
+      @for (series of outcomeSeries; track series.key) {
+        <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+      }
+    </ul>
+
+    @if (volumeView() === 'chart') {
+      <div class="plot" (mouseleave)="clearVolumeTip()">
+        <svg
+          class="chart-svg is-wide-plot"
+          [attr.viewBox]="'0 0 ' + volumeGeo.w + ' ' + volumeGeo.h"
+          role="img"
+          aria-label="Stacked column chart of approved and rejected decisions each month. Switch to the table view for exact values."
+        >
+          @for (tick of volumeGeo.yTicks; track tick.y) {
+            <line
+              [attr.x1]="volumeGeo.pad.l"
+              [attr.x2]="volumeGeo.w - volumeGeo.pad.r"
+              [attr.y1]="tick.y"
+              [attr.y2]="tick.y"
+              [style.stroke]="palette.grid"
+              stroke-width="1"
+            />
+            <text
+              class="axis-text"
+              [attr.x]="volumeGeo.pad.l - 10"
+              [attr.y]="tick.y + 4"
+              text-anchor="end"
+            >
+              {{ tick.label }}
+            </text>
+          }
+
+          @for (column of volumeGeo.columns; track column.index) {
+            @if (volumeIndex() === column.index) {
+              <rect
+                class="hover-band"
+                [attr.x]="column.hit.x"
+                [attr.y]="volumeGeo.pad.t"
+                [attr.width]="column.hit.w"
+                [attr.height]="volumeGeo.plotH"
+              />
+            }
+            @for (segment of column.segments; track segment.key) {
+              <path [attr.d]="segment.path" [style.fill]="segment.color" />
+            }
+            <!-- Rejections are a thin slice, so the total rides the cap and the split lives
+               in the legend, the tooltip and the table view. -->
+            <text
+              class="point-label"
+              [attr.x]="column.centre"
+              [attr.y]="column.capY - 8"
+              text-anchor="middle"
+            >
+              {{ fmtInt(column.total) }}
+            </text>
+            <text
+              class="axis-text"
+              [attr.x]="column.centre"
+              [attr.y]="volumeGeo.h - 18"
+              text-anchor="middle"
+            >
+              {{ column.row.label }}
+            </text>
+            <rect
+              class="hit"
+              [attr.x]="column.hit.x"
+              [attr.y]="volumeGeo.pad.t"
+              [attr.width]="column.hit.w"
+              [attr.height]="volumeGeo.plotH"
+              tabindex="0"
+              (mouseenter)="showVolumeTip(column.index)"
+              (focus)="showVolumeTip(column.index)"
+              (blur)="clearVolumeTip()"
+            >
+              <title>
+                {{ column.row.longLabel }}: {{ fmtInt(column.row.approved) }} approved,
+                {{ fmtInt(column.row.rejected) }} rejected
+              </title>
+            </rect>
+          }
+        </svg>
+
+        @if (volumeTip(); as tip) {
+          <div
+            class="tip"
+            [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+            [style.left.%]="tip.left"
+            [style.top.%]="tip.top"
+          >
+            <p class="tip-title">{{ tip.title }}</p>
+            @for (row of tip.rows; track row.label) {
+              <p class="tip-row">
+                @if (row.color) {
+                  <span class="swatch" [style.background]="row.color"></span>
+                }
+                <span class="tip-key">{{ row.label }}</span>
+                <span class="tip-value">{{ row.value }}</span>
+              </p>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption class="sr-only">
+            My decisions per month by outcome
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col" class="num">Approved</th>
+              <th scope="col" class="num">Rejected</th>
+              <th scope="col" class="num">Total</th>
+              <th scope="col" class="num">Approval rate</th>
+              <th scope="col" class="num">Turnaround</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.longLabel) {
+              <tr>
+                <th scope="row">{{ row.longLabel }}</th>
+                <td class="num">{{ fmtInt(row.approved) }}</td>
+                <td class="num">{{ fmtInt(row.rejected) }}</td>
+                <td class="num">{{ fmtInt(row.total) }}</td>
+                <td class="num">{{ fmtPct(row.total ? (row.approved / row.total) * 100 : 0) }}</td>
+                <td class="num">{{ fmtHours(row.turnaround) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+
+  <div class="chart-row">
+    <!-- Request type: part-to-whole with long row names, so the bars run horizontally. -->
+    @let typeGeo = byType();
+    <article class="chart-card">
+      <header class="card-head">
+        <div>
+          <h2>Leave requests vs gatepasses</h2>
+          <p class="card-sub">
+            Which escalations reach me, and how they land — {{ periodLabel() }}
+          </p>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Request type view">
+          <button
+            type="button"
+            [class.is-active]="typeView() === 'chart'"
+            (click)="typeView.set('chart')"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            [class.is-active]="typeView() === 'table'"
+            (click)="typeView.set('table')"
+          >
+            Table
+          </button>
+        </div>
+      </header>
+
+      <ul class="legend">
+        @for (series of outcomeSeries; track series.key) {
+          <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+        }
+      </ul>
+
+      @if (typeView() === 'chart') {
+        <div class="plot" (mouseleave)="clearTypeTip()">
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + typeGeo.w + ' ' + typeGeo.h"
+            role="img"
+            aria-label="Horizontal stacked bars comparing approved and rejected decisions for leave requests and gatepasses. Switch to the table view for exact values."
+          >
+            @for (bar of typeGeo.rows; track bar.index) {
+              @if (typeIndex() === bar.index) {
+                <rect
+                  class="hover-band"
+                  [attr.x]="typeGeo.pad.l"
+                  [attr.y]="bar.hit.y"
+                  [attr.width]="typeGeo.plotW"
+                  [attr.height]="bar.hit.h"
+                />
+              }
+              <text
+                class="row-text"
+                [attr.x]="typeGeo.pad.l - 12"
+                [attr.y]="bar.centreY + 4"
+                text-anchor="end"
+              >
+                {{ bar.label }}
+              </text>
+              @for (segment of bar.segments; track segment.key) {
+                <path [attr.d]="segment.path" [style.fill]="segment.color" />
+                <!-- Only label inside the fill when the text actually fits with padding. -->
+                @if (segment.fits) {
+                  <text
+                    class="inline-label"
+                    [attr.x]="segment.centre"
+                    [attr.y]="bar.centreY + 4"
+                    [style.fill]="segment.ink"
+                    text-anchor="middle"
+                  >
+                    {{ fmtInt(segment.value) }}
+                  </text>
+                }
+              }
+              <text
+                class="point-label"
+                [attr.x]="bar.endX + 10"
+                [attr.y]="bar.centreY + 4"
+                text-anchor="start"
+              >
+                {{ fmtInt(bar.total) }}
+              </text>
+              <rect
+                class="hit"
+                [attr.x]="typeGeo.pad.l"
+                [attr.y]="bar.hit.y"
+                [attr.width]="typeGeo.plotW"
+                [attr.height]="bar.hit.h"
+                tabindex="0"
+                (mouseenter)="showTypeTip(bar.index)"
+                (focus)="showTypeTip(bar.index)"
+                (blur)="clearTypeTip()"
+              >
+                <title>{{ bar.label }}: {{ fmtInt(bar.total) }} decided</title>
+              </rect>
+            }
+          </svg>
+
+          @if (typeTip(); as tip) {
+            <div
+              class="tip"
+              [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+              [style.left.%]="tip.left"
+              [style.top.%]="tip.top"
+            >
+              <p class="tip-title">{{ tip.title }}</p>
+              @for (row of tip.rows; track row.label) {
+                <p class="tip-row">
+                  @if (row.color) {
+                    <span class="swatch" [style.background]="row.color"></span>
+                  }
+                  <span class="tip-key">{{ row.label }}</span>
+                  <span class="tip-value">{{ row.value }}</span>
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">
+              Outcomes by request type
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Request type</th>
+                <th scope="col" class="num">Approved</th>
+                <th scope="col" class="num">Rejected</th>
+                <th scope="col" class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (bar of typeGeo.rows; track bar.index) {
+                <tr>
+                  <th scope="row">{{ bar.label }}</th>
+                  <td class="num">{{ fmtInt(bar.segments[0].value) }}</td>
+                  <td class="num">
+                    {{ fmtInt(bar.segments.length > 1 ? bar.segments[1].value : 0) }}
+                  </td>
+                  <td class="num">{{ fmtInt(bar.total) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+
+    <!-- Turnaround over time: one series, so the title carries identity and no legend. -->
+    @let turnGeo = turnaroundTrend();
+    <article class="chart-card">
+      <header class="card-head">
+        <div>
+          <h2>Decision turnaround</h2>
+          <p class="card-sub">Average hours from escalation to decision, month by month</p>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Decision turnaround view">
+          <button
+            type="button"
+            [class.is-active]="turnaroundView() === 'chart'"
+            (click)="turnaroundView.set('chart')"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            [class.is-active]="turnaroundView() === 'table'"
+            (click)="turnaroundView.set('table')"
+          >
+            Table
+          </button>
+        </div>
+      </header>
+
+      @if (turnaroundView() === 'chart') {
+        <div class="plot" (mouseleave)="clearTurnaroundTip()">
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + turnGeo.w + ' ' + turnGeo.h"
+            role="img"
+            aria-label="Line chart of the average monthly decision turnaround in hours. Switch to the table view for exact values."
+          >
+            @for (tick of turnGeo.yTicks; track tick.y) {
+              <line
+                [attr.x1]="turnGeo.pad.l"
+                [attr.x2]="turnGeo.w - turnGeo.pad.r"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
+                [style.stroke]="palette.grid"
+                stroke-width="1"
+              />
+              <text
+                class="axis-text"
+                [attr.x]="turnGeo.pad.l - 10"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            }
+
+            @if (turnaroundIndex() !== null) {
+              <line
+                [attr.x1]="turnGeo.points[turnaroundIndex()!].x"
+                [attr.x2]="turnGeo.points[turnaroundIndex()!].x"
+                [attr.y1]="turnGeo.pad.t"
+                [attr.y2]="turnGeo.pad.t + turnGeo.plotH"
+                [style.stroke]="palette.axis"
+                stroke-width="1"
+              />
+            }
+
+            <path [attr.d]="turnGeo.area" [style.fill]="palette.blue" fill-opacity="0.1" />
+            <path
+              [attr.d]="turnGeo.line"
+              fill="none"
+              [style.stroke]="palette.blue"
+              stroke-width="2"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            />
+
+            <circle
+              [attr.cx]="turnGeo.last.x"
+              [attr.cy]="turnGeo.last.y"
+              r="5"
+              [style.fill]="palette.blue"
+              [style.stroke]="palette.surface"
+              stroke-width="2"
+            />
+            <text
+              class="point-label"
+              [attr.x]="turnGeo.last.x + 12"
+              [attr.y]="turnGeo.last.y + 4"
+              text-anchor="start"
+            >
+              {{ fmtHours(turnGeo.last.row.turnaround) }}
+            </text>
+
+            @for (point of turnGeo.points; track point.index) {
+              <text
+                class="axis-text"
+                [attr.x]="point.x"
+                [attr.y]="turnGeo.h - 14"
+                text-anchor="middle"
+              >
+                {{ point.row.label }}
+              </text>
+            }
+
+            @for (band of turnGeo.hit; track band.index) {
+              <rect
+                class="hit"
+                [attr.x]="band.x"
+                [attr.y]="turnGeo.pad.t"
+                [attr.width]="band.w"
+                [attr.height]="turnGeo.plotH"
+                tabindex="0"
+                (mouseenter)="showTurnaroundTip(band.index)"
+                (focus)="showTurnaroundTip(band.index)"
+                (blur)="clearTurnaroundTip()"
+              >
+                <title>{{ turnGeo.points[band.index].row.longLabel }} average turnaround</title>
+              </rect>
+            }
+          </svg>
+
+          @if (turnaroundTip(); as tip) {
+            <div
+              class="tip"
+              [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+              [style.left.%]="tip.left"
+              [style.top.%]="tip.top"
+            >
+              <p class="tip-title">{{ tip.title }}</p>
+              @for (row of tip.rows; track row.label) {
+                <p class="tip-row">
+                  @if (row.color) {
+                    <span class="swatch" [style.background]="row.color"></span>
+                  }
+                  <span class="tip-key">{{ row.label }}</span>
+                  <span class="tip-value">{{ row.value }}</span>
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">
+              Monthly decision turnaround
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col" class="num">Decisions</th>
+                <th scope="col" class="num">Turnaround</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.longLabel) {
+                <tr>
+                  <th scope="row">{{ row.longLabel }}</th>
+                  <td class="num">{{ fmtInt(row.total) }}</td>
+                  <td class="num">{{ fmtHours(row.turnaround) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  </div>
+
+  <!-- Decision log: the record behind the charts. -->
+  <article class="chart-card is-wide">
+    <header class="card-head">
+      <div>
+        <h2>My recent decisions</h2>
+        <p class="card-sub">
+          Latest escalations I approved or rejected, with the reason each came up
+        </p>
+      </div>
+    </header>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">
+          My recent decisions
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Occupant</th>
+            <th scope="col">Room</th>
+            <th scope="col">Type</th>
+            <th scope="col">Reason</th>
+            <th scope="col">Filed</th>
+            <th scope="col">Decided</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Escalation note</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of decisionLog(); track entry.reference) {
+            <tr>
+              <th scope="row">{{ entry.reference }}</th>
+              <td>{{ entry.occupant }}</td>
+              <td>{{ entry.room }}</td>
+              <td>{{ entry.type }}</td>
+              <td>{{ entry.reason }}</td>
+              <td>{{ entry.filed }}</td>
+              <td>{{ entry.decided }}</td>
+              <td>
+                <span
+                  class="pill"
+                  [class.is-approved]="entry.outcome === 'Approved'"
+                  [class.is-rejected]="entry.outcome === 'Rejected'"
+                >
+                  {{ entry.outcome }}
+                </span>
+              </td>
+              <td>{{ entry.note }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+}

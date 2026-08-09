@@ -1,0 +1,141 @@
+@use '../shared/report-ui.scss' as *;
+
+/* --- Occupancy heatmap: the one chart form unique to the overview report --- */
+
+.heat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heat-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 190px) repeat(5, minmax(0, 1fr));
+  gap: 2px;
+
+  &.is-head {
+    margin-bottom: 0.15rem;
+  }
+}
+
+.heat-col,
+.heat-label {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+
+.heat-col {
+  justify-content: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.heat-label {
+  padding-right: 0.75rem;
+  font-weight: 500;
+}
+
+.heat-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  outline: none;
+
+  &.is-empty {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--plane),
+      var(--plane) 6px,
+      #eef2f7 6px,
+      #eef2f7 12px
+    );
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--surface),
+      0 0 0 4px #4361ee;
+  }
+}
+
+// Hover and keyboard focus surface the same detail. The value is already printed on the
+// cell, so the tooltip only adds context and never gates a number.
+.cell-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 3;
+  display: none;
+  padding: 0.4rem 0.6rem;
+  background: #0f172a;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.heat-cell:hover .cell-tip,
+.heat-cell:focus-visible .cell-tip {
+  display: block;
+}
+
+.heat-scale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-top: 0.875rem;
+
+  .scale-caption {
+    margin-right: 0.625rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .scale-step {
+    min-width: 58px;
+    padding: 0.25rem 0.5rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scale-step:first-of-type {
+    border-radius: 5px 0 0 5px;
+  }
+
+  .scale-step:last-of-type {
+    border-radius: 0 5px 5px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .heat-row {
+    grid-template-columns: 82px repeat(5, minmax(0, 1fr));
+  }
+
+  .heat-label {
+    padding-right: 0.35rem;
+    font-size: 0.7rem;
+  }
+
+  .heat-cell {
+    min-height: 38px;
+    font-size: 0.72rem;
+  }
+}

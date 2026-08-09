@@ -1,0 +1,17 @@
+@use '../shared/report-ui.scss' as *;
+
+// The wing breakdown that rides under the hero figure: same size as the detail line but in
+// body ink, so it reads as a second fact rather than more caption.
+.hero-split {
+  margin-top: 0.15rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+// M / F marks under each bar. Colour encodes the outcome in that chart, so the wing has to
+// be legible as text — one step darker than an axis tick.
+.chart-svg .wing-mark {
+  font-weight: 600;
+  fill: var(--ink-2);
+}

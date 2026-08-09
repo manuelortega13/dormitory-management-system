@@ -150,6 +150,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
           roles: ['admin', 'business_officer'],
         },
         // { label: 'Inventory', icon: '📦', route: '/manage/inventory' }
+        // Every /manage role gets Reports; the page renders the view for their role.
+        {
+          label: 'Reports',
+          icon: '📈',
+          route: '/manage/reports',
+          roles: ['admin', 'home_dean', 'vpsas', 'business_officer'],
+        },
       ],
     },
     {

@@ -1,0 +1,553 @@
+// Shared chart-card, stat-tile, tooltip and table styling for every report view.
+// Series colours stay in report-base.ts so geometry and palette live together; only
+// chrome and ink are themed here.
+
+:host {
+  --surface: #ffffff;
+  --plane: #f8fafc;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --muted: #94a3b8;
+  --hairline: #e2e8f0;
+  --good: #006300;
+  --bad: #b42318;
+
+  display: block;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Hero figure + stat tiles --- */
+
+.headline {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero-card,
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.125rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+}
+
+.tile-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.hero-value {
+  // Proportional figures: tabular-nums makes a large standalone number look loose.
+  margin: 0.5rem 0 0;
+  font-size: 3rem;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.hero-detail,
+.tile-detail {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tile-value {
+  margin: 0.4rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 650;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.tile-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.875rem;
+}
+
+.delta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-2);
+
+  &.is-good {
+    color: var(--good);
+  }
+
+  &.is-bad {
+    color: var(--bad);
+  }
+
+  &.is-flat {
+    font-weight: 500;
+    color: var(--muted);
+  }
+}
+
+.spark {
+  flex: none;
+  overflow: visible;
+}
+
+/* --- Chart cards --- */
+
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-card {
+  min-width: 0;
+  padding: 1.25rem 1.375rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+
+  &.is-wide {
+    margin-bottom: 1.25rem;
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 650;
+    color: var(--ink);
+  }
+
+  .card-sub {
+    margin: 0.2rem 0 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+}
+
+.view-toggle {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  background: var(--plane);
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+
+  button {
+    padding: 0.25rem 0.6rem;
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+
+  button.is-active {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--ink-2);
+  }
+}
+
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* --- Plot area --- */
+
+.plot {
+  position: relative;
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+
+  .axis-text {
+    font-size: 11px;
+    fill: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .row-text {
+    font-size: 12px;
+    fill: var(--ink-2);
+  }
+
+  .point-label {
+    font-size: 11px;
+    font-weight: 600;
+    fill: var(--ink-2);
+  }
+
+  .inline-label {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .hit {
+    fill: transparent;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .hit:focus-visible {
+    fill: rgba(67, 97, 238, 0.08);
+    stroke: #4361ee;
+    stroke-width: 1;
+  }
+
+  .hover-band {
+    fill: var(--plane);
+  }
+}
+
+.tip {
+  position: absolute;
+  z-index: 3;
+  min-width: 150px;
+  padding: 0.5rem 0.625rem;
+  background: #0f172a;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+
+  &.align-start {
+    transform: translate(0, calc(-100% - 12px));
+  }
+
+  &.align-end {
+    transform: translate(-100%, calc(-100% - 12px));
+  }
+
+  // No room above the anchor: drop below it rather than let the card clip the tooltip.
+  &.is-below {
+    transform: translate(-50%, 12px);
+  }
+
+  &.is-below.align-start {
+    transform: translate(0, 12px);
+  }
+
+  &.is-below.align-end {
+    transform: translate(-100%, 12px);
+  }
+
+  .tip-title {
+    margin: 0 0 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .tip-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.15rem 0 0;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    white-space: nowrap;
+  }
+
+  .tip-key {
+    margin-right: auto;
+  }
+
+  .tip-value {
+    font-weight: 600;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* --- Tables: the accessible twin of every chart --- */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+
+  th,
+  td {
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  tbody th {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  td {
+    color: var(--ink-2);
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tfoot th,
+  tfoot td {
+    font-weight: 650;
+    color: var(--ink);
+    border-top: 1px solid #cbd5e1;
+    border-bottom: none;
+  }
+}
+
+// Outcome/status pills carry an icon-free word plus colour, never colour alone.
+.pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+
+  &.is-approved,
+  &.is-verified {
+    background: #dcfce7;
+    color: #14532d;
+  }
+
+  &.is-rejected {
+    background: #fee2e2;
+    color: #7f1d1d;
+  }
+
+  &.is-pending {
+    background: #fef3c7;
+    color: #78350f;
+  }
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 1200px) {
+  .headline {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  // Charts scale with their viewBox, so on a phone an 11px label lands at ~4-6 CSS px.
+  // Bump the user-unit type instead, in proportion to how far each chart is scaled down.
+  .chart-svg {
+    .axis-text,
+    .point-label,
+    .inline-label {
+      font-size: 17px;
+    }
+
+    .row-text {
+      font-size: 18px;
+    }
+  }
+
+  .chart-svg.is-wide-plot {
+    .axis-text,
+    .point-label,
+    .inline-label {
+      font-size: 26px;
+    }
+
+    .row-text {
+      font-size: 28px;
+    }
+  }
+
+  .headline {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  }
+
+  .hero-card {
+    grid-column: 1 / -1;
+  }
+
+  .hero-value {
+    font-size: 2.5rem;
+  }
+
+  .chart-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chart-card {
+    padding: 1rem 1rem 1.25rem;
+  }
+
+  .card-head {
+    flex-direction: column;
+  }
+}
+
+@media print {
+  .view-toggle {
+    display: none;
+  }
+
+  .chart-card,
+  .headline {
+    break-inside: avoid;
+  }
+}
+
+/* --- Load, error and empty states --------------------------------------------------- */
+
+.report-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3.5rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  text-align: center;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 650;
+    color: var(--ink);
+  }
+
+  p {
+    margin: 0;
+    max-width: 52ch;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  button {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--surface);
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--plane);
+  }
+}
+
+// Loading holds the page's shape rather than flashing an empty box.
+.report-skeleton {
+  display: grid;
+  gap: 1rem;
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e7edf3 37%, #f1f5f9 63%);
+  background-size: 400% 100%;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  animation: report-shimmer 1.4s ease-in-out infinite;
+
+  &.is-tile {
+    height: 128px;
+  }
+
+  &.is-chart {
+    height: 320px;
+  }
+}
+
+@keyframes report-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block {
+    animation: none;
+  }
+}

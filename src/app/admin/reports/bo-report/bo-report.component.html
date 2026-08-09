@@ -1,0 +1,666 @@
+@if (loadState() === 'loading') {
+  <div class="report-skeleton" aria-busy="true" aria-live="polite">
+    <div class="skeleton-row">
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+      <div class="skeleton-block is-tile"></div>
+    </div>
+    <div class="skeleton-block is-chart"></div>
+  </div>
+} @else if (loadState() === 'error') {
+  <div class="report-state" role="alert">
+    <h2>Could not load the payments report</h2>
+    <p>The server did not return payment history. Check your connection and try again.</p>
+    <button type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (isEmpty()) {
+  <div class="report-state">
+    <h2>No billing activity yet</h2>
+    <p>
+      Nothing has been billed or paid in the last 12 months. Once bills are issued and occupants
+      submit e-receipts, this report will fill in.
+    </p>
+  </div>
+} @else {
+  <!-- Hero figure + supporting stat tiles -->
+  <section class="headline" aria-label="Headline figures">
+    @let heroFigure = hero();
+    <article class="hero-card">
+      <span class="tile-label">Collected this period</span>
+      <p class="hero-value">{{ heroFigure.value }}</p>
+      <p class="hero-detail">{{ heroFigure.detail }}</p>
+      <div class="tile-foot">
+        @if (heroFigure.delta) {
+          <span
+            class="delta"
+            [class.is-good]="heroFigure.delta.good === true"
+            [class.is-bad]="heroFigure.delta.good === false"
+          >
+            {{ heroFigure.delta.text }}
+          </span>
+        } @else {
+          <span class="delta is-flat">no prior period</span>
+        }
+        <svg
+          class="spark"
+          [attr.viewBox]="'0 0 ' + heroFigure.spark.w + ' ' + heroFigure.spark.h"
+          [attr.width]="heroFigure.spark.w"
+          [attr.height]="heroFigure.spark.h"
+          aria-hidden="true"
+        >
+          <path
+            [attr.d]="heroFigure.spark.base"
+            fill="none"
+            [style.stroke]="palette.deemph"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            [attr.d]="heroFigure.spark.accent"
+            fill="none"
+            [style.stroke]="palette.blue"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <circle
+            [attr.cx]="heroFigure.spark.end.x"
+            [attr.cy]="heroFigure.spark.end.y"
+            r="3"
+            [style.fill]="palette.blue"
+          />
+        </svg>
+      </div>
+    </article>
+
+    @for (tile of tiles(); track tile.key) {
+      <article class="tile">
+        <span class="tile-label">{{ tile.label }}</span>
+        <p class="tile-value">{{ tile.value }}</p>
+        <p class="tile-detail">{{ tile.detail }}</p>
+        <div class="tile-foot">
+          @if (tile.delta) {
+            <span
+              class="delta"
+              [class.is-good]="tile.delta.good === true"
+              [class.is-bad]="tile.delta.good === false"
+            >
+              {{ tile.delta.text }}
+            </span>
+          } @else {
+            <span class="delta is-flat">—</span>
+          }
+          <svg
+            class="spark"
+            [attr.viewBox]="'0 0 ' + tile.spark.w + ' ' + tile.spark.h"
+            [attr.width]="tile.spark.w"
+            [attr.height]="tile.spark.h"
+            aria-hidden="true"
+          >
+            <path
+              [attr.d]="tile.spark.base"
+              fill="none"
+              [style.stroke]="palette.deemph"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              [attr.d]="tile.spark.accent"
+              fill="none"
+              [style.stroke]="palette.blue"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <circle
+              [attr.cx]="tile.spark.end.x"
+              [attr.cy]="tile.spark.end.y"
+              r="3"
+              [style.fill]="palette.blue"
+            />
+          </svg>
+        </div>
+      </article>
+    }
+  </section>
+
+  <!-- Transaction value by verification state: part-to-whole of everything submitted. -->
+  @let statusGeo = status();
+  <article class="chart-card is-wide">
+    <header class="card-head">
+      <div>
+        <h2>Transactions by verification state</h2>
+        <p class="card-sub">Payment value submitted each month</p>
+      </div>
+      <div class="view-toggle" role="group" aria-label="Verification state view">
+        <button
+          type="button"
+          [class.is-active]="statusView() === 'chart'"
+          (click)="statusView.set('chart')"
+        >
+          Chart
+        </button>
+        <button
+          type="button"
+          [class.is-active]="statusView() === 'table'"
+          (click)="statusView.set('table')"
+        >
+          Table
+        </button>
+      </div>
+    </header>
+
+    <ul class="legend">
+      @for (series of statusSeries; track series.key) {
+        <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+      }
+    </ul>
+
+    @if (statusView() === 'chart') {
+      <div class="plot" (mouseleave)="clearStatusTip()">
+        <svg
+          class="chart-svg is-wide-plot"
+          [attr.viewBox]="'0 0 ' + statusGeo.w + ' ' + statusGeo.h"
+          role="img"
+          aria-label="Stacked column chart of payment value by verification state each month. Switch to the table view for exact values."
+        >
+          @for (tick of statusGeo.yTicks; track tick.y) {
+            <line
+              [attr.x1]="statusGeo.pad.l"
+              [attr.x2]="statusGeo.w - statusGeo.pad.r"
+              [attr.y1]="tick.y"
+              [attr.y2]="tick.y"
+              [style.stroke]="palette.grid"
+              stroke-width="1"
+            />
+            <text
+              class="axis-text"
+              [attr.x]="statusGeo.pad.l - 10"
+              [attr.y]="tick.y + 4"
+              text-anchor="end"
+            >
+              {{ tick.label }}
+            </text>
+          }
+
+          @for (column of statusGeo.columns; track column.index) {
+            @if (statusIndex() === column.index) {
+              <rect
+                class="hover-band"
+                [attr.x]="column.hit.x"
+                [attr.y]="statusGeo.pad.t"
+                [attr.width]="column.hit.w"
+                [attr.height]="statusGeo.plotH"
+              />
+            }
+            @for (segment of column.segments; track segment.key) {
+              <path [attr.d]="segment.path" [style.fill]="segment.color" />
+            }
+            <!-- Rejected is a sliver at this scale, so the submitted total rides the cap and
+               the split stays in the legend, the tooltip and the table view. -->
+            <text
+              class="point-label"
+              [attr.x]="column.centre"
+              [attr.y]="column.capY - 8"
+              text-anchor="middle"
+            >
+              {{ compactPeso(column.total) }}
+            </text>
+            <text
+              class="axis-text"
+              [attr.x]="column.centre"
+              [attr.y]="statusGeo.h - 18"
+              text-anchor="middle"
+            >
+              {{ column.row.label }}
+            </text>
+            <rect
+              class="hit"
+              [attr.x]="column.hit.x"
+              [attr.y]="statusGeo.pad.t"
+              [attr.width]="column.hit.w"
+              [attr.height]="statusGeo.plotH"
+              tabindex="0"
+              (mouseenter)="showStatusTip(column.index)"
+              (focus)="showStatusTip(column.index)"
+              (blur)="clearStatusTip()"
+            >
+              <title>
+                {{ column.row.longLabel }}: {{ fmtPeso(column.row.verified) }} verified,
+                {{ fmtPeso(column.row.pending) }} pending,
+                {{ fmtPeso(column.row.rejected) }} rejected
+              </title>
+            </rect>
+          }
+        </svg>
+
+        @if (statusTip(); as tip) {
+          <div
+            class="tip"
+            [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+            [style.left.%]="tip.left"
+            [style.top.%]="tip.top"
+          >
+            <p class="tip-title">{{ tip.title }}</p>
+            @for (row of tip.rows; track row.label) {
+              <p class="tip-row">
+                @if (row.color) {
+                  <span class="swatch" [style.background]="row.color"></span>
+                }
+                <span class="tip-key">{{ row.label }}</span>
+                <span class="tip-value">{{ row.value }}</span>
+              </p>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption class="sr-only">
+            Payment value by verification state each month
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col" class="num">Billed</th>
+              <th scope="col" class="num">Verified</th>
+              <th scope="col" class="num">Pending</th>
+              <th scope="col" class="num">Rejected</th>
+              <th scope="col" class="num">Collection rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.longLabel) {
+              <tr>
+                <th scope="row">{{ row.longLabel }}</th>
+                <td class="num">{{ fmtPeso(row.billed) }}</td>
+                <td class="num">{{ fmtPeso(row.verified) }}</td>
+                <td class="num">{{ fmtPeso(row.pending) }}</td>
+                <td class="num">{{ fmtPeso(row.rejected) }}</td>
+                <td class="num">{{ fmtPct(row.collectRate) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+
+  <div class="chart-row">
+    <!-- Payment channels: part-to-whole per month, horizontal so month names sit outside. -->
+    @let methodGeo = methods();
+    <article class="chart-card">
+      <header class="card-head">
+        <div>
+          <h2>Payment channels</h2>
+          <p class="card-sub">How payment value arrived each month</p>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Payment channel view">
+          <button
+            type="button"
+            [class.is-active]="methodView() === 'chart'"
+            (click)="methodView.set('chart')"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            [class.is-active]="methodView() === 'table'"
+            (click)="methodView.set('table')"
+          >
+            Table
+          </button>
+        </div>
+      </header>
+
+      <ul class="legend">
+        @for (series of methodSeries; track series.key) {
+          <li><span class="swatch" [style.background]="series.color"></span>{{ series.label }}</li>
+        }
+      </ul>
+
+      @if (methodView() === 'chart') {
+        <div class="plot" (mouseleave)="clearMethodTip()">
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + methodGeo.w + ' ' + methodGeo.h"
+            role="img"
+            aria-label="Horizontal stacked bars of payment value by channel for each month. Switch to the table view for exact values."
+          >
+            @for (bar of methodGeo.rows; track bar.index) {
+              @if (methodIndex() === bar.index) {
+                <rect
+                  class="hover-band"
+                  [attr.x]="methodGeo.pad.l"
+                  [attr.y]="bar.hit.y"
+                  [attr.width]="methodGeo.plotW"
+                  [attr.height]="bar.hit.h"
+                />
+              }
+              <text
+                class="row-text"
+                [attr.x]="methodGeo.pad.l - 12"
+                [attr.y]="bar.centreY + 4"
+                text-anchor="end"
+              >
+                {{ bar.label }}
+              </text>
+              @for (segment of bar.segments; track segment.key) {
+                <path [attr.d]="segment.path" [style.fill]="segment.color" />
+                <!-- Only label inside the fill when the text actually fits with padding. -->
+                @if (segment.fits) {
+                  <text
+                    class="inline-label"
+                    [attr.x]="segment.centre"
+                    [attr.y]="bar.centreY + 4"
+                    [style.fill]="segment.ink"
+                    text-anchor="middle"
+                  >
+                    {{ compactPeso(segment.value) }}
+                  </text>
+                }
+              }
+              <text
+                class="point-label"
+                [attr.x]="bar.endX + 10"
+                [attr.y]="bar.centreY + 4"
+                text-anchor="start"
+              >
+                {{ compactPeso(bar.total) }}
+              </text>
+              <rect
+                class="hit"
+                [attr.x]="methodGeo.pad.l"
+                [attr.y]="bar.hit.y"
+                [attr.width]="methodGeo.plotW"
+                [attr.height]="bar.hit.h"
+                tabindex="0"
+                (mouseenter)="showMethodTip(bar.index)"
+                (focus)="showMethodTip(bar.index)"
+                (blur)="clearMethodTip()"
+              >
+                <title>{{ bar.label }}: {{ fmtPeso(bar.total) }} received</title>
+              </rect>
+            }
+          </svg>
+
+          @if (methodTip(); as tip) {
+            <div
+              class="tip"
+              [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+              [style.left.%]="tip.left"
+              [style.top.%]="tip.top"
+            >
+              <p class="tip-title">{{ tip.title }}</p>
+              @for (row of tip.rows; track row.label) {
+                <p class="tip-row">
+                  @if (row.color) {
+                    <span class="swatch" [style.background]="row.color"></span>
+                  }
+                  <span class="tip-key">{{ row.label }}</span>
+                  <span class="tip-value">{{ row.value }}</span>
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">
+              Payment value by channel each month
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                @for (series of methodSeries; track series.key) {
+                  <th scope="col" class="num">{{ series.label }}</th>
+                }
+                <th scope="col" class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.longLabel) {
+                <tr>
+                  <th scope="row">{{ row.longLabel }}</th>
+                  <td class="num">{{ fmtPeso(row.methods.gcash) }}</td>
+                  <td class="num">{{ fmtPeso(row.methods.maya) }}</td>
+                  <td class="num">{{ fmtPeso(row.methods.cash) }}</td>
+                  <td class="num">{{ fmtPeso(row.methods.other) }}</td>
+                  <td class="num">{{ fmtPeso(row.submitted) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+
+    <!-- Collection rate over time: one series, so the title carries identity and no legend. -->
+    @let rateGeo = rateTrend();
+    <article class="chart-card">
+      <header class="card-head">
+        <div>
+          <h2>Collection rate</h2>
+          <p class="card-sub">Verified payments as a share of what was billed</p>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Collection rate view">
+          <button
+            type="button"
+            [class.is-active]="rateView() === 'chart'"
+            (click)="rateView.set('chart')"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            [class.is-active]="rateView() === 'table'"
+            (click)="rateView.set('table')"
+          >
+            Table
+          </button>
+        </div>
+      </header>
+
+      @if (rateView() === 'chart') {
+        <div class="plot" (mouseleave)="clearRateTip()">
+          <svg
+            class="chart-svg"
+            [attr.viewBox]="'0 0 ' + rateGeo.w + ' ' + rateGeo.h"
+            role="img"
+            aria-label="Line chart of the monthly collection rate. Switch to the table view for exact values."
+          >
+            @for (tick of rateGeo.yTicks; track tick.y) {
+              <line
+                [attr.x1]="rateGeo.pad.l"
+                [attr.x2]="rateGeo.w - rateGeo.pad.r"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
+                [style.stroke]="palette.grid"
+                stroke-width="1"
+              />
+              <text
+                class="axis-text"
+                [attr.x]="rateGeo.pad.l - 10"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+              >
+                {{ tick.label }}
+              </text>
+            }
+
+            @if (rateIndex() !== null) {
+              <line
+                [attr.x1]="rateGeo.series[0].points[rateIndex()!].x"
+                [attr.x2]="rateGeo.series[0].points[rateIndex()!].x"
+                [attr.y1]="rateGeo.pad.t"
+                [attr.y2]="rateGeo.pad.t + rateGeo.plotH"
+                [style.stroke]="palette.axis"
+                stroke-width="1"
+              />
+            }
+
+            @for (line of rateGeo.series; track line.key) {
+              <path
+                [attr.d]="line.line"
+                fill="none"
+                [style.stroke]="line.color"
+                stroke-width="2"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+              @if (line.last; as endPoint) {
+                <circle
+                  [attr.cx]="endPoint.x"
+                  [attr.cy]="endPoint.y"
+                  r="5"
+                  [style.fill]="line.color"
+                  [style.stroke]="palette.surface"
+                  stroke-width="2"
+                />
+                <text
+                  class="point-label"
+                  [attr.x]="endPoint.x + 12"
+                  [attr.y]="endPoint.y + 4"
+                  text-anchor="start"
+                >
+                  {{ fmtPct(endPoint.row.collectRate) }}
+                </text>
+              }
+            }
+
+            @for (point of rateGeo.series[0].points; track point.index) {
+              <text
+                class="axis-text"
+                [attr.x]="point.x"
+                [attr.y]="rateGeo.h - 14"
+                text-anchor="middle"
+              >
+                {{ point.row.label }}
+              </text>
+            }
+
+            @for (band of rateGeo.hit; track band.index) {
+              <rect
+                class="hit"
+                [attr.x]="band.x"
+                [attr.y]="rateGeo.pad.t"
+                [attr.width]="band.w"
+                [attr.height]="rateGeo.plotH"
+                tabindex="0"
+                (mouseenter)="showRateTip(band.index)"
+                (focus)="showRateTip(band.index)"
+                (blur)="clearRateTip()"
+              >
+                <title>
+                  {{ rateGeo.rows[band.index].longLabel }}:
+                  {{ fmtPct(rateGeo.rows[band.index].collectRate) }} collected
+                </title>
+              </rect>
+            }
+          </svg>
+
+          @if (rateTip(); as tip) {
+            <div
+              class="tip"
+              [class]="'align-' + tip.align + (tip.below ? ' is-below' : '')"
+              [style.left.%]="tip.left"
+              [style.top.%]="tip.top"
+            >
+              <p class="tip-title">{{ tip.title }}</p>
+              @for (row of tip.rows; track row.label) {
+                <p class="tip-row">
+                  @if (row.color) {
+                    <span class="swatch" [style.background]="row.color"></span>
+                  }
+                  <span class="tip-key">{{ row.label }}</span>
+                  <span class="tip-value">{{ row.value }}</span>
+                </p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">
+              Monthly collection rate
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col" class="num">Verified</th>
+                <th scope="col" class="num">Billed</th>
+                <th scope="col" class="num">Collection rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.longLabel) {
+                <tr>
+                  <th scope="row">{{ row.longLabel }}</th>
+                  <td class="num">{{ fmtPeso(row.verified) }}</td>
+                  <td class="num">{{ fmtPeso(row.billed) }}</td>
+                  <td class="num">{{ fmtPct(row.collectRate) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  </div>
+
+  <!-- Transaction log: the record behind the charts. -->
+  <article class="chart-card is-wide">
+    <header class="card-head">
+      <div>
+        <h2>Recent transactions</h2>
+        <p class="card-sub">Latest e-receipts submitted by occupants, newest last</p>
+      </div>
+    </header>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">
+          Recent payment transactions
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Occupant</th>
+            <th scope="col">Room</th>
+            <th scope="col" class="num">Amount</th>
+            <th scope="col">Method</th>
+            <th scope="col">Submitted</th>
+            <th scope="col">Status</th>
+            <th scope="col">Handled by</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of transactionLog(); track entry.reference) {
+            <tr>
+              <th scope="row">{{ entry.reference }}</th>
+              <td>{{ entry.occupant }}</td>
+              <td>{{ entry.room }}</td>
+              <td class="num">{{ fmtPeso(entry.amount) }}</td>
+              <td>{{ entry.method }}</td>
+              <td>{{ entry.submitted }}</td>
+              <td>
+                <span
+                  class="pill"
+                  [class.is-verified]="entry.status === 'verified'"
+                  [class.is-pending]="entry.status === 'pending'"
+                  [class.is-rejected]="entry.status === 'rejected'"
+                >
+                  {{ entry.status | titlecase }}
+                </span>
+              </td>
+              <td>{{ entry.handledBy }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+}
