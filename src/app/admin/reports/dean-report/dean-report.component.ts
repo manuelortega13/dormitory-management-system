@@ -1,9 +1,10 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { PALETTE, ReportBase, Tooltip } from '../shared/report-base';
 import { ReportExportService } from '../shared/report-export.service';
 import { DecisionReport, ReportService } from '../shared/report.service';
 import { buildGroupedStacks, buildLines, buildStackedBarsH } from '../shared/chart-geometry';
 import {
+  CustomRange,
   DecisionRow,
   GENDERS,
   Gender,
@@ -65,6 +66,11 @@ interface WingSummary {
 })
 export class DeanReportComponent extends ReportBase {
   readonly range = input.required<RangeKey>();
+  /**
+   * An explicit day range. When set, the API returns exactly the months it touches, bounded
+   * to those days, so the client does no slicing of its own.
+   */
+  readonly customRange = input<CustomRange | null>(null);
 
   private readonly reports = inject(ReportService);
 
@@ -89,13 +95,19 @@ export class DeanReportComponent extends ReportBase {
   constructor() {
     super();
     inject(ReportExportService).register(() => this.exportCsv());
-    this.load();
+
+    // Refetch whenever the explicit range changes. Presets need no refetch: they slice the
+    // twelve months already in hand, which keeps the sparkline baselines intact.
+    effect(() => {
+      const range = this.customRange();
+      void this.load(range);
+    });
   }
 
-  protected async load(): Promise<void> {
+  protected async load(range: CustomRange | null = this.customRange()): Promise<void> {
     this.status.set('loading');
     try {
-      this.report.set(await this.reports.getDecisions());
+      this.report.set(await this.reports.getDecisions(range));
       this.status.set('ready');
     } catch (error) {
       console.error('Failed to load the decisions report', error);
@@ -149,6 +161,7 @@ export class DeanReportComponent extends ReportBase {
   });
 
   private readonly priorRows = computed(() => {
+    if (this.customRange()) return [];
     const { start, end } = resolveWindow(this.range(), this.months());
     const span = end - start;
     return start - span < 0 ? [] : this.allRows().slice(start - span, start);
@@ -490,7 +503,9 @@ export class DeanReportComponent extends ReportBase {
   private exportCsv(): void {
     const wings = this.shownWings();
     const scope = wings.length === 1 ? wings[0].key : 'all-wings';
-    this.downloadCsv(`dean-decisions-${scope}-${this.range()}.csv`, [
+    const custom = this.customRange();
+    const period = custom ? `${custom.from}_to_${custom.to}` : this.range();
+    this.downloadCsv(`dean-decisions-${scope}-${period}.csv`, [
       ['Home Dean — leave request & gatepass decisions', this.periodLabel(), this.wingLabel()],
       [],
       [

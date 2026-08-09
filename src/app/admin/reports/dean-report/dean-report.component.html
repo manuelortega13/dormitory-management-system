@@ -44,34 +44,36 @@
         } @else {
           <span class="delta is-flat">no prior period</span>
         }
-        <svg
-          class="spark"
-          [attr.viewBox]="'0 0 ' + heroFigure.spark.w + ' ' + heroFigure.spark.h"
-          [attr.width]="heroFigure.spark.w"
-          [attr.height]="heroFigure.spark.h"
-          aria-hidden="true"
-        >
-          <path
-            [attr.d]="heroFigure.spark.base"
-            fill="none"
-            [style.stroke]="palette.deemph"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-          <path
-            [attr.d]="heroFigure.spark.accent"
-            fill="none"
-            [style.stroke]="palette.blue"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-          <circle
-            [attr.cx]="heroFigure.spark.end.x"
-            [attr.cy]="heroFigure.spark.end.y"
-            r="3"
-            [style.fill]="palette.blue"
-          />
-        </svg>
+        @if (heroFigure.spark.visible) {
+          <svg
+            class="spark"
+            [attr.viewBox]="'0 0 ' + heroFigure.spark.w + ' ' + heroFigure.spark.h"
+            [attr.width]="heroFigure.spark.w"
+            [attr.height]="heroFigure.spark.h"
+            aria-hidden="true"
+          >
+            <path
+              [attr.d]="heroFigure.spark.base"
+              fill="none"
+              [style.stroke]="palette.deemph"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              [attr.d]="heroFigure.spark.accent"
+              fill="none"
+              [style.stroke]="palette.blue"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <circle
+              [attr.cx]="heroFigure.spark.end.x"
+              [attr.cy]="heroFigure.spark.end.y"
+              r="3"
+              [style.fill]="palette.blue"
+            />
+          </svg>
+        }
       </div>
     </article>
 

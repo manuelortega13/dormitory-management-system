@@ -202,3 +202,55 @@
     display: none;
   }
 }
+
+// Custom range inputs, matching the date controls used on Leave Requests and Gatepass.
+.range-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.custom-range {
+  flex-wrap: wrap;
+
+  input[type='date'] {
+    min-width: 0;
+    padding: 0.4rem 0.5rem;
+    background: var(--surface);
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+  }
+
+  input[type='date']:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+  }
+}
+
+// Stated inline rather than as a silent no-op, so an incomplete range explains itself.
+.custom-hint {
+  font-size: 0.78rem;
+  color: #b42318;
+}
+
+@media (max-width: 768px) {
+  // Give each date field the full row so the native picker has room to breathe.
+  .custom-range {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .range-field {
+    justify-content: space-between;
+  }
+
+  .range-field input[type='date'] {
+    flex: 1;
+    margin-left: 0.75rem;
+  }
+}

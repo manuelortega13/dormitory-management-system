@@ -60,6 +60,8 @@ export interface Sparkline {
   base: string;
   accent: string;
   end: Point;
+  /** False when there are too few points to draw a line worth showing. */
+  visible: boolean;
 }
 
 /**
@@ -92,7 +94,14 @@ export abstract class ReportBase {
     const d = (list: Point[]) =>
       list.map((pt, i) => `${i ? 'L' : 'M'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
 
-    return { w, h, base: d(pts), accent: d(pts.slice(start, end)), end: pts[end - 1] };
+    return {
+      w,
+      h,
+      base: d(pts),
+      accent: d(pts.slice(start, end)),
+      end: pts[end - 1] ?? { x: p, y: h / 2 },
+      visible: values.length > 1,
+    };
   }
 
   protected alignFor(fraction: number): 'start' | 'center' | 'end' {

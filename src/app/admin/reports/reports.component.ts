@@ -2,11 +2,23 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService, User } from '../../auth/auth.service';
 import { ReportExportService } from './shared/report-export.service';
-import { RANGES, RangeKey } from './shared/report-data';
+import { CustomRange, RANGES, RANGES_WITH_CUSTOM, RangeKey } from './shared/report-data';
 import { OverviewReportComponent } from './overview-report/overview-report.component';
 import { DeanReportComponent } from './dean-report/dean-report.component';
 import { VpsasReportComponent } from './vpsas-report/vpsas-report.component';
 import { BoReportComponent } from './bo-report/bo-report.component';
+
+const DAY_FORMAT = new Intl.DateTimeFormat('en-PH', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+
+/** "2026-03-01" -> "01 Mar 2026", matching how dates read elsewhere in the app. */
+function formatDay(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : DAY_FORMAT.format(date);
+}
 
 interface RoleCopy {
   title: string;
@@ -60,9 +72,36 @@ export class ReportsComponent {
   private readonly auth = inject(AuthService);
   private readonly exporter = inject(ReportExportService);
 
-  protected readonly ranges = RANGES;
-
   protected readonly range = signal<RangeKey>('6m');
+
+  // Only the decisions endpoint accepts an explicit day range, so the custom option is
+  // offered where it actually works rather than presented everywhere and ignored.
+  protected readonly ranges = computed(() =>
+    this.role() === 'home_dean' ? RANGES_WITH_CUSTOM : RANGES,
+  );
+
+  protected readonly customFrom = signal<string>('');
+  protected readonly customTo = signal<string>('');
+
+  protected readonly isCustom = computed(() => this.range() === 'custom');
+
+  /** Null until both ends are set and ordered — the report keeps its last valid window. */
+  protected readonly customRange = computed<CustomRange | null>(() => {
+    if (!this.isCustom()) return null;
+    const from = this.customFrom();
+    const to = this.customTo();
+    if (!from || !to || from > to) return null;
+    return { from, to };
+  });
+
+  protected readonly customHint = computed(() => {
+    if (!this.isCustom()) return '';
+    const from = this.customFrom();
+    const to = this.customTo();
+    if (!from || !to) return 'Pick a start and end date.';
+    if (from > to) return 'The start date must not be after the end date.';
+    return '';
+  });
 
   private readonly currentUser = this.auth.getCurrentUser();
 
@@ -89,12 +128,20 @@ export class ReportsComponent {
     return base;
   });
 
-  protected readonly periodLabel = computed(
-    () => RANGES.find((r) => r.key === this.range())?.label ?? '',
-  );
+  protected readonly periodLabel = computed(() => {
+    const custom = this.customRange();
+    if (custom) return `${formatDay(custom.from)} – ${formatDay(custom.to)}`;
+    // Custom is selected but not yet usable, so the report is still showing the full
+    // window. Name what is on screen rather than the control that is mid-edit.
+    if (this.isCustom()) return 'Last 12 months';
+    return this.ranges().find((r) => r.key === this.range())?.label ?? '';
+  });
 
   protected readonly comparisonLabel = computed(() => {
-    const span = { '3m': 3, '6m': 6, '12m': 12, ytd: 0 }[this.range()];
+    // A custom window has no defined "previous period" of the same shape, so the tiles
+    // drop their deltas rather than compare against something arbitrary.
+    if (this.isCustom()) return 'no prior period to compare';
+    const span = { '3m': 3, '6m': 6, '12m': 12, ytd: 0, custom: 0 }[this.range()];
     // Twelve months is the whole window the API returns, so there is nothing before it.
     return !span || span >= 12 ? 'no prior period to compare' : `vs previous ${span} months`;
   });

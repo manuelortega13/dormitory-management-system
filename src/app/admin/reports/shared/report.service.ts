@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
+  CustomRange,
   DecisionLogEntry,
   DecisionRow,
   FloorRow,
@@ -111,9 +112,18 @@ export class ReportService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/reports`;
 
-  async getDecisions(): Promise<DecisionReport> {
+  /**
+   * @param range optional explicit day range. When given, the API returns exactly the
+   * months that range touches, bounded to those days — so a range ending mid-month yields
+   * a genuinely partial bucket rather than the whole month.
+   */
+  async getDecisions(range?: CustomRange | null): Promise<DecisionReport> {
+    let params = new HttpParams();
+    if (range?.from && range?.to) {
+      params = params.set('from', range.from).set('to', range.to);
+    }
     const res = await firstValueFrom(
-      this.http.get<ApiEnvelope<ApiDecisions>>(`${this.base}/decisions`),
+      this.http.get<ApiEnvelope<ApiDecisions>>(`${this.base}/decisions`, { params }),
     );
     const data = res.data;
     const months: MonthMeta[] = data.months.map((m) => ({

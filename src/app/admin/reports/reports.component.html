@@ -18,7 +18,7 @@
     <div class="filter-group">
       <span class="filter-label">Period</span>
       <div class="segmented" role="group" aria-label="Reporting period">
-        @for (option of ranges; track option.key) {
+        @for (option of ranges(); track option.key) {
           <button
             type="button"
             [class.is-active]="range() === option.key"
@@ -31,6 +31,34 @@
       </div>
     </div>
 
+    @if (isCustom()) {
+      <div class="filter-group custom-range">
+        <!-- Each label travels with its own input, so a wrap on a narrow screen never
+             strands "To" at the end of the previous row. -->
+        <span class="range-field">
+          <label class="filter-label" for="range-from">From</label>
+          <input
+            id="range-from"
+            type="date"
+            [ngModel]="customFrom()"
+            (ngModelChange)="customFrom.set($event)"
+          />
+        </span>
+        <span class="range-field">
+          <label class="filter-label" for="range-to">To</label>
+          <input
+            id="range-to"
+            type="date"
+            [ngModel]="customTo()"
+            (ngModelChange)="customTo.set($event)"
+          />
+        </span>
+        @if (customHint()) {
+          <span class="custom-hint">{{ customHint() }}</span>
+        }
+      </div>
+    }
+
     <p class="filter-summary">
       <strong>{{ periodLabel() }}</strong>
       <span>deltas {{ comparisonLabel() }}</span>
@@ -39,7 +67,7 @@
 
   @switch (role()) {
     @case ('home_dean') {
-      <app-dean-report [range]="range()" />
+      <app-dean-report [range]="range()" [customRange]="customRange()" />
     }
     @case ('vpsas') {
       <app-vpsas-report [range]="range()" />

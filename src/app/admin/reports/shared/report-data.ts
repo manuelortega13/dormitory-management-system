@@ -6,7 +6,13 @@
  * window, so a quiet month renders as a real zero instead of vanishing from the axis.
  */
 
-export type RangeKey = '3m' | '6m' | '12m' | 'ytd';
+export type RangeKey = '3m' | '6m' | '12m' | 'ytd' | 'custom';
+
+/** An explicit day range, inclusive at both ends. Only set when RangeKey is 'custom'. */
+export interface CustomRange {
+  from: string;
+  to: string;
+}
 
 /** Mirrors `users.gender` / `users.dean_type` — the men's and women's wings. */
 export type Gender = 'male' | 'female';
@@ -21,6 +27,12 @@ export const RANGES: { key: RangeKey; label: string }[] = [
   { key: '6m', label: 'Last 6 months' },
   { key: '12m', label: 'Last 12 months' },
   { key: 'ytd', label: 'Year to date' },
+];
+
+/** Presets plus the custom option, for views whose endpoint accepts an explicit range. */
+export const RANGES_WITH_CUSTOM: { key: RangeKey; label: string }[] = [
+  ...RANGES,
+  { key: 'custom', label: 'Custom range' },
 ];
 
 export interface MonthMeta {
@@ -103,6 +115,8 @@ export function resolveWindow(
 ): { start: number; end: number } {
   const total = months.length;
   switch (range) {
+    case 'custom':
+      return { start: 0, end: total };
     case '3m':
       return { start: Math.max(0, total - 3), end: total };
     case '6m':

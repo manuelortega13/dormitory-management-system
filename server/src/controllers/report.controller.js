@@ -40,6 +40,69 @@ const buildMonthSeries = (count = MONTHS_RETURNED) => {
   return months;
 };
 
+const makeMonth = (year, month) => ({
+  key: `${year}-${String(month + 1).padStart(2, '0')}`,
+  label: MONTH_NAMES[month],
+  longLabel: `${MONTH_NAMES[month]} ${year}`,
+  start: new Date(Date.UTC(year, month, 1)),
+  end: new Date(Date.UTC(year, month + 1, 1)),
+});
+
+/** Every calendar month touched by [from, to], oldest first. */
+const buildMonthSeriesBetween = (from, to) => {
+  const months = [];
+  let year = from.getUTCFullYear();
+  let month = from.getUTCMonth();
+  const lastYear = to.getUTCFullYear();
+  const lastMonth = to.getUTCMonth();
+
+  while (year < lastYear || (year === lastYear && month <= lastMonth)) {
+    months.push(makeMonth(year, month));
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  return months;
+};
+
+/** Longest custom range accepted, so a stray year cannot produce a 500-column chart. */
+const MAX_RANGE_MONTHS = 36;
+
+/**
+ * Parses ?from=&to= (YYYY-MM-DD). Returns null when neither is supplied, or an `error`
+ * describing why the pair is unusable. The bounds are treated as inclusive days: `to` is
+ * turned into an exclusive upper bound at midnight the following day, so a request ending
+ * on the 20th includes everything decided on the 20th.
+ */
+const parseRange = (query) => {
+  const { from, to } = query;
+  if (!from && !to) return null;
+  if (!from || !to) return { error: 'Both from and to are required for a custom range' };
+
+  const pattern = /^\d{4}-\d{2}-\d{2}$/;
+  if (!pattern.test(from) || !pattern.test(to)) {
+    return { error: 'from and to must be YYYY-MM-DD dates' };
+  }
+
+  const start = new Date(`${from}T00:00:00Z`);
+  const endInclusive = new Date(`${to}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(endInclusive.getTime())) {
+    return { error: 'from and to must be valid dates' };
+  }
+  if (start > endInclusive) return { error: 'from must not be later than to' };
+
+  const months = buildMonthSeriesBetween(start, endInclusive);
+  if (months.length > MAX_RANGE_MONTHS) {
+    return { error: `A custom range may not span more than ${MAX_RANGE_MONTHS} months` };
+  }
+
+  // Exclusive upper bound: the instant after the last requested day.
+  const end = new Date(endInclusive.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end, months, from, to };
+};
+
 /** Inclusive lower bound for every query: the first day of the oldest month returned. */
 const seriesStart = (months) => months[0].start;
 
@@ -137,8 +200,16 @@ const emptyWing = () => ({
 exports.getDecisions = async (req, res) => {
   try {
     const isVpsas = req.user.role === 'vpsas';
-    const months = buildMonthSeries();
-    const from = toDateTime(seriesStart(months));
+
+    const range = parseRange(req.query);
+    if (range?.error) return res.status(400).json({ error: range.error });
+
+    // A custom range spans exactly the months it touches; the default is the last 12.
+    const months = range ? range.months : buildMonthSeries();
+    const from = toDateTime(range ? range.start : seriesStart(months));
+    // Exclusive upper bound. Without one, a range ending mid-month would still pull in the
+    // rest of that month and the partial bucket would read as a full one.
+    const until = toDateTime(range ? range.end : months[months.length - 1].end);
     const wings = wingsFor(req.user);
 
     // Column set differs per level; the shape of the query does not.
@@ -170,13 +241,14 @@ exports.getDecisions = async (req, res) => {
       WHERE t.${cols.status} IN ('approved', 'declined')
         AND t.${cols.at} IS NOT NULL
         AND t.${cols.at} >= ?
+        AND t.${cols.at} < ?
         AND u.gender IS NOT NULL
         ${scope.length ? `AND ${scope.join(' AND ')}` : ''}
         ${reviewerClause.replace('{t}', 't').replace('{by}', cols.by)}
       GROUP BY ym, u.gender
     `;
 
-    const params = [from, ...scopeParams, ...(isVpsas ? [req.user.id] : [])];
+    const params = [from, until, ...scopeParams, ...(isVpsas ? [req.user.id] : [])];
     const [leaveRows] = await pool.query(bucketQuery('leave_requests', leave), params);
     const [gatepassRows] = await pool.query(bucketQuery('gatepasses', gatepass), params);
 
@@ -225,7 +297,15 @@ exports.getDecisions = async (req, res) => {
       ),
     }));
 
-    const log = await fetchDecisionLog({ isVpsas, leave, gatepass, wings, userId: req.user.id });
+    const log = await fetchDecisionLog({
+      isVpsas,
+      leave,
+      gatepass,
+      wings,
+      userId: req.user.id,
+      from,
+      until,
+    });
 
     res.json({
       success: true,
@@ -236,6 +316,7 @@ exports.getDecisions = async (req, res) => {
         logLimit: LOG_LIMIT,
         logTotal: log.total,
         level: isVpsas ? 'vpsas' : 'dean',
+        range: range ? { from: range.from, to: range.to } : null,
       },
     });
   } catch (error) {
@@ -245,7 +326,7 @@ exports.getDecisions = async (req, res) => {
 };
 
 /** The most recent individual decisions behind the charts. */
-const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId }) => {
+const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId, from, until }) => {
   const scope = wings.length === 1 ? 'AND u.gender = ?' : '';
   const scopeParams = wings.length === 1 ? [wings[0]] : [];
   const reviewer = isVpsas ? 'AND t.{by} = ?' : '';
@@ -268,6 +349,8 @@ const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId }) => 
     LEFT JOIN rooms r ON r.id = ra.room_id
     WHERE t.${cols.status} IN ('approved', 'declined')
       AND t.${cols.at} IS NOT NULL
+      AND t.${cols.at} >= ?
+      AND t.${cols.at} < ?
       AND u.gender IS NOT NULL
       ${scope}
       ${reviewer.replace('{by}', cols.by)}
@@ -278,7 +361,8 @@ const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId }) => 
     UNION ALL
     ${select('gatepasses', gatepass, 'Gatepass', 't.reason')}
   `;
-  const params = [...scopeParams, ...reviewerParams, ...scopeParams, ...reviewerParams];
+  const perSelect = [from, until, ...scopeParams, ...reviewerParams];
+  const params = [...perSelect, ...perSelect];
 
   const [rows] = await pool.query(`${union} ORDER BY decided DESC LIMIT ${LOG_LIMIT}`, params);
   const [[counted]] = await pool.query(`SELECT COUNT(*) AS n FROM (${union}) counted`, params);

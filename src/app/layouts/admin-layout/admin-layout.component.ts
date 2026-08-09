@@ -63,6 +63,13 @@ export class AdminLayoutComponent {
       route: '/manage/payments',
       roles: ['admin', 'business_officer'],
     },
+    // Every /manage role can reach Reports; the page renders the view for their role.
+    {
+      label: 'Reports',
+      icon: '📈',
+      route: '/manage/reports',
+      roles: ['admin', 'home_dean', 'vpsas', 'business_officer'],
+    },
     { label: 'Announcements', icon: '📢', route: '/manage/announcements', roles: this.adminRoles },
     {
       label: 'Settings',
