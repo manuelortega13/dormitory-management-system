@@ -96,3 +96,4 @@ Configured in root `package.json`: `printWidth: 100`, `singleQuote: true`, Angul
 ## Rules
 - **No co-author in commits**: Never include `Co-Authored-By` lines in git commit messages.
 - **Never commit or push without explicit instruction**: Do not run `git commit` or `git push` unless the user explicitly asks for it in the current turn. Approval given on a previous turn does not carry over.
+- **Never create a branch without explicit instruction**: Do not run `git checkout -b` / `git branch` unless the user asks for a branch by name or explicitly asks you to create one. Commit to the current branch — including `main` — even if a general convention or skill suggests branching off the default branch first.
