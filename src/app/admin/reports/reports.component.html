@@ -73,7 +73,7 @@
       <app-vpsas-report [range]="range()" />
     }
     @case ('business_officer') {
-      <app-bo-report [range]="range()" />
+      <app-bo-report [range]="range()" [customRange]="customRange()" />
     }
     @default {
       <app-overview-report [range]="range()" />

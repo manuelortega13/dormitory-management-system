@@ -395,8 +395,14 @@ const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId, from,
  */
 exports.getPayments = async (req, res) => {
   try {
-    const months = buildMonthSeries();
-    const from = toDateTime(seriesStart(months));
+    const range = parseRange(req.query);
+    if (range?.error) return res.status(400).json({ error: range.error });
+
+    const months = range ? range.months : buildMonthSeries();
+    const from = toDateTime(range ? range.start : seriesStart(months));
+    // Exclusive upper bound, so a range ending mid-month yields a genuinely partial bucket
+    // instead of quietly pulling in the rest of that month.
+    const until = toDateTime(range ? range.end : months[months.length - 1].end);
 
     const [paymentRows] = await pool.query(
       `SELECT DATE_FORMAT(p.payment_date, '%Y-%m') AS ym,
@@ -405,17 +411,17 @@ exports.getPayments = async (req, res) => {
               COUNT(*) AS n,
               SUM(p.amount) AS amount
        FROM payments p
-       WHERE p.payment_date >= ?
+       WHERE p.payment_date >= ? AND p.payment_date < ?
        GROUP BY ym, p.status, p.payment_method`,
-      [from],
+      [from, until],
     );
 
     const [billRows] = await pool.query(
       `SELECT DATE_FORMAT(b.due_date, '%Y-%m') AS ym, SUM(b.amount) AS billed
        FROM bills b
-       WHERE b.due_date >= ? AND b.status <> 'cancelled'
+       WHERE b.due_date >= ? AND b.due_date < ? AND b.status <> 'cancelled'
        GROUP BY ym`,
-      [from],
+      [from, until],
     );
 
     const buckets = new Map(months.map((m) => [m.key, emptyPaymentBucket()]));
@@ -452,16 +458,22 @@ exports.getPayments = async (req, res) => {
        LEFT JOIN room_assignments ra ON ra.user_id = u.id AND ra.status = 'active'
        LEFT JOIN rooms r ON r.id = ra.room_id
        LEFT JOIN users v ON v.id = p.verified_by
+       WHERE p.payment_date >= ? AND p.payment_date < ?
        ORDER BY p.payment_date DESC
        LIMIT ${LOG_LIMIT}`,
+      [from, until],
     );
 
-    const [[logCount]] = await pool.query(`SELECT COUNT(*) AS n FROM payments`);
+    const [[logCount]] = await pool.query(
+      `SELECT COUNT(*) AS n FROM payments WHERE payment_date >= ? AND payment_date < ?`,
+      [from, until],
+    );
 
     res.json({
       success: true,
       data: {
         months: series,
+        range: range ? { from: range.from, to: range.to } : null,
         logLimit: LOG_LIMIT,
         logTotal: numeric(logCount.n),
         log: log.map((row) => ({

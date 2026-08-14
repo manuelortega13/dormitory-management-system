@@ -1,10 +1,11 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { PALETTE, ReportBase, Tooltip } from '../shared/report-base';
 import { ReportExportService } from '../shared/report-export.service';
 import { buildLines, buildStackedBarsH, buildStackedColumns } from '../shared/chart-geometry';
 import { PaymentReport, ReportService } from '../shared/report.service';
 import {
+  CustomRange,
   PaymentRow,
   RangeKey,
   TransactionLogEntry,
@@ -54,6 +55,8 @@ const METHOD_INK: Record<string, string> = {
 })
 export class BoReportComponent extends ReportBase {
   readonly range = input.required<RangeKey>();
+  /** An explicit day range. When set, the API returns exactly the months it touches. */
+  readonly customRange = input<CustomRange | null>(null);
 
   private readonly reports = inject(ReportService);
 
@@ -81,13 +84,20 @@ export class BoReportComponent extends ReportBase {
     exporter.register(() => void this.exportCsv());
     // Print / PDF carries the same payload as the CSV: every transaction in the period.
     exporter.registerPrint(() => this.printTransactions());
-    this.load();
+
+    // Refetch whenever the explicit range changes. Presets need no refetch: they slice the
+    // twelve months already in hand, which keeps the sparkline baselines intact. The first
+    // run of this effect is what loads the report, so there is no separate initial fetch.
+    effect(() => {
+      const range = this.customRange();
+      void this.load(range);
+    });
   }
 
-  protected async load(): Promise<void> {
+  protected async load(range: CustomRange | null = this.customRange()): Promise<void> {
     this.loadState.set('loading');
     try {
-      this.report.set(await this.reports.getPayments());
+      this.report.set(await this.reports.getPayments(range));
       this.loadState.set('ready');
     } catch (error) {
       console.error('Failed to load the payments report', error);
@@ -110,9 +120,14 @@ export class BoReportComponent extends ReportBase {
       : `All ${this.fmtInt(report.logTotal)} transactions`;
   });
 
-  /** True when nothing has been billed or paid in the last 12 months. */
+  /** True when nothing has been billed or paid anywhere in the window the API returned. */
   protected readonly isEmpty = computed(() =>
     (this.report()?.months ?? []).every((m) => m.billed === 0 && m.submitted === 0),
+  );
+
+  /** What the empty state names: a custom window is not "the last 12 months". */
+  protected readonly windowLabel = computed(() =>
+    this.customRange() ? 'the selected range' : 'the last 12 months',
   );
 
   private readonly monthMetas = computed(() => this.report()?.months ?? []);
@@ -126,6 +141,8 @@ export class BoReportComponent extends ReportBase {
   });
 
   private readonly priorRows = computed(() => {
+    // A custom window has no comparable preceding period, so the tiles drop their deltas.
+    if (this.customRange()) return [];
     const { start, end } = this.window();
     const span = end - start;
     return start - span < 0 ? [] : this.allRows().slice(start - span, start);
@@ -413,6 +430,8 @@ export class BoReportComponent extends ReportBase {
 
   /** First and last day of the months currently in view. */
   private windowBounds(): { from: string; to: string } | null {
+    const custom = this.customRange();
+    if (custom) return custom;
     const rows = this.rows();
     if (!rows.length) return null;
     const [firstYear, firstMonth] = rows[0].key.split('-').map(Number);

@@ -177,9 +177,14 @@ export class ReportService {
     };
   }
 
-  async getPayments(): Promise<PaymentReport> {
+  /** @param range optional explicit day range; the API bounds the buckets and log to it. */
+  async getPayments(range?: CustomRange | null): Promise<PaymentReport> {
+    let params = new HttpParams();
+    if (range?.from && range?.to) {
+      params = params.set('from', range.from).set('to', range.to);
+    }
     const res = await firstValueFrom(
-      this.http.get<ApiEnvelope<ApiPayments>>(`${this.base}/payments`),
+      this.http.get<ApiEnvelope<ApiPayments>>(`${this.base}/payments`, { params }),
     );
 
     return {
