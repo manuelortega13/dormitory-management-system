@@ -9,6 +9,7 @@ import {
   PaymentRow,
   RangeKey,
   TransactionLogEntry,
+  monthBounds,
   periodLabel,
   resolveWindow,
 } from '../shared/report-data';
@@ -428,19 +429,9 @@ export class BoReportComponent extends ReportBase {
     setTimeout(cleanUp, 1000);
   }
 
-  /** First and last day of the months currently in view. */
-  private windowBounds(): { from: string; to: string } | null {
-    const custom = this.customRange();
-    if (custom) return custom;
-    const rows = this.rows();
-    if (!rows.length) return null;
-    const [firstYear, firstMonth] = rows[0].key.split('-').map(Number);
-    const [lastYear, lastMonth] = rows[rows.length - 1].key.split('-').map(Number);
-    const lastDay = new Date(Date.UTC(lastYear, lastMonth, 0)).getUTCDate();
-    return {
-      from: `${firstYear}-${String(firstMonth).padStart(2, '0')}-01`,
-      to: `${lastYear}-${String(lastMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-    };
+  /** The days the export covers: the explicit range, or the months currently in view. */
+  private windowBounds(): CustomRange | null {
+    return this.customRange() ?? monthBounds(this.rows());
   }
 
   /**

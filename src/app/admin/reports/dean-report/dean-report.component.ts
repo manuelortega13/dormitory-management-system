@@ -5,10 +5,12 @@ import { DecisionReport, ReportService } from '../shared/report.service';
 import { buildGroupedStacks, buildLines, buildStackedBarsH } from '../shared/chart-geometry';
 import {
   CustomRange,
+  DecisionLogEntry,
   DecisionRow,
   GENDERS,
   Gender,
   RangeKey,
+  monthBounds,
   periodLabel,
   resolveWindow,
 } from '../shared/report-data';
@@ -94,7 +96,10 @@ export class DeanReportComponent extends ReportBase {
 
   constructor() {
     super();
-    inject(ReportExportService).register(() => this.exportCsv());
+    const exporter = inject(ReportExportService);
+    exporter.register(() => void this.exportCsv());
+    // Print / PDF carries the same payload as the CSV: every decision in the period.
+    exporter.registerPrint(() => this.printDecisions());
 
     // Refetch whenever the explicit range changes. Presets need no refetch: they slice the
     // twelve months already in hand, which keeps the sparkline baselines intact.
@@ -500,37 +505,68 @@ export class DeanReportComponent extends ReportBase {
     this.rateTip.set(null);
   }
 
-  private exportCsv(): void {
+  /** Rows staged for printing. Rendered only while a print is in flight. */
+  protected readonly printRows = signal<DecisionLogEntry[] | null>(null);
+
+  /** The days the export covers: the explicit range, or the months currently in view. */
+  private windowBounds(): CustomRange | null {
+    return this.customRange() ?? monthBounds(this.rows());
+  }
+
+  /**
+   * Every leave request and gatepass this office decided in the period. Not the capped
+   * on-screen log, which stops at 12 rows, and not the monthly aggregates — the export is
+   * the decision list itself.
+   */
+  private async fetchDecisions(bounds: CustomRange): Promise<DecisionLogEntry[] | null> {
+    try {
+      return await this.reports.getDecisionLog(bounds);
+    } catch (error) {
+      console.error('Failed to list the decisions for export', error);
+      return null;
+    }
+  }
+
+  protected wingOf(entry: DecisionLogEntry): string {
+    return entry.gender === 'male' ? "Men's wing" : "Women's wing";
+  }
+
+  /**
+   * Prints the same thing the CSV exports. Printing the page as it appears would carry the
+   * charts and a 12-row sample of the log, which is not the list that was asked for.
+   */
+  private async printDecisions(): Promise<void> {
+    const bounds = this.windowBounds();
+    if (!bounds) return;
+    const decisions = await this.fetchDecisions(bounds);
+    if (!decisions) return;
+
+    this.printRows.set(decisions);
+    document.body.classList.add('printing-report');
+
+    const cleanUp = () => {
+      document.body.classList.remove('printing-report');
+      this.printRows.set(null);
+      window.removeEventListener('afterprint', cleanUp);
+    };
+    window.addEventListener('afterprint', cleanUp);
+
+    // Let Angular flush the print-only table before handing over to the browser.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    window.print();
+    // Headless and some mobile browsers never fire afterprint; do not leak the class.
+    setTimeout(cleanUp, 1000);
+  }
+
+  private async exportCsv(): Promise<void> {
+    const bounds = this.windowBounds();
+    if (!bounds) return;
+    const decisions = await this.fetchDecisions(bounds);
+    if (!decisions) return;
+
     const wings = this.shownWings();
     const scope = wings.length === 1 ? wings[0].key : 'all-wings';
-    const custom = this.customRange();
-    const period = custom ? `${custom.from}_to_${custom.to}` : this.range();
-    this.downloadCsv(`dean-decisions-${scope}-${period}.csv`, [
-      ['Home Dean — leave request & gatepass decisions', this.periodLabel(), this.wingLabel()],
-      [],
-      [
-        'Month',
-        'Wing',
-        'Leave approved',
-        'Leave rejected',
-        'Gatepass approved',
-        'Gatepass rejected',
-        'Approval rate %',
-        'Turnaround hours',
-      ],
-      ...this.wingRows().flatMap((entry) =>
-        entry.wings.map((w) => [
-          entry.row.longLabel,
-          w.wing.label,
-          w.row.leaveApproved,
-          w.row.leaveRejected,
-          w.row.gatepassApproved,
-          w.row.gatepassRejected,
-          this.rateOf(w.row).toFixed(1),
-          w.row.turnaround.toFixed(1),
-        ]),
-      ),
-      [],
+    this.downloadCsv(`dean-decisions-${scope}-${bounds.from}_to_${bounds.to}.csv`, [
       [
         'Reference',
         'Occupant',
@@ -543,10 +579,10 @@ export class DeanReportComponent extends ReportBase {
         'Outcome',
         'Note',
       ],
-      ...this.decisionLog().map((e) => [
+      ...decisions.map((e) => [
         e.reference,
         e.occupant,
-        e.gender === 'male' ? "Men's wing" : "Women's wing",
+        this.wingOf(e),
         e.room,
         e.type,
         e.reason,

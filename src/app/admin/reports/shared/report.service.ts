@@ -177,6 +177,26 @@ export class ReportService {
     };
   }
 
+  /** Every decision in the window — the export needs the full set, not the capped log. */
+  async getDecisionLog(range: CustomRange): Promise<DecisionLogEntry[]> {
+    const params = new HttpParams().set('from', range.from).set('to', range.to);
+    const res = await firstValueFrom(
+      this.http.get<
+        ApiEnvelope<{
+          decisions: (Omit<DecisionLogEntry, 'filed' | 'decided'> & {
+            filed: string;
+            decided: string;
+          })[];
+        }>
+      >(`${this.base}/decisions/log`, { params }),
+    );
+    return res.data.decisions.map((entry) => ({
+      ...entry,
+      filed: formatDay(entry.filed),
+      decided: formatDay(entry.decided),
+    }));
+  }
+
   /** @param range optional explicit day range; the API bounds the buckets and log to it. */
   async getPayments(range?: CustomRange | null): Promise<PaymentReport> {
     let params = new HttpParams();

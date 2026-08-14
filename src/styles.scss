@@ -202,6 +202,13 @@ body {
     font-variant-numeric: tabular-nums;
   }
 
+  // Free-text columns (a leave reason, a dean's note) wrap instead of forcing the sheet
+  // wider than the page.
+  body.printing-report .print-sheet .wrap {
+    white-space: normal;
+    min-width: 8rem;
+  }
+
   // Repeat the header on every page of a long transaction list.
   body.printing-report .print-sheet thead {
     display: table-header-group;

@@ -13,6 +13,14 @@ router.use(authMiddleware);
 // happens inside the controller from req.user, never from a client-supplied parameter.
 router.get('/decisions', exactRoleMiddleware('home_dean', 'vpsas'), reportController.getDecisions);
 
+// Every decision in the window, for the CSV export and the printed sheet (the on-screen
+// log is capped). Scoped from req.user exactly as /decisions is.
+router.get(
+  '/decisions/log',
+  exactRoleMiddleware('home_dean', 'vpsas'),
+  reportController.getDecisionList,
+);
+
 // Payments: the business officer's report; the admin can read it too.
 router.get(
   '/payments',

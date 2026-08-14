@@ -700,4 +700,48 @@
       </table>
     </div>
   </article>
+
+  <!-- Print / PDF sheet: every decision in the period. Hidden on screen; the global print
+       rules hide everything else while it is present. -->
+  @if (printRows(); as printed) {
+    <section class="print-sheet">
+      <h1>Leave request &amp; gatepass decisions</h1>
+      <p class="print-meta">
+        {{ periodLabel() }} · {{ wingLabel() }} · {{ fmtInt(printed.length) }} decisions
+      </p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Occupant</th>
+            <th scope="col">Wing</th>
+            <th scope="col">Room</th>
+            <th scope="col">Type</th>
+            <th scope="col">Reason</th>
+            <th scope="col">Filed</th>
+            <th scope="col">Decided</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of printed; track entry.reference) {
+            <tr>
+              <th scope="row">{{ entry.reference }}</th>
+              <td>{{ entry.occupant }}</td>
+              <td>{{ wingOf(entry) }}</td>
+              <td>{{ entry.room }}</td>
+              <td>{{ entry.type }}</td>
+              <!-- Free text, so it wraps rather than pushing the sheet off the page. -->
+              <td class="wrap">{{ entry.reason }}</td>
+              <td>{{ entry.filed }}</td>
+              <td>{{ entry.decided }}</td>
+              <td>{{ entry.outcome }}</td>
+              <td class="wrap">{{ entry.note }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
 }

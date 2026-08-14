@@ -183,6 +183,20 @@ const wingsFor = (user) => {
   return ['male', 'female'];
 };
 
+/**
+ * Which columns carry a decision at this level. The home dean reads `admin_*` on leave
+ * requests and `dean_*` on gatepasses; the VP reads their own VPSAS columns on both. The
+ * shape of every decision query is identical — only these column names differ.
+ */
+const decisionColumns = (isVpsas) => ({
+  leave: isVpsas
+    ? { status: 'vpsas_status', at: 'vpsas_reviewed_at', by: 'vpsas_reviewed_by' }
+    : { status: 'admin_status', at: 'admin_reviewed_at', by: 'admin_reviewed_by' },
+  gatepass: isVpsas
+    ? { status: 'vpsas_status', at: 'vpsas_reviewed_at', by: 'vpsas_reviewed_by' }
+    : { status: 'dean_status', at: 'dean_reviewed_at', by: 'dean_reviewed_by' },
+});
+
 const emptyWing = () => ({
   leaveApproved: 0,
   leaveRejected: 0,
@@ -215,13 +229,7 @@ exports.getDecisions = async (req, res) => {
     const until = toDateTime(range ? range.end : months[months.length - 1].end);
     const wings = wingsFor(req.user);
 
-    // Column set differs per level; the shape of the query does not.
-    const leave = isVpsas
-      ? { status: 'vpsas_status', at: 'vpsas_reviewed_at', by: 'vpsas_reviewed_by' }
-      : { status: 'admin_status', at: 'admin_reviewed_at', by: 'admin_reviewed_by' };
-    const gatepass = isVpsas
-      ? { status: 'vpsas_status', at: 'vpsas_reviewed_at', by: 'vpsas_reviewed_by' }
-      : { status: 'dean_status', at: 'dean_reviewed_at', by: 'dean_reviewed_by' };
+    const { leave, gatepass } = decisionColumns(isVpsas);
 
     const scope = [];
     const scopeParams = [];
@@ -328,8 +336,12 @@ exports.getDecisions = async (req, res) => {
   }
 };
 
-/** The most recent individual decisions behind the charts. */
-const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId, from, until }) => {
+/**
+ * The individual decisions behind the charts, as a UNION over both request types, already
+ * scoped to the wings this viewer may see and — for the VP — to what they signed themselves.
+ * Returned unexecuted so the on-screen log can cap it and the export can take the lot.
+ */
+const decisionLogQuery = ({ isVpsas, leave, gatepass, wings, userId, from, until }) => {
   const scope = wings.length === 1 ? 'AND u.gender = ?' : '';
   const scopeParams = wings.length === 1 ? [wings[0]] : [];
   const reviewer = isVpsas ? 'AND t.{by} = ?' : '';
@@ -365,25 +377,73 @@ const fetchDecisionLog = async ({ isVpsas, leave, gatepass, wings, userId, from,
     ${select('gatepasses', gatepass, 'Gatepass', 't.reason')}
   `;
   const perSelect = [from, until, ...scopeParams, ...reviewerParams];
-  const params = [...perSelect, ...perSelect];
+  return { union, params: [...perSelect, ...perSelect] };
+};
+
+const decisionEntry = (row) => ({
+  reference: `${row.type === 'Gatepass' ? 'GP' : 'LR'}-${row.id}`,
+  occupant: row.occupant,
+  gender: row.gender,
+  room: row.room,
+  type: row.type,
+  reason: row.reason,
+  filed: row.filed,
+  decided: row.decided,
+  outcome: row.outcome === 'approved' ? 'Approved' : 'Rejected',
+  note: row.note,
+});
+
+/** The most recent individual decisions behind the charts, capped for the screen. */
+const fetchDecisionLog = async (scope) => {
+  const { union, params } = decisionLogQuery(scope);
 
   const [rows] = await pool.query(`${union} ORDER BY decided DESC LIMIT ${LOG_LIMIT}`, params);
   const [[counted]] = await pool.query(`SELECT COUNT(*) AS n FROM (${union}) counted`, params);
 
-  const entries = rows.map((row) => ({
-    reference: `${row.type === 'Gatepass' ? 'GP' : 'LR'}-${row.id}`,
-    occupant: row.occupant,
-    gender: row.gender,
-    room: row.room,
-    type: row.type,
-    reason: row.reason,
-    filed: row.filed,
-    decided: row.decided,
-    outcome: row.outcome === 'approved' ? 'Approved' : 'Rejected',
-    note: row.note,
-  }));
+  return { entries: rows.map(decisionEntry), total: numeric(counted.n) };
+};
 
-  return { entries, total: numeric(counted.n) };
+/**
+ * GET /api/reports/decisions/log?from=&to=
+ *
+ * Every decision this office made in the window, for the CSV and the printed sheet. The
+ * report's own log is capped at LOG_LIMIT rows for the screen; an export that silently
+ * stopped at twelve would under-report the period, so this returns the lot (bounded by
+ * EXPORT_LIMIT purely as a runaway guard). Scoping is identical to /decisions: the wings
+ * come from req.user, and the VP still sees only what they signed themselves.
+ */
+exports.getDecisionList = async (req, res) => {
+  try {
+    const isVpsas = req.user.role === 'vpsas';
+
+    const range = parseRange(req.query);
+    if (range?.error) return res.status(400).json({ error: range.error });
+
+    const months = range ? range.months : buildMonthSeries();
+    const from = toDateTime(range ? range.start : seriesStart(months));
+    const until = toDateTime(range ? range.end : months[months.length - 1].end);
+
+    const { leave, gatepass } = decisionColumns(isVpsas);
+    const { union, params } = decisionLogQuery({
+      isVpsas,
+      leave,
+      gatepass,
+      wings: wingsFor(req.user),
+      userId: req.user.id,
+      from,
+      until,
+    });
+
+    const [rows] = await pool.query(`${union} ORDER BY decided ASC LIMIT ${EXPORT_LIMIT}`, params);
+
+    res.json({
+      success: true,
+      data: { from, until, decisions: rows.map(decisionEntry) },
+    });
+  } catch (error) {
+    console.error('getDecisionList error:', error);
+    res.status(500).json({ error: 'Failed to list decisions' });
+  }
 };
 
 /**

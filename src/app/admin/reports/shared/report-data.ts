@@ -132,6 +132,22 @@ export function resolveWindow(
   }
 }
 
+/**
+ * First and last day of the calendar months these rows cover, as an inclusive day range —
+ * what an export sends when no explicit range was picked. Null when there are no rows.
+ */
+export function monthBounds(rows: MonthMeta[]): CustomRange | null {
+  if (!rows.length) return null;
+  const [firstYear, firstMonth] = rows[0].key.split('-').map(Number);
+  const [lastYear, lastMonth] = rows[rows.length - 1].key.split('-').map(Number);
+  // Day 0 of the following month is the last day of this one.
+  const lastDay = new Date(Date.UTC(lastYear, lastMonth, 0)).getUTCDate();
+  return {
+    from: `${firstYear}-${String(firstMonth).padStart(2, '0')}-01`,
+    to: `${lastYear}-${String(lastMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+  };
+}
+
 export function periodLabel(rows: { longLabel: string }[]): string {
   if (!rows.length) return '';
   return rows.length === 1
