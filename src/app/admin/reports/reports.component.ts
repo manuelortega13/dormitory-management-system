@@ -151,6 +151,7 @@ export class ReportsComponent {
   }
 
   protected printReport(): void {
-    window.print();
+    // The active view decides what gets printed; it falls back to the page as it appears.
+    this.exporter.runPrint();
   }
 }

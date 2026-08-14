@@ -4,7 +4,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -56,7 +57,7 @@ html, body {
   .btn-primary,
   .btn-secondary,
   select,
-  input[type="submit"] {
+  input[type='submit'] {
     min-height: 44px;
   }
 }
@@ -69,16 +70,16 @@ body {
 /* Prevent iOS zoom on input focus - inputs must be at least 16px */
 @media (max-width: 768px) {
   input,
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="url"],
-  input[type="search"],
-  input[type="date"],
-  input[type="time"],
-  input[type="datetime-local"],
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='number'],
+  input[type='tel'],
+  input[type='url'],
+  input[type='search'],
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'],
   textarea,
   select {
     font-size: 16px !important;
@@ -87,7 +88,10 @@ body {
 
 /* Disable touch callout and selection on interactive elements */
 @media (pointer: coarse) {
-  input, textarea, select, button {
+  input,
+  textarea,
+  select,
+  button {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
@@ -99,7 +103,11 @@ body {
   // to avoid double-offset when headers are position:fixed
 
   // Smoother scrolling
-  main, .main-content, .user-content, .admin-content, .security-content {
+  main,
+  .main-content,
+  .user-content,
+  .admin-content,
+  .security-content {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
@@ -120,8 +128,86 @@ body {
   }
 
   // Prevent text selection on nav elements
-  nav, .bottom-tab-bar, .tab-item {
+  nav,
+  .bottom-tab-bar,
+  .tab-item {
     -webkit-user-select: none;
     user-select: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+   Report print sheets
+
+   A report can stage a print-only sheet (e.g. the full payment-transaction list) and add
+   `printing-report` to <body>. While that class is present, printing shows only the sheet:
+   the sidebar, filters, charts and the capped on-screen log are all suppressed, so the
+   printout carries the same complete data as the CSV rather than the page as it appears.
+
+   Visibility rather than display is used so the surrounding layout does not reflow while
+   the print dialog is open.
+--------------------------------------------------------------------------------------- */
+
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  body.printing-report * {
+    visibility: hidden;
+  }
+
+  body.printing-report .print-sheet,
+  body.printing-report .print-sheet * {
+    visibility: visible;
+  }
+
+  body.printing-report .print-sheet {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0;
+  }
+
+  body.printing-report .print-sheet h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.25rem;
+    color: #000;
+  }
+
+  body.printing-report .print-sheet .print-meta {
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
+    color: #333;
+  }
+
+  body.printing-report .print-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+  }
+
+  body.printing-report .print-sheet th,
+  body.printing-report .print-sheet td {
+    padding: 0.3rem 0.4rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    white-space: nowrap;
+  }
+
+  body.printing-report .print-sheet .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Repeat the header on every page of a long transaction list.
+  body.printing-report .print-sheet thead {
+    display: table-header-group;
+  }
+
+  body.printing-report .print-sheet tr {
+    break-inside: avoid;
   }
 }

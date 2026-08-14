@@ -4,7 +4,13 @@ import { PALETTE, ReportBase, Tooltip } from '../shared/report-base';
 import { ReportExportService } from '../shared/report-export.service';
 import { buildLines, buildStackedBarsH, buildStackedColumns } from '../shared/chart-geometry';
 import { PaymentReport, ReportService } from '../shared/report.service';
-import { PaymentRow, RangeKey, periodLabel, resolveWindow } from '../shared/report-data';
+import {
+  PaymentRow,
+  RangeKey,
+  TransactionLogEntry,
+  periodLabel,
+  resolveWindow,
+} from '../shared/report-data';
 
 /**
  * Verification states in a fixed stack order. These are categorical slots chosen for
@@ -71,7 +77,10 @@ export class BoReportComponent extends ReportBase {
 
   constructor() {
     super();
-    inject(ReportExportService).register(() => this.exportCsv());
+    const exporter = inject(ReportExportService);
+    exporter.register(() => void this.exportCsv());
+    // Print / PDF carries the same payload as the CSV: every transaction in the period.
+    exporter.registerPrint(() => this.printTransactions());
     this.load();
   }
 
@@ -361,37 +370,79 @@ export class BoReportComponent extends ReportBase {
     this.rateTip.set(null);
   }
 
-  private exportCsv(): void {
-    this.downloadCsv(`payment-transactions-${this.range()}.csv`, [
-      ['Business Officer — payment transactions', this.periodLabel()],
-      [],
-      [
-        'Month',
-        'Billed',
-        'Verified',
-        'Pending verification',
-        'Rejected',
-        'Collection rate %',
-        'GCash',
-        'Maya',
-        'Cash',
-        'Other',
-      ],
-      ...this.rows().map((r) => [
-        r.longLabel,
-        r.billed,
-        r.verified,
-        r.pending,
-        r.rejected,
-        r.collectRate.toFixed(1),
-        r.methods.gcash,
-        r.methods.maya,
-        r.methods.cash,
-        r.methods.other,
-      ]),
-      [],
+  /** Rows staged for printing. Rendered only while a print is in flight. */
+  protected readonly printRows = signal<TransactionLogEntry[] | null>(null);
+
+  protected readonly printTotal = computed(() =>
+    (this.printRows() ?? []).reduce((sum, t) => sum + t.amount, 0),
+  );
+
+  /**
+   * Prints the same thing the CSV exports: every payment transaction in the selected
+   * period, not the page as it appears. The on-screen log is capped at 12 rows and the
+   * charts are aggregates, so printing the view would under-report the period.
+   */
+  private async printTransactions(): Promise<void> {
+    const bounds = this.windowBounds();
+    if (!bounds) return;
+
+    let transactions: TransactionLogEntry[];
+    try {
+      transactions = await this.reports.getTransactions(bounds);
+    } catch (error) {
+      console.error('Failed to prepare the transactions for printing', error);
+      return;
+    }
+
+    this.printRows.set(transactions);
+    document.body.classList.add('printing-report');
+
+    const cleanUp = () => {
+      document.body.classList.remove('printing-report');
+      this.printRows.set(null);
+      window.removeEventListener('afterprint', cleanUp);
+    };
+    window.addEventListener('afterprint', cleanUp);
+
+    // Let Angular flush the print-only table before handing over to the browser.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    window.print();
+    // Headless and some mobile browsers never fire afterprint; do not leak the class.
+    setTimeout(cleanUp, 1000);
+  }
+
+  /** First and last day of the months currently in view. */
+  private windowBounds(): { from: string; to: string } | null {
+    const rows = this.rows();
+    if (!rows.length) return null;
+    const [firstYear, firstMonth] = rows[0].key.split('-').map(Number);
+    const [lastYear, lastMonth] = rows[rows.length - 1].key.split('-').map(Number);
+    const lastDay = new Date(Date.UTC(lastYear, lastMonth, 0)).getUTCDate();
+    return {
+      from: `${firstYear}-${String(firstMonth).padStart(2, '0')}-01`,
+      to: `${lastYear}-${String(lastMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+    };
+  }
+
+  /**
+   * Exports every payment transaction in the selected period — not the monthly summary and
+   * not the capped on-screen log, both of which would under-report an export.
+   */
+  private async exportCsv(): Promise<void> {
+    const bounds = this.windowBounds();
+    if (!bounds) return;
+
+    let transactions: TransactionLogEntry[];
+    try {
+      transactions = await this.reports.getTransactions(bounds);
+    } catch (error) {
+      console.error('Failed to export payment transactions', error);
+      return;
+    }
+
+    this.downloadCsv(`payment-transactions-${bounds.from}_to_${bounds.to}.csv`, [
       ['Reference', 'Occupant', 'Room', 'Amount', 'Method', 'Submitted', 'Status', 'Handled by'],
-      ...this.transactionLog().map((t) => [
+      ...transactions.map((t) => [
         t.reference,
         t.occupant,
         t.room,

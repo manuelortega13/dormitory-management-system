@@ -197,6 +197,19 @@ export class ReportService {
     };
   }
 
+  /** Every transaction in the window — the export needs the full set, not the capped log. */
+  async getTransactions(range: CustomRange): Promise<TransactionLogEntry[]> {
+    const params = new HttpParams().set('from', range.from).set('to', range.to);
+    const res = await firstValueFrom(
+      this.http.get<
+        ApiEnvelope<{
+          transactions: (Omit<TransactionLogEntry, 'submitted'> & { submitted: string })[];
+        }>
+      >(`${this.base}/payments/transactions`, { params }),
+    );
+    return res.data.transactions.map((t) => ({ ...t, submitted: formatDay(t.submitted) }));
+  }
+
   async getOverview(): Promise<OverviewReport> {
     const res = await firstValueFrom(
       this.http.get<ApiEnvelope<ApiOverview>>(`${this.base}/overview`),

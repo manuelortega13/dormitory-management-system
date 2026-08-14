@@ -20,6 +20,13 @@ router.get(
   reportController.getPayments,
 );
 
+// Every transaction in the window, for the CSV export (the on-screen log is capped).
+router.get(
+  '/payments/transactions',
+  exactRoleMiddleware('admin', 'business_officer'),
+  reportController.getTransactions,
+);
+
 // Dorm-wide overview, admin only.
 router.get('/overview', roleMiddleware('admin'), reportController.getOverview);
 

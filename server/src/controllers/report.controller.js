@@ -121,6 +121,9 @@ const PAYMENT_METHODS = ['gcash', 'maya', 'cash'];
  */
 const LOG_LIMIT = 12;
 
+/** Upper bound on an export, so a huge window cannot stream an unbounded result set. */
+const EXPORT_LIMIT = 10000;
+
 const emptyPaymentBucket = () => ({
   billed: 0,
   verified: 0,
@@ -591,5 +594,65 @@ exports.getOverview = async (req, res) => {
   } catch (error) {
     console.error('getOverview error:', error);
     res.status(500).json({ error: 'Failed to build the overview report' });
+  }
+};
+
+/**
+ * GET /api/reports/payments/transactions?from=&to=
+ *
+ * Every payment in the window, for the CSV export. The report's own log is capped at
+ * LOG_LIMIT rows for the screen; an export is expected to be complete, so this returns the
+ * lot (bounded by EXPORT_LIMIT purely as a runaway guard).
+ */
+exports.getTransactions = async (req, res) => {
+  try {
+    const range = parseRange(req.query);
+    if (range?.error) return res.status(400).json({ error: range.error });
+
+    const months = range ? range.months : buildMonthSeries();
+    const from = toDateTime(range ? range.start : seriesStart(months));
+    const until = toDateTime(range ? range.end : months[months.length - 1].end);
+
+    const [rows] = await pool.query(
+      `SELECT p.id AS id,
+              p.reference_number AS reference,
+              CONCAT(u.first_name, ' ', u.last_name) AS occupant,
+              COALESCE(r.room_number, '—') AS room,
+              p.amount AS amount,
+              p.payment_method AS method,
+              p.payment_date AS submitted,
+              p.status AS status,
+              COALESCE(CONCAT(v.first_name, ' ', v.last_name), '—') AS handledBy
+       FROM payments p
+       JOIN users u ON u.id = p.resident_id
+       LEFT JOIN room_assignments ra ON ra.user_id = u.id AND ra.status = 'active'
+       LEFT JOIN rooms r ON r.id = ra.room_id
+       LEFT JOIN users v ON v.id = p.verified_by
+       WHERE p.payment_date >= ? AND p.payment_date < ?
+       ORDER BY p.payment_date ASC
+       LIMIT ${EXPORT_LIMIT}`,
+      [from, until],
+    );
+
+    res.json({
+      success: true,
+      data: {
+        from,
+        until,
+        transactions: rows.map((row) => ({
+          reference: row.reference || `PMT-${row.id}`,
+          occupant: row.occupant,
+          room: row.room,
+          amount: numeric(row.amount),
+          method: row.method,
+          submitted: row.submitted,
+          status: row.status,
+          handledBy: row.handledBy,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('getTransactions error:', error);
+    res.status(500).json({ error: 'Failed to list payment transactions' });
   }
 };

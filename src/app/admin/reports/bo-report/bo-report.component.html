@@ -671,4 +671,52 @@
       </table>
     </div>
   </article>
+
+  <!-- Print / PDF sheet: the full transaction list for the period. Hidden on screen; the
+       global print rules hide everything else while it is present. -->
+  @if (printRows(); as printed) {
+    <section class="print-sheet">
+      <h1>Payment transactions</h1>
+      <p class="print-meta">
+        {{ periodLabel() }} · {{ fmtInt(printed.length) }} transactions ·
+        {{ fmtPeso(printTotal()) }}
+      </p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Occupant</th>
+            <th scope="col">Room</th>
+            <th scope="col" class="num">Amount</th>
+            <th scope="col">Method</th>
+            <th scope="col">Submitted</th>
+            <th scope="col">Status</th>
+            <th scope="col">Handled by</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of printed; track t.reference) {
+            <tr>
+              <th scope="row">{{ t.reference }}</th>
+              <td>{{ t.occupant }}</td>
+              <td>{{ t.room }}</td>
+              <td class="num">{{ fmtPeso(t.amount) }}</td>
+              <td>{{ t.method }}</td>
+              <td>{{ t.submitted }}</td>
+              <td>{{ t.status | titlecase }}</td>
+              <td>{{ t.handledBy }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td colspan="2"></td>
+            <td class="num">{{ fmtPeso(printTotal()) }}</td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+  }
 }
