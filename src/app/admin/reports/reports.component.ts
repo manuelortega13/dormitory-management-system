@@ -74,10 +74,14 @@ export class ReportsComponent {
 
   protected readonly range = signal<RangeKey>('6m');
 
-  // Decisions and payments both accept an explicit day range; the overview and the VP's
-  // report do not, so the custom option is offered only where it actually works rather than
-  // presented everywhere and ignored.
-  private readonly customCapableRoles: (User['role'] | null)[] = ['home_dean', 'business_officer'];
+  // Decisions and payments both accept an explicit day range; the overview does not, so the
+  // custom option is offered only where it actually works rather than presented everywhere
+  // and ignored.
+  private readonly customCapableRoles: (User['role'] | null)[] = [
+    'home_dean',
+    'vpsas',
+    'business_officer',
+  ];
 
   protected readonly ranges = computed(() =>
     this.customCapableRoles.includes(this.role()) ? RANGES_WITH_CUSTOM : RANGES,

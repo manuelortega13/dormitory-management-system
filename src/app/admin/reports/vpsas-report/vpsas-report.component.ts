@@ -1,9 +1,17 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { PALETTE, ReportBase, Tooltip } from '../shared/report-base';
 import { ReportExportService } from '../shared/report-export.service';
 import { buildLine, buildStackedBarsH, buildStackedColumns } from '../shared/chart-geometry';
 import { DecisionReport, ReportService } from '../shared/report.service';
-import { DecisionRow, RangeKey, periodLabel, resolveWindow } from '../shared/report-data';
+import {
+  CustomRange,
+  DecisionLogEntry,
+  DecisionRow,
+  RangeKey,
+  monthBounds,
+  periodLabel,
+  resolveWindow,
+} from '../shared/report-data';
 
 /** Same validated outcome pair the dean report uses, so a colour means one thing site-wide. */
 const OUTCOME_SERIES = [
@@ -30,6 +38,11 @@ interface TypeRow {
 })
 export class VpsasReportComponent extends ReportBase {
   readonly range = input.required<RangeKey>();
+  /**
+   * An explicit day range. When set, the API returns exactly the months it touches, bounded
+   * to those days, so the client does no slicing of its own.
+   */
+  readonly customRange = input<CustomRange | null>(null);
 
   private readonly reports = inject(ReportService);
 
@@ -51,14 +64,24 @@ export class VpsasReportComponent extends ReportBase {
 
   constructor() {
     super();
-    inject(ReportExportService).register(() => this.exportCsv());
-    this.load();
+    const exporter = inject(ReportExportService);
+    exporter.register(() => void this.exportCsv());
+    // Print / PDF carries the same payload as the CSV: every decision in the period.
+    exporter.registerPrint(() => this.printDecisions());
+
+    // Refetch whenever the explicit range changes. Presets need no refetch: they slice the
+    // twelve months already in hand, which keeps the sparkline baselines intact. The first
+    // run of this effect is what loads the report, so there is no separate initial fetch.
+    effect(() => {
+      const range = this.customRange();
+      void this.load(range);
+    });
   }
 
-  protected async load(): Promise<void> {
+  protected async load(range: CustomRange | null = this.customRange()): Promise<void> {
     this.status.set('loading');
     try {
-      this.report.set(await this.reports.getDecisions());
+      this.report.set(await this.reports.getDecisions(range));
       this.status.set('ready');
     } catch (error) {
       console.error('Failed to load the decisions report', error);
@@ -94,6 +117,8 @@ export class VpsasReportComponent extends ReportBase {
   });
 
   private readonly priorRows = computed(() => {
+    // A custom window has no comparable preceding period, so the tiles drop their deltas.
+    if (this.customRange()) return [];
     const { start, end } = this.window();
     const span = end - start;
     return start - span < 0 ? [] : this.allRows().slice(start - span, start);
@@ -328,31 +353,65 @@ export class VpsasReportComponent extends ReportBase {
     this.turnaroundTip.set(null);
   }
 
-  private exportCsv(): void {
-    this.downloadCsv(`vpsas-decisions-${this.range()}.csv`, [
-      ['VPSAS — decisions I approved or rejected', this.periodLabel()],
-      [],
-      [
-        'Month',
-        'Leave approved',
-        'Leave rejected',
-        'Gatepass approved',
-        'Gatepass rejected',
-        'Approval rate %',
-        'Turnaround hours',
-      ],
-      ...this.rows().map((r) => [
-        r.longLabel,
-        r.leaveApproved,
-        r.leaveRejected,
-        r.gatepassApproved,
-        r.gatepassRejected,
-        (r.total ? (r.approved / r.total) * 100 : 0).toFixed(1),
-        r.turnaround.toFixed(1),
-      ]),
-      [],
+  /** Rows staged for printing. Rendered only while a print is in flight. */
+  protected readonly printRows = signal<DecisionLogEntry[] | null>(null);
+
+  /** The days the export covers: the explicit range, or the months currently in view. */
+  private windowBounds(): CustomRange | null {
+    return this.customRange() ?? monthBounds(this.rows());
+  }
+
+  /**
+   * Every escalation this VP personally decided in the period. Not the capped on-screen
+   * log, which stops at 12 rows, and not the monthly aggregates — the export is the
+   * decision list itself. The endpoint scopes to the signed-in reviewer, so "mine" is
+   * enforced server-side rather than trusted from here.
+   */
+  private async fetchDecisions(bounds: CustomRange): Promise<DecisionLogEntry[] | null> {
+    try {
+      return await this.reports.getDecisionLog(bounds);
+    } catch (error) {
+      console.error('Failed to list the decisions for export', error);
+      return null;
+    }
+  }
+
+  /**
+   * Prints the same thing the CSV exports. Printing the page as it appears would carry the
+   * charts and a 12-row sample of the log, which is not the list that was asked for.
+   */
+  private async printDecisions(): Promise<void> {
+    const bounds = this.windowBounds();
+    if (!bounds) return;
+    const decisions = await this.fetchDecisions(bounds);
+    if (!decisions) return;
+
+    this.printRows.set(decisions);
+    document.body.classList.add('printing-report');
+
+    const cleanUp = () => {
+      document.body.classList.remove('printing-report');
+      this.printRows.set(null);
+      window.removeEventListener('afterprint', cleanUp);
+    };
+    window.addEventListener('afterprint', cleanUp);
+
+    // Let Angular flush the print-only table before handing over to the browser.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    window.print();
+    // Headless and some mobile browsers never fire afterprint; do not leak the class.
+    setTimeout(cleanUp, 1000);
+  }
+
+  private async exportCsv(): Promise<void> {
+    const bounds = this.windowBounds();
+    if (!bounds) return;
+    const decisions = await this.fetchDecisions(bounds);
+    if (!decisions) return;
+
+    this.downloadCsv(`vpsas-decisions-${bounds.from}_to_${bounds.to}.csv`, [
       ['Reference', 'Occupant', 'Room', 'Type', 'Reason', 'Filed', 'Decided', 'Outcome', 'Note'],
-      ...this.decisionLog().map((e) => [
+      ...decisions.map((e) => [
         e.reference,
         e.occupant,
         e.room,
