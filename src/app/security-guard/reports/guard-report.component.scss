@@ -328,7 +328,17 @@ $line: #e5e7eb;
 }
 
 @media (max-width: 480px) {
-  .tally {
-    grid-template-columns: 1fr;
+  // Three short counts stay a single row rather than three stacked cards, so the log
+  // itself is not pushed a screenful down on a phone.
+  .tally-card {
+    padding: 0.7rem 0.6rem;
+
+    .tally-value {
+      font-size: 1.25rem;
+    }
+
+    .tally-detail {
+      display: none;
+    }
   }
 }

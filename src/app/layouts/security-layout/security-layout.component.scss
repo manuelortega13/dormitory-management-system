@@ -261,6 +261,10 @@
 
 .security-content {
   flex: 1;
+  // A flex item defaults to min-width: auto, so it refuses to shrink below its widest
+  // child. One wide table then stretches the whole column past the viewport and the fixed
+  // header and tab bar stop covering the page. Let it shrink; the table scrolls itself.
+  min-width: 0;
   margin-left: 240px;
   min-height: 100vh;
   background: #f5f6fa;
