@@ -246,24 +246,10 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'visitor-log',
+        path: 'reports',
         loadComponent: () =>
-          import('./security-guard/visitor-log/visitor-log.component').then(
-            (m) => m.VisitorLogComponent,
-          ),
-      },
-      {
-        path: 'incidents',
-        loadComponent: () =>
-          import('./security-guard/incidents/incidents.component').then(
-            (m) => m.IncidentsComponent,
-          ),
-      },
-      {
-        path: 'emergency',
-        loadComponent: () =>
-          import('./security-guard/emergency/emergency.component').then(
-            (m) => m.EmergencyComponent,
+          import('./security-guard/reports/guard-report.component').then(
+            (m) => m.GuardReportComponent,
           ),
       },
     ],

@@ -1,0 +1,334 @@
+// Follows the gate scanner's visual language: light ground, white cards, indigo accent.
+$ink: #1a1a2e;
+$muted: #6b7280;
+$accent: #4361ee;
+$line: #e5e7eb;
+
+.guard-report {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  h1 {
+    font-size: 1.5rem;
+    color: $ink;
+    margin: 0 0 0.25rem;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: $muted;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-ghost,
+.btn-primary {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+}
+
+.btn-ghost {
+  border: 1px solid $line;
+  background: white;
+  color: $ink;
+}
+
+.btn-primary {
+  border: 1px solid $accent;
+  background: $accent;
+  color: white;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $muted;
+}
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid $line;
+  border-radius: 8px;
+  overflow: hidden;
+
+  button {
+    padding: 0.45rem 0.75rem;
+    border: 0;
+    border-right: 1px solid $line;
+    background: white;
+    color: $ink;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  button:last-child {
+    border-right: 0;
+  }
+
+  .is-active {
+    background: $accent;
+    color: white;
+  }
+}
+
+.range-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  input {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid $line;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: $ink;
+  }
+}
+
+.custom-hint {
+  font-size: 0.8rem;
+  color: #b45309;
+}
+
+.tally {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.tally-card {
+  padding: 0.9rem 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .tally-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $muted;
+  }
+
+  .tally-value {
+    margin: 0.2rem 0 0.1rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $ink;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tally-detail {
+    font-size: 0.8rem;
+    color: $muted;
+  }
+}
+
+.log-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid $line;
+
+  h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: $ink;
+  }
+
+  .log-caption {
+    font-size: 0.8rem;
+    color: $muted;
+  }
+}
+
+// The table is wide; it scrolls inside its own card rather than the page.
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th,
+  td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid $line;
+  }
+
+  thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $muted;
+    background: #fafbfc;
+  }
+
+  tbody th {
+    font-weight: 600;
+    color: $ink;
+  }
+
+  tbody td {
+    color: #374151;
+  }
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.is-exit {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.is-entry {
+    background: #dcfce7;
+    color: #166534;
+  }
+}
+
+.report-state {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.1rem;
+    color: $ink;
+  }
+
+  p {
+    margin: 0 auto 0.75rem;
+    max-width: 46ch;
+    font-size: 0.9rem;
+    color: $muted;
+  }
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 0.75rem;
+  border: 3px solid $line;
+  border-top-color: $accent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header,
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+
+  .tally {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .tally-card .tally-value {
+    font-size: 1.4rem;
+  }
+
+  // Labels stack above their controls so a wrap never strands one at the end of a row.
+  .filter-group,
+  .range-field {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .range-field input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tally {
+    grid-template-columns: 1fr;
+  }
+}

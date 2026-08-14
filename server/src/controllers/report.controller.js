@@ -555,6 +555,127 @@ exports.getPayments = async (req, res) => {
 };
 
 /**
+ * How many scans the guard's report renders on screen. Higher than LOG_LIMIT because this
+ * page *is* the log — there is no chart above it that a long list would contradict — but
+ * still capped so a year's traffic cannot lock up the browser. The export takes the lot.
+ */
+const GUARD_LOG_LIMIT = 100;
+
+/**
+ * Which request a scan belongs to. A leave request and a gatepass each stamp their own id
+ * on the check_logs row; a manual check-in recorded by a guard carries neither.
+ */
+const SCAN_SOURCES = {
+  leave: 'cl.leave_request_id IS NOT NULL',
+  gatepass: 'cl.gatepass_id IS NOT NULL',
+  manual: 'cl.leave_request_id IS NULL AND cl.gatepass_id IS NULL',
+};
+
+/**
+ * GET /api/reports/check-logs?from=&to=&type=&full=
+ *
+ * Entry and exit scans for the guard's report. `type` narrows to what the scan was for
+ * (leave request, gatepass, or a manual entry with no request behind it); `full=1` lifts
+ * the screen cap for the CSV and the printed sheet. The counts always cover the whole
+ * window, so the tiles never disagree with a capped list.
+ */
+exports.getCheckLogs = async (req, res) => {
+  try {
+    const range = parseRange(req.query);
+    if (range?.error) return res.status(400).json({ error: range.error });
+
+    const months = range ? range.months : buildMonthSeries();
+    const from = toDateTime(range ? range.start : seriesStart(months));
+    const until = toDateTime(range ? range.end : months[months.length - 1].end);
+
+    const source = req.query.type || 'all';
+    if (source !== 'all' && !SCAN_SOURCES[source]) {
+      return res.status(400).json({ error: 'type must be all, leave, gatepass or manual' });
+    }
+    const sourceClause = source === 'all' ? '' : `AND ${SCAN_SOURCES[source]}`;
+    const limit = req.query.full === '1' ? EXPORT_LIMIT : GUARD_LOG_LIMIT;
+    const bounds = [from, until];
+
+    const [rows] = await pool.query(
+      `SELECT cl.id AS id,
+              cl.type AS direction,
+              cl.method AS method,
+              cl.created_at AS at,
+              COALESCE(NULLIF(cl.notes, ''), '—') AS notes,
+              cl.leave_request_id AS leaveId,
+              cl.gatepass_id AS gatepassId,
+              CONCAT(u.first_name, ' ', u.last_name) AS occupant,
+              COALESCE(r.room_number, '—') AS room,
+              COALESCE(CONCAT(g.first_name, ' ', g.last_name), '—') AS recordedBy,
+              lr.leave_type AS leaveType,
+              COALESCE(NULLIF(lr.destination, ''), NULLIF(gp.destination, ''), '—') AS destination,
+              COALESCE(NULLIF(gp.reason, ''), NULLIF(lr.reason, ''), '—') AS purpose
+       FROM check_logs cl
+       JOIN users u ON u.id = cl.user_id
+       LEFT JOIN room_assignments ra ON ra.user_id = u.id AND ra.status = 'active'
+       LEFT JOIN rooms r ON r.id = ra.room_id
+       LEFT JOIN users g ON g.id = cl.recorded_by
+       LEFT JOIN leave_requests lr ON lr.id = cl.leave_request_id
+       LEFT JOIN gatepasses gp ON gp.id = cl.gatepass_id
+       WHERE cl.created_at >= ? AND cl.created_at < ?
+         ${sourceClause}
+       ORDER BY cl.created_at DESC
+       LIMIT ${limit}`,
+      bounds,
+    );
+
+    const [counts] = await pool.query(
+      `SELECT cl.type AS direction, COUNT(*) AS n
+       FROM check_logs cl
+       WHERE cl.created_at >= ? AND cl.created_at < ?
+         ${sourceClause}
+       GROUP BY cl.type`,
+      bounds,
+    );
+
+    const tally = { entries: 0, exits: 0 };
+    for (const row of counts) {
+      // check-in is a return through the gate, check-out is a departure.
+      if (row.direction === 'check-in') tally.entries = numeric(row.n);
+      if (row.direction === 'check-out') tally.exits = numeric(row.n);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        from,
+        until,
+        logLimit: limit,
+        logTotal: tally.entries + tally.exits,
+        stats: tally,
+        logs: rows.map((row) => ({
+          reference: row.leaveId
+            ? `LR-${row.leaveId}`
+            : row.gatepassId
+              ? `GP-${row.gatepassId}`
+              : '—',
+          occupant: row.occupant,
+          room: row.room,
+          // What the resident was let out on, which is what the type filter narrows.
+          source: row.leaveId ? 'Leave request' : row.gatepassId ? 'Gatepass' : 'Manual',
+          direction: row.direction === 'check-out' ? 'Exit' : 'Entry',
+          leaveType: row.leaveType || '—',
+          destination: row.destination,
+          purpose: row.purpose,
+          method: row.method === 'qr_scan' ? 'QR scan' : 'Manual',
+          recordedBy: row.recordedBy,
+          at: row.at,
+          notes: row.notes,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('getCheckLogs error:', error);
+    res.status(500).json({ error: 'Failed to list entry and exit logs' });
+  }
+};
+
+/**
  * GET /api/reports/overview
  *
  * Dorm-wide occupancy, collections and leave volume for the admin.

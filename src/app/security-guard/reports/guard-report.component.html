@@ -1,0 +1,203 @@
+<div class="guard-report">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>📋 Entry &amp; Exit Logs</h1>
+      <p class="subtitle">Every movement recorded at the gate — {{ periodLabel() }}</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-ghost" type="button" [disabled]="exporting()" (click)="exportCsv()">
+        ⬇ Export CSV
+      </button>
+      <button class="btn-primary" type="button" [disabled]="exporting()" (click)="printReport()">
+        🖨 Print / PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- One filter row above everything it scopes: the tally and the list share it. -->
+  <section class="filter-bar" aria-label="Log filters">
+    <div class="filter-group">
+      <span class="filter-label">Period</span>
+      <div class="segmented" role="group" aria-label="Reporting period">
+        @for (option of periods; track option.key) {
+          <button
+            type="button"
+            [class.is-active]="period() === option.key"
+            [attr.aria-pressed]="period() === option.key"
+            (click)="period.set(option.key)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (isCustom()) {
+      <div class="filter-group custom-range">
+        <!-- Each label travels with its own input, so a wrap on a narrow screen never
+             strands "To" at the end of the previous row. -->
+        <span class="range-field">
+          <label class="filter-label" for="range-from">From</label>
+          <input
+            id="range-from"
+            type="date"
+            [ngModel]="customFrom()"
+            (ngModelChange)="customFrom.set($event)"
+          />
+        </span>
+        <span class="range-field">
+          <label class="filter-label" for="range-to">To</label>
+          <input
+            id="range-to"
+            type="date"
+            [ngModel]="customTo()"
+            (ngModelChange)="customTo.set($event)"
+          />
+        </span>
+        @if (customHint()) {
+          <span class="custom-hint">{{ customHint() }}</span>
+        }
+      </div>
+    }
+
+    <div class="filter-group">
+      <span class="filter-label">Type</span>
+      <div class="segmented" role="group" aria-label="Pass type">
+        @for (option of sources; track option.key) {
+          <button
+            type="button"
+            [class.is-active]="source() === option.key"
+            [attr.aria-pressed]="source() === option.key"
+            (click)="source.set(option.key)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  @if (state() === 'loading') {
+    <div class="report-state">
+      <div class="spinner"></div>
+      <p>Loading the gate logs…</p>
+    </div>
+  } @else if (state() === 'error') {
+    <div class="report-state">
+      <h2>Could not load the gate logs</h2>
+      <p>The server did not return the entry and exit history. Check your connection.</p>
+      <button class="btn-primary" type="button" (click)="load()">Retry</button>
+    </div>
+  } @else {
+    <section class="tally" aria-label="Movements in this period">
+      @for (tile of tiles(); track tile.key) {
+        <article class="tally-card">
+          <span class="tally-label">{{ tile.label }}</span>
+          <p class="tally-value">{{ tile.value }}</p>
+          <span class="tally-detail">{{ tile.detail }}</span>
+        </article>
+      }
+    </section>
+
+    @if (isEmpty()) {
+      <div class="report-state">
+        <h2>No movements recorded</h2>
+        <p>
+          Nothing was scanned at the gate in this period for the "{{ sourceLabel() }}" type. Try a
+          wider period, or a different type.
+        </p>
+      </div>
+    } @else {
+      <article class="log-card">
+        <header class="log-header">
+          <h2>Gate movements</h2>
+          <span class="log-caption">{{ logCaption() }}</span>
+        </header>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Date &amp; time</th>
+                <th scope="col">Direction</th>
+                <th scope="col">Occupant</th>
+                <th scope="col">Room</th>
+                <th scope="col">Type</th>
+                <th scope="col">Reference</th>
+                <th scope="col">Destination</th>
+                <th scope="col">Method</th>
+                <th scope="col">Recorded by</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of logs(); track $index) {
+                <tr>
+                  <th scope="row">{{ entry.at }}</th>
+                  <td>
+                    <span
+                      class="pill"
+                      [class.is-exit]="entry.direction === 'Exit'"
+                      [class.is-entry]="entry.direction === 'Entry'"
+                    >
+                      {{ entry.direction }}
+                    </span>
+                  </td>
+                  <td>{{ entry.occupant }}</td>
+                  <td>{{ entry.room }}</td>
+                  <td>{{ entry.source }}</td>
+                  <td>{{ entry.reference }}</td>
+                  <td>{{ entry.destination }}</td>
+                  <td>{{ entry.method }}</td>
+                  <td>{{ entry.recordedBy }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </article>
+    }
+
+    <!-- Print / PDF sheet: every scan in the period. Hidden on screen; the global print
+         rules hide everything else while it is present. -->
+    @if (printRows(); as printed) {
+      <section class="print-sheet">
+        <h1>Entry &amp; exit logs</h1>
+        <p class="print-meta">
+          {{ periodLabel() }} · {{ sourceLabel() }} passes · {{ printed.length }} scans
+        </p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Date &amp; time</th>
+              <th scope="col">Direction</th>
+              <th scope="col">Occupant</th>
+              <th scope="col">Room</th>
+              <th scope="col">Type</th>
+              <th scope="col">Reference</th>
+              <th scope="col">Destination</th>
+              <th scope="col">Purpose</th>
+              <th scope="col">Method</th>
+              <th scope="col">Recorded by</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of printed; track $index) {
+              <tr>
+                <th scope="row">{{ entry.at }}</th>
+                <td>{{ entry.direction }}</td>
+                <td>{{ entry.occupant }}</td>
+                <td>{{ entry.room }}</td>
+                <td>{{ entry.source }}</td>
+                <td>{{ entry.reference }}</td>
+                <td>{{ entry.destination }}</td>
+                <!-- Free text, so it wraps rather than pushing the sheet off the page. -->
+                <td class="wrap">{{ entry.purpose }}</td>
+                <td>{{ entry.method }}</td>
+                <td>{{ entry.recordedBy }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  }
+</div>

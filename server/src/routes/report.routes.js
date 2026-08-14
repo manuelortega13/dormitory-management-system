@@ -35,6 +35,13 @@ router.get(
   reportController.getTransactions,
 );
 
+// Entry and exit scans for the guard's report; the admin can read them too.
+router.get(
+  '/check-logs',
+  exactRoleMiddleware('admin', 'security_guard'),
+  reportController.getCheckLogs,
+);
+
 // Dorm-wide overview, admin only.
 router.get('/overview', roleMiddleware('admin'), reportController.getOverview);
 

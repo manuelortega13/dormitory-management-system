@@ -295,10 +295,8 @@
   .security-content {
     margin-left: 0;
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
-    // No bottom tab bar to clear while the nav is hidden — restore the 64px allowance
-    // below if the tab bar comes back.
-    /*    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);*/
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    // Clear the fixed bottom tab bar, so the last row of a page is not sitting under it.
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
   }
 
   .desktop-notification-bar {
