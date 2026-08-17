@@ -17,9 +17,19 @@ export function toCsv(rows: (string | number)[][]): string {
     .join('\n');
 }
 
+/**
+ * Byte-order mark. Excel ignores the blob's charset when opening a local .csv and falls back
+ * to the system ANSI codepage, which turns any non-ASCII cell into mojibake (a dean's note
+ * reading "Señor Peña" arrives as "SeÃ±or PeÃ±a"). The BOM is what makes it detect UTF-8; it
+ * is consumed as an encoding marker, so it never shows up in the first header cell.
+ */
+const UTF8_BOM = '\uFEFF';
+
 /** Serialise a grid of cells and hand it to the browser as a download. */
 export function downloadCsv(filename: string, rows: (string | number)[][]): void {
-  const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
+  const url = URL.createObjectURL(
+    new Blob([UTF8_BOM + toCsv(rows)], { type: 'text/csv;charset=utf-8' }),
+  );
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
