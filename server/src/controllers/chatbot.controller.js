@@ -20,7 +20,9 @@ const RATE_LIMIT_RETRY_LIMIT = 2;
 // Tool selection across ~19 tools, and getting figures out of tool results without
 // garbling them, needs more capacity than the 8b model had: it misread combined totals
 // as per-student, mangled amounts, and answered questions its role had no tool for.
-const CHAT_MODEL = 'llama-3.3-70b-versatile';
+// Groq decommissioned llama-3.3-70b-versatile on 2026-08-16; this is the replacement
+// they point at, and it likewise supports tool calling.
+const CHAT_MODEL = 'openai/gpt-oss-120b';
 
 // Models occasionally emit malformed tool-call syntax (a broken closing tag, a param
 // belonging to another tool, "null" as a string). Groq rejects those with a 400 before
