@@ -22,9 +22,9 @@
         <label for="email">Email Address</label>
         <div class="input-wrapper">
           <span class="input-icon">📧</span>
-          <input 
-            type="email" 
-            id="email" 
+          <input
+            type="email"
+            id="email"
             placeholder="Enter your email"
             [ngModel]="email()"
             (ngModelChange)="email.set($event)"
@@ -39,9 +39,9 @@
         <label for="password">Password</label>
         <div class="input-wrapper">
           <span class="input-icon">🔒</span>
-          <input 
+          <input
             [type]="showPassword() ? 'text' : 'password'"
-            id="password" 
+            id="password"
             placeholder="Enter your password"
             [ngModel]="password()"
             (ngModelChange)="password.set($event)"
@@ -49,8 +49,8 @@
             autocomplete="current-password"
             required
           />
-          <button 
-            type="button" 
+          <button
+            type="button"
             class="toggle-password"
             (click)="togglePasswordVisibility()"
           >
@@ -59,8 +59,8 @@
         </div>
       </div>
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         class="btn-login"
         [disabled]="isLoading()"
       >
@@ -84,7 +84,7 @@
           <li><span class="role-badge admin">Admin</span> Manage dormitory operations</li>
           <li><span class="role-badge dean">Home Dean</span> Approve leave requests</li>
           <li><span class="role-badge vpsas">VPSAS</span> Final approval authority</li>
-          <li><span class="role-badge business-officer">Business Officer</span> Manage bills and payments</li>
+          <li><span class="role-badge business-officer">Business Office</span> Manage bills and payments</li>
           <li><span class="role-badge resident">Occupant</span> Request campus leave</li>
           <li><span class="role-badge parent">Parent</span> Approve child's requests</li>
           <li><span class="role-badge guard">Guard</span> Scan QR codes at gate</li>
