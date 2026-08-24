@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ParentService } from '../data/parent.service';
 import { LeaveRequest } from '../../models/leave-request.model';
 import { NotificationService } from '../../services/notification.service';
+import { ToastService } from '../../services/toast.service';
+import { captureFrame } from '../../shared/utils/face-verification.util';
 
 @Component({
   selector: 'app-parent-dashboard',
@@ -15,6 +17,7 @@ import { NotificationService } from '../../services/notification.service';
 export class ParentDashboardComponent implements OnInit {
   private parentService = inject(ParentService);
   private notificationService = inject(NotificationService);
+  private toast = inject(ToastService);
 
   @ViewChild('verificationVideo') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('verificationCanvas') canvasElement!: ElementRef<HTMLCanvasElement>;
@@ -234,24 +237,26 @@ export class ParentDashboardComponent implements OnInit {
     
     if (!this.videoElement?.nativeElement || !this.canvasElement?.nativeElement) return;
 
-    const video = this.videoElement.nativeElement;
-    const canvas = this.canvasElement.nativeElement;
-    const context = canvas.getContext('2d');
+    // Same quality bar as the other capture flows: a blurry or dark frame yields
+    // an unreliable descriptor and the server rejects it, so catch it here and
+    // let the parent retake instead of burning an attempt.
+    const result = captureFrame(
+      this.videoElement.nativeElement,
+      this.canvasElement.nativeElement
+    );
 
-    if (!context) return;
+    if ('error' in result) {
+      this.verificationError.set(result.error);
+      // This flow captures on a countdown, so restart it rather than leaving the
+      // parent staring at a live camera that will not fire again on its own.
+      if (this.cameraActive()) {
+        this.startAutoCapture();
+      }
+      return;
+    }
 
-    // Resize to max 640px width to reduce file size
-    const maxWidth = 640;
-    const scale = Math.min(1, maxWidth / video.videoWidth);
-    canvas.width = video.videoWidth * scale;
-    canvas.height = video.videoHeight * scale;
-
-    // Draw the current video frame (scaled down)
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Get the image as base64 with reduced quality
-    const imageData = canvas.toDataURL('image/jpeg', 0.7);
-    this.capturedFaceImage.set(imageData);
+    this.verificationError.set('');
+    this.capturedFaceImage.set(result.image);
     this.stopCamera();
   }
 
@@ -289,15 +294,19 @@ export class ParentDashboardComponent implements OnInit {
         this.closeModal();
         await this.loadRequests();
       } catch (error: any) {
-        // Handle HTTP error response
-        const errorMessage = error?.error?.error || error?.message || 'Face verification failed. Please try again.';
-        
-        if (errorMessage.toLowerCase().includes('face') || 
-            errorMessage.toLowerCase().includes('verification') ||
-            errorMessage.toLowerCase().includes('match')) {
+        const errorMessage =
+          error?.error?.error || error?.message || 'Face verification failed. Please try again.';
+
+        if (error?.status === 429) {
+          // Locked out after repeated failures - close the modal, it is no use now.
+          this.toast.error('Temporarily locked', errorMessage);
+          this.closeModal();
+        } else if (error?.status === 403 || error?.status === 400 || error?.status === 503) {
           this.verificationError.set(errorMessage);
+          // Drop the rejected frame so the parent retakes rather than resubmitting.
+          this.capturedFaceImage.set(null);
         } else {
-          alert(errorMessage);
+          this.toast.error('Error', errorMessage);
         }
       } finally {
         this.isVerifying.set(false);
@@ -312,7 +321,7 @@ export class ParentDashboardComponent implements OnInit {
         await this.loadRequests();
       } catch (error: any) {
         const errorMessage = error?.error?.error || error?.message || 'Failed to process request';
-        alert(errorMessage);
+        this.toast.error('Error', errorMessage);
       } finally {
         this.isProcessing.set(false);
       }

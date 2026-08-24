@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { FACE_ERROR_CODES } from '../../shared/utils/face-verification.util';
 
 interface RegisterForm {
   firstName: string;
@@ -273,11 +274,11 @@ export class RegisterParentComponent implements OnDestroy {
       this.stopCamera();
       this.clearFieldError('faceImage');
     } catch (error) {
+      // Never accept an unchecked photo: this image becomes the reference every
+      // future approval is matched against, so a bad one breaks verification for
+      // this parent from then on. The server re-validates it on submit regardless.
       console.error('Face validation error:', error);
-      // If validation APIs are not available, accept the image with a warning
-      this.faceImageCaptured.set(imageData);
-      this.stopCamera();
-      this.clearFieldError('faceImage');
+      this.cameraError.set('Could not check the photo. Please try capturing again.');
     } finally {
       this.isValidatingFace.set(false);
     }
@@ -341,7 +342,7 @@ export class RegisterParentComponent implements OnDestroy {
   // Fallback face detection using skin tone analysis
   private detectSkinTone(canvas: HTMLCanvasElement): boolean {
     const context = canvas.getContext('2d');
-    if (!context) return true; // Allow if we can't check
+    if (!context) return false; // Cannot check, so cannot confirm a face
 
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
@@ -513,10 +514,23 @@ export class RegisterParentComponent implements OnDestroy {
         }, 1500);
       }
     } catch (error: any) {
-      if (error.status === 400) {
-        this.errorMessage.set(error.error?.error || 'Email already registered');
+      const message = error.error?.error;
+      const faceCode: string | undefined = error.error?.code;
+
+      // The server re-checks the reference photo; when that is what failed, drop
+      // the capture and send the parent back to the camera rather than leaving an
+      // unusable photo staged for submit.
+      if (faceCode && (FACE_ERROR_CODES as readonly string[]).includes(faceCode)) {
+        this.faceImageCaptured.set('');
+        this.fieldErrors.update((errors) => ({
+          ...errors,
+          faceImage: message || 'The photo could not be verified. Please retake it.'
+        }));
+        this.errorMessage.set(message || 'Please retake your photo and try again.');
+      } else if (error.status === 400) {
+        this.errorMessage.set(message || 'Email already registered');
       } else {
-        this.errorMessage.set(error.error?.error || 'Registration failed. Please try again.');
+        this.errorMessage.set(message || 'Registration failed. Please try again.');
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {

@@ -1,7 +1,11 @@
 const crypto = require('crypto');
 const { pool } = require('../config/database');
 const notificationController = require('./notification.controller');
-const { verifyFaces } = require('../services/face-verification.service');
+const {
+  verifyParentFace,
+  sendGateFailure,
+} = require('../services/parent-face-gate.service');
+const { PURPOSE: facePurpose } = require('../services/face-attempt.service');
 
 // Generate unique QR code
 const generateQRCode = () => {
@@ -456,23 +460,6 @@ exports.parentApprove = async (req, res) => {
     const { notes, faceImage } = req.body;
     const parentId = req.user.id;
 
-    // Face image is required for approval
-    if (!faceImage) {
-      return res.status(400).json({ error: 'Face verification is required for approval' });
-    }
-
-    // Get parent's stored face image
-    const [parents] = await pool.execute(
-      `SELECT face_image FROM users WHERE id = ? AND role = 'parent'`,
-      [parentId]
-    );
-
-    if (parents.length === 0 || !parents[0].face_image) {
-      return res.status(400).json({ 
-        error: 'No registered face found. Please complete face registration first.' 
-      });
-    }
-
     // Verify this parent owns this request's resident
     const [requests] = await pool.execute(
       `SELECT lr.*, u.parent_id, u.first_name, u.last_name, u.gender FROM leave_requests lr
@@ -495,29 +482,20 @@ exports.parentApprove = async (req, res) => {
       return res.status(400).json({ error: 'Request is not pending parent approval' });
     }
 
-    // Perform face verification using face-api.js
-    const storedFace = parents[0].face_image;
-    const providedFace = faceImage;
-    
-    // Validate image format
-    if (!storedFace.startsWith('data:image/') || !providedFace.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Invalid face image format' });
-    }
+    // Confirm the enrolled parent is the one at the camera. Runs only after the
+    // ownership and status checks above, so a failed attempt on someone else's
+    // request can never consume this parent's verification quota.
+    const gate = await verifyParentFace({
+      req,
+      parentId,
+      purpose: facePurpose.LEAVE_REQUEST,
+      referenceId: id,
+      faceImage,
+    });
 
-    // Compare faces using neural network
-    console.log(`Starting face verification for parent ${parentId} on request ${id}`);
-    const verificationResult = await verifyFaces(storedFace, providedFace, 0.6);
-    
-    if (!verificationResult.match) {
-      console.log(`Face verification FAILED for parent ${parentId}: ${verificationResult.error || 'Faces do not match'}`);
-      return res.status(403).json({ 
-        error: verificationResult.error || 'Face verification failed. The captured face does not match your registered face.',
-        distance: verificationResult.distance
-      });
+    if (!gate.ok) {
+      return sendGateFailure(res, gate);
     }
-    
-    console.log(`Face verification PASSED for parent ${parentId}, distance: ${verificationResult.distance.toFixed(4)}`);
-
 
     // After parent approval, move to Home Dean approval (next in the chain)
     const childName = `${request.first_name} ${request.last_name}`;

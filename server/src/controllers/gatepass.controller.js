@@ -1,7 +1,11 @@
 const crypto = require('crypto');
 const { pool } = require('../config/database');
 const notificationController = require('./notification.controller');
-const { verifyFaces } = require('../services/face-verification.service');
+const {
+  verifyParentFace,
+  sendGateFailure,
+} = require('../services/parent-face-gate.service');
+const { PURPOSE: facePurpose } = require('../services/face-attempt.service');
 const { getGatepassSettings } = require('../services/gatepass-settings.service');
 
 // Generate a unique opaque QR token (same approach as leave requests)
@@ -183,18 +187,6 @@ exports.parentApprove = async (req, res) => {
     const { notes, faceImage } = req.body;
     const parentId = req.user.id;
 
-    if (!faceImage) {
-      return res.status(400).json({ error: 'Face verification is required for approval' });
-    }
-
-    const [parents] = await pool.execute(
-      "SELECT face_image FROM users WHERE id = ? AND role = 'parent'",
-      [parentId]
-    );
-    if (parents.length === 0 || !parents[0].face_image) {
-      return res.status(400).json({ error: 'No registered face found. Please complete face registration first.' });
-    }
-
     const gp = await loadGatepass(id);
     if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
     if (gp.parent_id !== parentId) {
@@ -204,17 +196,19 @@ exports.parentApprove = async (req, res) => {
       return res.status(400).json({ error: 'Gatepass is not pending parent approval' });
     }
 
-    const storedFace = parents[0].face_image;
-    if (!storedFace.startsWith('data:image/') || !faceImage.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Invalid face image format' });
-    }
+    // Confirm the enrolled parent is the one at the camera. Runs only after the
+    // ownership and status checks above, so a failed attempt on someone else's
+    // gatepass can never consume this parent's verification quota.
+    const gate = await verifyParentFace({
+      req,
+      parentId,
+      purpose: facePurpose.GATEPASS,
+      referenceId: id,
+      faceImage,
+    });
 
-    const verification = await verifyFaces(storedFace, faceImage, 0.6);
-    if (!verification.match) {
-      return res.status(403).json({
-        error: verification.error || 'Face verification failed. The captured face does not match your registered face.',
-        distance: verification.distance,
-      });
+    if (!gate.ok) {
+      return sendGateFailure(res, gate);
     }
 
     const childName = `${gp.first_name} ${gp.last_name}`;

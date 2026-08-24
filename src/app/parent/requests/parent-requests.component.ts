@@ -6,6 +6,7 @@ import { ParentGatepassService } from '../data/parent-gatepass.service';
 import { NotificationService } from '../../services/notification.service';
 import { ToastService } from '../../services/toast.service';
 import { LeaveRequest } from '../../models/leave-request.model';
+import { captureFrame } from '../../shared/utils/face-verification.util';
 
 interface RequestItem {
   kind: 'leave' | 'gatepass';
@@ -162,10 +163,18 @@ export class ParentRequestsComponent implements OnInit, OnDestroy {
     const v = this.video()?.nativeElement;
     const c = this.canvas()?.nativeElement;
     if (!v || !c) return;
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    c.getContext('2d')?.drawImage(v, 0, 0);
-    this.captured.set(c.toDataURL('image/jpeg', 0.8));
+
+    // Same quality bar the registration capture applies. A blurry or dark frame
+    // produces an unreliable descriptor, and the server rejects it anyway - catch
+    // it here so the parent can simply retake instead of burning an attempt.
+    const result = captureFrame(v, c);
+    if ('error' in result) {
+      this.faceError.set(result.error);
+      return;
+    }
+
+    this.faceError.set('');
+    this.captured.set(result.image);
     this.stopCamera();
   }
 
@@ -197,7 +206,18 @@ export class ParentRequestsComponent implements OnInit, OnDestroy {
       this.closeApprove();
       await this.load();
     } catch (e: any) {
-      this.faceError.set(e?.error?.error || 'Face verification failed. Please try again.');
+      const message = e?.error?.error || 'Face verification failed. Please try again.';
+      this.faceError.set(message);
+
+      if (e?.status === 429) {
+        // Locked out after repeated failures - the modal is no use now.
+        this.toast.error('Temporarily locked', message);
+        this.closeApprove();
+      } else {
+        // Drop the rejected frame so the parent retakes rather than resubmitting
+        // the same photo.
+        this.captured.set('');
+      }
     } finally {
       this.saving.set(false);
     }

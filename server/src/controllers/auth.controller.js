@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const { sendNotificationToUser } = require('../services/socket.service');
+const { validateReferenceFace } = require('../services/face-verification.service');
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -57,6 +58,24 @@ exports.register = async (req, res) => {
     // Validate face image for parent registration
     if (userRole === 'parent' && !faceImage) {
       return res.status(400).json({ error: 'Face image is required for parent registration' });
+    }
+
+    // The stored photo is the reference every future approval is matched against,
+    // so it is validated here rather than trusted from the browser. A reference
+    // photo with no usable face makes every later verification fail, and the
+    // client-side check cannot be relied on (the FaceDetector API is Chrome-only
+    // and its fallback is a skin-tone heuristic).
+    if (userRole === 'parent') {
+      const faceCheck = await validateReferenceFace(faceImage);
+      if (!faceCheck.ok) {
+        console.warn(
+          `Parent registration rejected for ${email}: reference photo ${faceCheck.code}`
+        );
+        return res.status(faceCheck.code === 'engine_unavailable' ? 503 : 400).json({
+          error: faceCheck.error,
+          code: faceCheck.code,
+        });
+      }
     }
 
     // For parent registration, validate and find the student

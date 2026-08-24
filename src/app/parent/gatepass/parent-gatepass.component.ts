@@ -5,6 +5,7 @@ import { ParentGatepassService } from '../data/parent-gatepass.service';
 import { Gatepass } from '../../models/gatepass.model';
 import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
+import { captureFrame } from '../../shared/utils/face-verification.util';
 
 @Component({
   selector: 'app-parent-gatepass',
@@ -184,10 +185,18 @@ export class ParentGatepassComponent implements OnInit, OnDestroy {
     const v = this.video()?.nativeElement;
     const c = this.canvas()?.nativeElement;
     if (!v || !c) return;
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    c.getContext('2d')?.drawImage(v, 0, 0);
-    this.captured.set(c.toDataURL('image/jpeg', 0.8));
+
+    // Same quality bar as the other capture flows: a blurry or dark frame yields
+    // an unreliable descriptor and the server rejects it, so catch it here and
+    // let the parent retake instead of burning an attempt.
+    const result = captureFrame(v, c);
+    if ('error' in result) {
+      this.faceError.set(result.error);
+      return;
+    }
+
+    this.faceError.set('');
+    this.captured.set(result.image);
     this.stopCamera();
   }
 
@@ -215,7 +224,17 @@ export class ParentGatepassComponent implements OnInit, OnDestroy {
       this.closeApprove();
       await this.load();
     } catch (e: any) {
-      this.faceError.set(e?.error?.error || 'Face verification failed. Please try again.');
+      const message = e?.error?.error || 'Face verification failed. Please try again.';
+      this.faceError.set(message);
+
+      if (e?.status === 429) {
+        // Locked out after repeated failures - the modal is no use now.
+        this.toast.error('Temporarily locked', message);
+        this.closeApprove();
+      } else {
+        // Drop the rejected frame so the parent retakes rather than resubmitting.
+        this.captured.set('');
+      }
     } finally {
       this.saving.set(false);
     }
