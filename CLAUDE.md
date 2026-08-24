@@ -89,8 +89,8 @@ Configured in root `package.json`: `printWidth: 100`, `singleQuote: true`, Angul
 | `security_guard` | Security portal | `/security-guard` |
 
 ## Deployment
-- **Frontend**: Vercel — `vercel.json` rewrites `/api/*` to Render backend
-- **Backend**: Render — env vars configured in dashboard
+- **Frontend**: Vercel — `vercel.json` rewrites `/api/*` to Railway backend
+- **Backend**: Railway — env vars configured in dashboard
 - **Database**: AWS RDS MySQL
 
 ## Rules
