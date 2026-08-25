@@ -1,5 +1,7 @@
 export type RoomStatus = 'occupied' | 'available' | 'maintenance' | 'reserved';
 export type RoomType = 'single' | 'double' | 'triple' | 'quad' | 'suite';
+/** Which wing a room belongs to. Null on rooms that predate the setting. */
+export type RoomGender = 'male' | 'female' | null;
 
 export interface Occupant {
   id: number;
@@ -20,6 +22,7 @@ export interface Room {
   floor: number;
   type: RoomType;
   capacity: number;
+  gender: RoomGender;
   status: RoomStatus;
   monthlyRent: number;
   amenities: string[];
@@ -33,6 +36,7 @@ export interface RoomResponse {
   capacity: number;
   status: RoomStatus;
   room_type: RoomType;
+  gender?: RoomGender;
   price_per_month: number;
   amenities: string;
 }
@@ -48,5 +52,7 @@ export interface OccupantResponse {
   assignment_id?: number;
   start_date: string;
   end_date: string | null;
+  // Kept on a restricted row so the UI can say which side the bed belongs to.
+  gender?: 'male' | 'female' | null;
   restricted?: boolean;
 }

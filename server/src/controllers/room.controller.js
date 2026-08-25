@@ -8,12 +8,42 @@ const { pool } = require('../config/database');
 const isOutsideDeanWing = (user, gender) =>
   user.role === 'home_dean' && !!user.deanType && gender !== user.deanType;
 
+/**
+ * The wing a room belongs to. A home dean runs one wing only, so their choice is not
+ * consulted - whatever the form sent, the room lands in their own wing. Returns null when
+ * the value is missing or is not one of the two wings.
+ */
+const resolveRoomGender = (user, requested) => {
+  if (user.role === 'home_dean' && user.deanType) return user.deanType;
+  return ['male', 'female'].includes(requested) ? requested : null;
+};
+
+/**
+ * A room with no wing set (one that predates the column) takes anyone; a room with a wing
+ * takes only occupants of that wing.
+ */
+const roomAcceptsOccupant = (roomGender, occupantGender) => !roomGender || roomGender === occupantGender;
+
+/**
+ * Whether a room belongs to the wing this dean does not run. A room with no wing set is
+ * nobody's yet, so it stays workable by either dean - and an unset wing reads as null or
+ * undefined depending on the query, hence the truthiness check rather than a null compare.
+ */
+const isOtherWingRoom = (user, roomGender) => !!roomGender && isOutsideDeanWing(user, roomGender);
+
 exports.getAll = async (req, res) => {
   try {
     const { status, floor, roomType } = req.query;
 
     let query = 'SELECT * FROM rooms WHERE 1=1';
     const params = [];
+
+    // A home dean runs one wing, so they get its rooms plus any room with no wing set -
+    // those are unassigned and still need somebody to claim them.
+    if (req.user.role === 'home_dean' && req.user.deanType) {
+      query += ' AND (gender = ? OR gender IS NULL)';
+      params.push(req.user.deanType);
+    }
 
     if (status) {
       query += ' AND status = ?';
@@ -43,13 +73,21 @@ exports.getAll = async (req, res) => {
 
 exports.getAvailable = async (req, res) => {
   try {
+    const params = [];
+    let wingFilter = '';
+    if (req.user.role === 'home_dean' && req.user.deanType) {
+      wingFilter = ' AND (r.gender = ? OR r.gender IS NULL)';
+      params.push(req.user.deanType);
+    }
+
     const [rooms] = await pool.execute(
       `SELECT r.*, 
         (SELECT COUNT(*) FROM room_assignments ra WHERE ra.room_id = r.id AND ra.status = 'active') as current_occupants
        FROM rooms r
-       WHERE r.status = 'available'
+       WHERE r.status = 'available'${wingFilter}
        HAVING current_occupants < r.capacity
-       ORDER BY r.room_number`
+       ORDER BY r.room_number`,
+      params
     );
 
     res.json(rooms);
@@ -80,10 +118,15 @@ exports.create = async (req, res) => {
   try {
     const { roomNumber, floor, capacity, roomType, pricePerMonth, amenities } = req.body;
 
+    const gender = resolveRoomGender(req.user, req.body.gender);
+    if (!gender) {
+      return res.status(400).json({ error: 'Choose whether this room is for male or female occupants' });
+    }
+
     const [result] = await pool.execute(
-      `INSERT INTO rooms (room_number, floor, capacity, room_type, price_per_month, amenities)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [roomNumber, floor, capacity || 1, roomType || 'single', pricePerMonth, JSON.stringify(amenities || [])]
+      `INSERT INTO rooms (room_number, floor, capacity, room_type, gender, price_per_month, amenities)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [roomNumber, floor, capacity || 1, roomType || 'single', gender, pricePerMonth, JSON.stringify(amenities || [])]
     );
 
     res.status(201).json({
@@ -101,10 +144,37 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const { roomNumber, floor, capacity, status, roomType, pricePerMonth, amenities } = req.body;
 
+    const [existing] = await pool.execute('SELECT gender FROM rooms WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    // A dean may claim an unassigned room for their wing, but not touch the other wing's.
+    if (isOtherWingRoom(req.user, existing[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const gender = resolveRoomGender(req.user, req.body.gender);
+    if (!gender) {
+      return res.status(400).json({ error: 'Choose whether this room is for male or female occupants' });
+    }
+
+    // Moving a room to the other wing would strand the occupants living in it.
+    const [occupants] = await pool.execute(
+      `SELECT COUNT(*) as count FROM room_assignments ra
+       JOIN users u ON ra.user_id = u.id
+       WHERE ra.room_id = ? AND ra.status = 'active' AND u.gender <> ?`,
+      [id, gender]
+    );
+    if (occupants[0].count > 0) {
+      return res.status(400).json({
+        error: 'This room still has occupants of the other wing. Move them out before changing the room type.'
+      });
+    }
+
     await pool.execute(
       `UPDATE rooms SET room_number = ?, floor = ?, capacity = ?, status = ?, 
-       room_type = ?, price_per_month = ?, amenities = ? WHERE id = ?`,
-      [roomNumber, floor, capacity, status, roomType, pricePerMonth, JSON.stringify(amenities || []), id]
+       room_type = ?, gender = ?, price_per_month = ?, amenities = ? WHERE id = ?`,
+      [roomNumber, floor, capacity, status, roomType, gender, pricePerMonth, JSON.stringify(amenities || []), id]
     );
 
     res.json({ message: 'Room updated successfully' });
@@ -137,9 +207,12 @@ exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [rooms] = await pool.execute('SELECT id FROM rooms WHERE id = ?', [id]);
+    const [rooms] = await pool.execute('SELECT id, gender FROM rooms WHERE id = ?', [id]);
     if (rooms.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
+    }
+    if (isOtherWingRoom(req.user, rooms[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     // room_assignments cascades on room delete, so deleting an occupied room would quietly
@@ -174,6 +247,10 @@ exports.assignResident = async (req, res) => {
     if (room.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
     }
+    // A dean may only place occupants in their own wing's rooms.
+    if (isOtherWingRoom(req.user, room[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
     const [currentAssignments] = await pool.execute(
       'SELECT COUNT(*) as count FROM room_assignments WHERE room_id = ? AND status = "active"',
@@ -192,6 +269,13 @@ exports.assignResident = async (req, res) => {
     }
     if (isOutsideDeanWing(req.user, targets[0].gender)) {
       return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // A male room takes male occupants and a female room female ones. A room with no wing
+    // set yet takes either, so rooms predating the column keep working.
+    if (!roomAcceptsOccupant(room[0].gender, targets[0].gender)) {
+      const wing = room[0].gender === 'male' ? 'male' : 'female';
+      return res.status(400).json({ error: `This room is for ${wing} occupants only.` });
     }
 
     // Create assignment
@@ -230,7 +314,8 @@ exports.getOccupants = async (req, res) => {
 
     // Strip the identity of occupants outside a home dean's wing, but keep the row: the bed
     // is genuinely taken, and dropping it would show a phantom vacancy and offer an
-    // assignment the capacity check would reject anyway.
+    // assignment the capacity check would reject anyway. The gender stays on a redacted row
+    // only - it is what "the other wing" already meant, and it labels the row on screen.
     res.json(occupants.map(({ gender, ...occupant }) =>
       isOutsideDeanWing(req.user, gender)
         ? {
@@ -238,6 +323,7 @@ exports.getOccupants = async (req, res) => {
             assignment_id: occupant.assignment_id,
             start_date: occupant.start_date,
             end_date: occupant.end_date,
+            gender,
             restricted: true
           }
         : occupant

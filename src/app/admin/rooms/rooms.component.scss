@@ -971,3 +971,33 @@
   color: #6c757d;
   font-size: 0.85rem;
 }
+
+// Which wing a room belongs to
+.wing-tag {
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  &.wing-male {
+    background: #e7f0fb;
+    color: #2b6cb0;
+  }
+
+  &.wing-female {
+    background: #fdeaf3;
+    color: #b83280;
+  }
+
+  &.wing-unset {
+    background: #f1f3f5;
+    color: #6c757d;
+  }
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: #6c757d;
+  font-size: 0.78rem;
+}

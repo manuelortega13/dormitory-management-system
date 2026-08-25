@@ -2,9 +2,10 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoomsService } from './data/rooms.service';
-import { Room, RoomStatus, RoomType } from './data/room.model';
+import { Room, RoomStatus, RoomType, RoomGender } from './data/room.model';
 import { ResidentsService } from '../residents/data/residents.service';
 import { ToastService } from '../../services/toast.service';
+import { AuthService } from '../../auth/auth.service';
 import { Resident } from '../residents/data/resident.model';
 
 interface RoomFormData {
@@ -12,6 +13,8 @@ interface RoomFormData {
   floor: number;
   capacity: number;
   roomType: RoomType;
+  /** '' until chosen; the server refuses a room with no wing. */
+  gender: 'male' | 'female' | '';
   pricePerMonth: number;
   amenities: string;
 }
@@ -27,6 +30,14 @@ export class RoomsComponent implements OnInit {
   private readonly roomsService = inject(RoomsService);
   private readonly residentsService = inject(ResidentsService);
   private readonly toast = inject(ToastService);
+  private readonly authService = inject(AuthService);
+
+  // A home dean runs one wing, so every room they add or edit belongs to it and the choice
+  // is theirs to see, not to make. Null for the admin and the VP, who pick per room.
+  protected readonly deanWing: RoomGender = (() => {
+    const user = this.authService.getCurrentUser();
+    return user?.role === 'home_dean' ? (user.deanType ?? null) : null;
+  })();
 
   protected readonly searchQuery = signal('');
   protected readonly selectedStatus = signal<RoomStatus | 'all'>('all');
@@ -36,14 +47,17 @@ export class RoomsComponent implements OnInit {
 
   protected readonly rooms = signal<Room[]>([]);
 
-  // Add Room Modal state
+  // Add / Edit Room Modal state
   protected readonly showAddModal = signal(false);
+  protected readonly editingRoom = signal<Room | null>(null);
   protected readonly saving = signal(false);
+  protected readonly formError = signal('');
   protected readonly formData = signal<RoomFormData>({
     roomNumber: '',
     floor: 1,
     capacity: 1,
     roomType: 'single',
+    gender: '',
     pricePerMonth: 0,
     amenities: ''
   });
@@ -160,19 +174,40 @@ export class RoomsComponent implements OnInit {
 
   // Modal methods
   openAddModal(): void {
+    this.formError.set('');
+    this.editingRoom.set(null);
     this.formData.set({
       roomNumber: '',
       floor: 1,
       capacity: 1,
       roomType: 'single',
+      // A dean's rooms can only be their own wing's, so it is filled in for them.
+      gender: this.deanWing ?? '',
       pricePerMonth: 0,
       amenities: ''
     });
     this.showAddModal.set(true);
   }
 
+  openEditModal(room: Room): void {
+    this.formError.set('');
+    this.editingRoom.set(room);
+    this.formData.set({
+      roomNumber: room.roomNumber,
+      floor: room.floor,
+      capacity: room.capacity,
+      roomType: room.type,
+      gender: this.deanWing ?? room.gender ?? '',
+      pricePerMonth: room.monthlyRent,
+      amenities: room.amenities.join(', ')
+    });
+    this.showAddModal.set(true);
+  }
+
   closeAddModal(): void {
     this.showAddModal.set(false);
+    this.editingRoom.set(null);
+    this.formError.set('');
   }
 
   updateFormField<K extends keyof RoomFormData>(field: K, value: RoomFormData[K]): void {
@@ -182,35 +217,60 @@ export class RoomsComponent implements OnInit {
   saveRoom(): void {
     const data = this.formData();
     if (!data.roomNumber.trim()) {
-      alert('Room number is required');
+      this.formError.set('Room number is required');
+      return;
+    }
+    if (!data.gender) {
+      this.formError.set('Choose whether this room is for male or female occupants');
       return;
     }
 
     this.saving.set(true);
+    this.formError.set('');
     const amenitiesArray = data.amenities
       .split(',')
       .map(a => a.trim())
       .filter(a => a.length > 0);
 
-    this.roomsService.create({
+    const room = this.editingRoom();
+    const payload = {
       roomNumber: data.roomNumber,
       floor: data.floor,
       capacity: data.capacity,
       roomType: data.roomType,
+      gender: data.gender as RoomGender,
       pricePerMonth: data.pricePerMonth,
       amenities: amenitiesArray
-    }).subscribe({
+    };
+
+    const request = room
+      ? this.roomsService.update(room.id, { ...payload, status: room.status })
+      : this.roomsService.create(payload);
+
+    request.subscribe({
       next: () => {
         this.saving.set(false);
         this.closeAddModal();
+        this.toast.success(
+          room ? 'Room updated' : 'Room added',
+          `Room ${data.roomNumber} has been ${room ? 'updated' : 'added'}.`
+        );
         this.loadRooms();
       },
       error: (err) => {
-        console.error('Failed to create room:', err);
         this.saving.set(false);
-        alert('Failed to create room. Please try again.');
+        this.formError.set(
+          err?.error?.error || `Failed to ${room ? 'update' : 'create'} the room. Please try again.`
+        );
       }
     });
+  }
+
+  /** How a room's wing reads on screen, worded to match the "Room For" picker. */
+  protected genderLabel(gender: RoomGender): string {
+    if (gender === 'male') return 'Male occupants';
+    if (gender === 'female') return 'Female occupants';
+    return 'Anyone';
   }
 
   // View Details Modal methods
@@ -244,8 +304,12 @@ export class RoomsComponent implements OnInit {
     // Load residents without a room assignment
     this.residentsService.getResidents({ status: 'active' }).subscribe({
       next: (residents) => {
-        // Filter only residents without a room
-        const available = residents.filter(r => !r.room_number);
+        // Only occupants without a room, and only those this room takes: a men's room lists
+        // men, a women's room women. A room with no wing set still takes either.
+        const wing = this.assigningRoom()?.gender ?? null;
+        const available = residents.filter(
+          r => !r.room_number && (!wing || r.gender === wing)
+        );
         this.availableResidents.set(available);
       },
       error: (err) => {

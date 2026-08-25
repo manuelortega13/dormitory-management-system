@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, switchMap } from 'rxjs';
-import { Room, RoomStatus, RoomType, Occupant, RoomResponse, OccupantResponse } from './room.model';
+import { Room, RoomStatus, RoomType, RoomGender, Occupant, RoomResponse, OccupantResponse } from './room.model';
 import { environment } from '../../../../environments/environment';
 
-export type { Room, RoomStatus, RoomType, Occupant } from './room.model';
+export type { Room, RoomStatus, RoomType, RoomGender, Occupant } from './room.model';
 
 @Injectable({
   providedIn: 'root'
@@ -71,6 +71,7 @@ export class RoomsService {
     floor: number;
     capacity: number;
     roomType: RoomType;
+    gender: RoomGender;
     pricePerMonth: number;
     amenities: string[];
   }): Observable<{ message: string; id: number }> {
@@ -83,6 +84,7 @@ export class RoomsService {
     capacity: number;
     status: RoomStatus;
     roomType: RoomType;
+    gender: RoomGender;
     pricePerMonth: number;
     amenities: string[];
   }): Observable<{ message: string }> {
@@ -129,6 +131,7 @@ export class RoomsService {
       floor: room.floor,
       type: room.room_type,
       capacity: room.capacity,
+      gender: room.gender ?? null,
       status: room.status,
       monthlyRent: room.price_per_month,
       amenities,
@@ -142,7 +145,7 @@ export class RoomsService {
     if (o.restricted) {
       return {
         id: o.id,
-        name: 'Occupant (other wing)',
+        name: o.gender ? `Occupant (${o.gender})` : 'Occupant',
         email: '',
         phone: '',
         checkInDate: new Date(o.start_date),

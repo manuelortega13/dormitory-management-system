@@ -98,6 +98,12 @@
             <span class="value">{{ getRoomTypeLabel(room.type) }}</span>
           </div>
           <div class="info-row">
+            <span class="label">Room For:</span>
+            <span class="value wing-tag" [class]="'wing-' + (room.gender ?? 'unset')">
+              {{ genderLabel(room.gender) }}
+            </span>
+          </div>
+          <div class="info-row">
             <span class="label">Capacity:</span>
             <span class="value">{{ room.occupants.length }}/{{ room.capacity }}</span>
           </div>
@@ -161,6 +167,7 @@
 
         <div class="room-actions">
           <button class="btn-secondary" (click)="openDetailsModal(room)">View Details</button>
+          <button class="btn-secondary" (click)="openEditModal(room)">Edit</button>
           @if (room.status === 'available' || room.occupants.length < room.capacity) {
             <button class="btn-primary" (click)="openAssignModal(room)">Assign</button>
           }
@@ -191,10 +198,13 @@
   <div class="modal-overlay" (click)="closeAddModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Add New Room</h2>
-        <button class="close-btn" (click)="closeAddModal()">×</button>
+        <h2>{{ editingRoom() ? 'Edit Room ' + editingRoom()!.roomNumber : 'Add New Room' }}</h2>
+        <button class="close-btn" (click)="closeAddModal()" [disabled]="saving()">×</button>
       </div>
       <div class="modal-body">
+        @if (formError()) {
+          <div class="alert-error">{{ formError() }}</div>
+        }
         <div class="form-group">
           <label for="roomNumber">Room Number *</label>
           <input
@@ -218,6 +228,26 @@
             />
           </div>
 
+          <div class="form-group">
+            <label for="roomGender">Room For *</label>
+            @if (deanWing) {
+              <input type="text" id="roomGender" [value]="genderLabel(deanWing)" disabled />
+              <span class="field-hint">Rooms you add are for your own occupants.</span>
+            } @else {
+              <select
+                id="roomGender"
+                [value]="formData().gender"
+                (change)="updateFormField('gender', $any($event.target).value)"
+              >
+                <option value="">Select room type</option>
+                <option value="male">Male occupants</option>
+                <option value="female">Female occupants</option>
+              </select>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label for="capacity">Capacity</label>
             <input
@@ -274,7 +304,7 @@
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeAddModal()" [disabled]="saving()">Cancel</button>
         <button class="btn-primary" (click)="saveRoom()" [disabled]="saving()">
-          {{ saving() ? 'Saving...' : 'Add Room' }}
+          {{ saving() ? 'Saving...' : editingRoom() ? 'Save Changes' : 'Add Room' }}
         </button>
       </div>
     </div>
@@ -304,6 +334,10 @@
             <div class="detail-item">
               <span class="detail-label">Type:</span>
               <span class="detail-value">{{ getRoomTypeLabel(selectedRoom()!.type) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Room For:</span>
+              <span class="detail-value">{{ genderLabel(selectedRoom()!.gender) }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Capacity:</span>
