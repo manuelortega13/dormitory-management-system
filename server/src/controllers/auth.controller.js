@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
-const { sendNotificationToUser } = require('../services/socket.service');
+const notificationController = require('./notification.controller');
 const { validateReferenceFace } = require('../services/face-verification.service');
 
 const generateToken = (user) => {
@@ -89,9 +89,12 @@ exports.register = async (req, res) => {
 
     // For parent registration, validate and find the student
     let linkedStudentId = null;
+    // The occupant's wing decides which home dean reviews this registration, so it is read
+    // here alongside the id rather than looked up again when the notification goes out.
+    let linkedStudentGender = null;
     if (userRole === 'parent' && studentResidentId) {
       const [students] = await pool.execute(
-        'SELECT id FROM users WHERE student_resident_id = ? AND role = "resident"',
+        'SELECT id, gender FROM users WHERE student_resident_id = ? AND role = "resident"',
         [studentResidentId]
       );
       
@@ -100,6 +103,7 @@ exports.register = async (req, res) => {
       }
       
       linkedStudentId = students[0].id;
+      linkedStudentGender = students[0].gender || null;
     }
 
     // Hash password
@@ -127,46 +131,14 @@ exports.register = async (req, res) => {
       // We'll update this after admin approval
     }
 
-    // Send notification to all admins and home deans for parent registration
+    // Notify the staff who can act on this registration. Home deans hear only about their
+    // own wing, so the notification never points at a queue the recipient cannot see.
     if (userRole === 'parent') {
-      const [adminsAndDeans] = await pool.execute(
-        'SELECT id FROM users WHERE (role = ? OR role = ?) AND status = ?',
-        ['admin', 'home_dean', 'active']
+      await notificationController.notifyStaffNewParentRegistration(
+        `${firstName} ${lastName}`,
+        result.insertId,
+        linkedStudentGender
       );
-      
-      console.log(`Found ${adminsAndDeans.length} admins/deans to notify for parent registration`);
-      
-      for (const user of adminsAndDeans) {
-        const notificationData = {
-          title: 'New Parent Registration',
-          message: `${firstName} ${lastName} has registered as a parent/guardian and is awaiting approval.`,
-          type: 'registration',
-          reference_id: result.insertId,
-          reference_type: 'user'
-        };
-        
-        // Insert into database
-        const [notifResult] = await pool.execute(
-          `INSERT INTO notifications (user_id, title, message, type, reference_id, reference_type) 
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            user.id,
-            notificationData.title,
-            notificationData.message,
-            notificationData.type,
-            notificationData.reference_id,
-            notificationData.reference_type
-          ]
-        );
-        
-        // Send real-time notification via socket
-        sendNotificationToUser(user.id, {
-          id: notifResult.insertId,
-          ...notificationData,
-          is_read: false,
-          created_at: new Date().toISOString()
-        });
-      }
     }
 
     // For parents, don't issue token until approved

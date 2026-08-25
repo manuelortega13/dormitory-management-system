@@ -395,6 +395,47 @@ exports.notifyAdminsRequestCancelled = async (residentName, leaveRequestId, resi
   }
 };
 
+// Notify staff that a parent/guardian has registered and is awaiting approval.
+// Home deans only hear about the parents of their own wing's occupants, so the notification
+// always lands with someone who can actually act on it: a dean with no wing set is
+// unrestricted and hears about every registration, and a registration with no linked
+// occupant has no wing, so it goes to the admin, the VP and unrestricted deans only. This
+// mirrors how the Parent Approvals queue itself is scoped.
+exports.notifyStaffNewParentRegistration = async (parentName, parentUserId, studentGender = null) => {
+  try {
+    // The admin and the VP oversee both wings and receive every registration.
+    const [generalAdmins] = await pool.execute(
+      "SELECT id FROM users WHERE role IN ('admin', 'vpsas') AND status = 'active'"
+    );
+
+    let homeDeanQuery = "SELECT id FROM users WHERE role = 'home_dean' AND status = 'active'";
+    const homeDeanParams = [];
+
+    if (studentGender) {
+      homeDeanQuery += ' AND (dean_type = ? OR dean_type IS NULL)';
+      homeDeanParams.push(studentGender);
+    } else {
+      homeDeanQuery += ' AND dean_type IS NULL';
+    }
+
+    const [homeDeans] = await pool.execute(homeDeanQuery, homeDeanParams);
+
+    for (const recipient of [...generalAdmins, ...homeDeans]) {
+      // Type 'registration' drives the Parent Approvals badge on the client; keep it.
+      await exports.createNotification(
+        recipient.id,
+        'registration',
+        'New Parent Registration',
+        `${parentName} has registered as a parent/guardian and is awaiting approval.`,
+        parentUserId,
+        'user'
+      );
+    }
+  } catch (error) {
+    console.error('Notify staff new parent registration error:', error);
+  }
+};
+
 // ==================== GATEPASS NOTIFICATIONS ====================
 
 // Notify a parent that their child's gatepass needs approval (first approver)
