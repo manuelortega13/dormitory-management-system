@@ -11,6 +11,14 @@ const { getGatepassSettings } = require('../services/gatepass-settings.service')
 // Generate a unique opaque QR token (same approach as leave requests)
 const generateQRCode = () => crypto.randomBytes(32).toString('hex');
 
+/**
+ * A home dean is bound to one wing by `dean_type`, so an occupant of the other wing is
+ * neither theirs to see nor theirs to rule on. False for the admin, the VP and a dean with
+ * no wing set. The queues are already scoped this way; these are the per-record checks.
+ */
+const isOutsideDeanWing = (user, gender) =>
+  user.role === 'home_dean' && !!user.deanType && gender !== user.deanType;
+
 const SELECT_WITH_USER = `
   SELECT g.*,
          CONCAT(u.first_name, ' ', u.last_name) AS occupant_name,
@@ -70,6 +78,9 @@ exports.getById = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     if (role === 'parent' && gp.parent_id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (isOutsideDeanWing(req.user, gp.gender)) {
       return res.status(403).json({ error: 'Access denied' });
     }
     res.json({ success: true, data: gp });
@@ -268,6 +279,11 @@ exports.deanApprove = async (req, res) => {
 
     const gp = await loadGatepass(id);
     if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    // Ruling on the other wing's occupant is not this dean's call. Checked before the status
+    // test so the reply says nothing about a gatepass they may not see.
+    if (isOutsideDeanWing(req.user, gp.gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (gp.status !== 'pending_dean') {
       return res.status(400).json({ error: 'Gatepass is not pending Home Dean approval' });
     }
@@ -301,6 +317,9 @@ exports.deanDecline = async (req, res) => {
 
     const gp = await loadGatepass(id);
     if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    if (isOutsideDeanWing(req.user, gp.gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (gp.status !== 'pending_dean') {
       return res.status(400).json({ error: 'Gatepass is not pending Home Dean approval' });
     }
@@ -656,6 +675,22 @@ exports.extend = async (req, res) => {
 exports.getExtensions = async (req, res) => {
   try {
     const { id } = req.params;
+    const { role, id: userId } = req.user;
+
+    // The extension log carries the occupant's own reason and photo, so it is authorised
+    // exactly like the gatepass it belongs to rather than left open to any signed-in user.
+    const gp = await loadGatepass(id);
+    if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    if (role === 'resident' && gp.user_id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (role === 'parent' && gp.parent_id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (isOutsideDeanWing(req.user, gp.gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     const [rows] = await pool.execute(
       `SELECT e.*, CONCAT(rb.first_name, ' ', rb.last_name) AS reviewer_name
        FROM gatepass_extensions e
@@ -726,10 +761,14 @@ exports.assignDisciplinaryTask = async (req, res) => {
     if (!title) return res.status(400).json({ error: 'A task title is required' });
 
     const [[gp]] = await pool.execute(
-      'SELECT user_id, disciplinary_status FROM gatepasses WHERE id = ?',
+      `SELECT g.user_id, g.disciplinary_status, u.gender
+       FROM gatepasses g JOIN users u ON g.user_id = u.id WHERE g.id = ?`,
       [id]
     );
     if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    if (isOutsideDeanWing(req.user, gp.gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (gp.disciplinary_status !== 'pending') {
       return res.status(400).json({ error: 'This gatepass has already been reviewed' });
     }
@@ -756,10 +795,14 @@ exports.waiveDisciplinary = async (req, res) => {
     const { id } = req.params;
 
     const [[gp]] = await pool.execute(
-      'SELECT disciplinary_status FROM gatepasses WHERE id = ?',
+      `SELECT g.disciplinary_status, u.gender
+       FROM gatepasses g JOIN users u ON g.user_id = u.id WHERE g.id = ?`,
       [id]
     );
     if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
+    if (isOutsideDeanWing(req.user, gp.gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (gp.disciplinary_status !== 'pending') {
       return res.status(400).json({ error: 'This gatepass has already been reviewed' });
     }
