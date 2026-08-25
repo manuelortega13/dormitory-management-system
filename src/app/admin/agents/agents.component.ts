@@ -17,7 +17,8 @@ export class AgentsComponent implements OnInit {
   private readonly agentsService = inject(AgentsService);
   private readonly authService = inject(AuthService);
 
-  // Only admins can deactivate (suspend/reactivate) or delete staff
+  // The VP may read this page; every change to a staff account is the administrator's, so
+  // isAdmin() gates each write action here and the API refuses them regardless.
   protected readonly isAdmin = signal(this.authService.getCurrentUser()?.role === 'admin');
   // Password resets are the administrator's alone, matching the API. The page itself is
   // admin-only now, so this is the last line rather than the first.

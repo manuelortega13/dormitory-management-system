@@ -49,7 +49,7 @@ export class AdminLayoutComponent {
   // Secondary nav shown in the floating "More" sheet (items not in the bottom tab bar).
   private readonly allMoreItems: NavItem[] = [
     { label: 'Rooms', icon: '🛏️', route: '/manage/rooms', roles: this.adminRoles },
-    { label: 'Staff', icon: '👮', route: '/manage/agents', roles: ['admin'] },
+    { label: 'Staff', icon: '👮', route: '/manage/agents', roles: ['admin', 'vpsas'] },
     { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: this.adminRoles },
     {
       label: 'Parent Approvals',

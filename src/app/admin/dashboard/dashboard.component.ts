@@ -35,8 +35,8 @@ export class DashboardComponent implements OnInit {
 
   protected readonly recentActivities = signal<RecentActivity[]>([]);
 
-  // Manage Staff is administrator-only, so the shortcut is dropped for the dean and the VP
-  // rather than sending them to a page their guard bounces them off.
+  // Manage Staff is reachable by the administrator and the VP only, so the shortcut is
+  // dropped for the dean rather than sending them to a page their guard bounces them off.
   protected readonly quickActions = computed(() => {
     const actions = [
       { label: 'Add Occupant', icon: '👤', route: '/manage/residents' },
@@ -44,7 +44,8 @@ export class DashboardComponent implements OnInit {
       { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' }
     ];
 
-    if (this.authService.getCurrentUser()?.role === 'admin') {
+    const role = this.authService.getCurrentUser()?.role;
+    if (role === 'admin' || role === 'vpsas') {
       actions.push({ label: 'Manage Staff', icon: '👷', route: '/manage/agents' });
     }
 

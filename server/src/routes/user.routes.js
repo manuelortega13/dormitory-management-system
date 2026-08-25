@@ -32,9 +32,10 @@ router.patch('/:id/reactivate', authMiddleware, roleMiddleware('admin'), userCon
 // GET /api/users/:id/room - Get user's room assignment
 router.get('/:id/room', authMiddleware, userController.getUserRoom);
 
-// GET /api/users/agents - Get all agents. Staff management is administrator-only, matching
-// the Staff page's guard; roleMiddleware would have let every admin-equivalent role in.
-router.get('/agents/list', authMiddleware, exactRoleMiddleware('admin'), userController.getAgents);
+// GET /api/users/agents - Read the staff roster. The VP oversees staff and may read it; the
+// writes below stay with the administrator. exactRoleMiddleware keeps home_dean out, which
+// plain roleMiddleware would admit as an admin equivalent.
+router.get('/agents/list', authMiddleware, exactRoleMiddleware('admin', 'vpsas'), userController.getAgents);
 
 // Every staff write below is administrator-only, matching the Staff page's guard.
 // exactRoleMiddleware is required: roleMiddleware would admit home_dean and vpsas.

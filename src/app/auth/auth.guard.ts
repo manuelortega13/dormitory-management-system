@@ -76,8 +76,9 @@ export const roleGuard = (allowedRoles: User['role'][]): CanActivateFn => {
 
 // Pre-configured role guards
 export const adminGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas']);
-// Staff management is administrator-only; the dean and VP have no business editing accounts.
-export const staffGuard: CanActivateFn = roleGuard(['admin']);
+// The VP oversees staff and may read the roster; only the administrator may change it, which
+// the API enforces. The home dean has no business on this page at all.
+export const staffGuard: CanActivateFn = roleGuard(['admin', 'vpsas']);
 export const residentGuard: CanActivateFn = roleGuard(['resident']);
 export const securityGuard: CanActivateFn = roleGuard(['security_guard']);
 export const parentGuard: CanActivateFn = roleGuard(['parent']);

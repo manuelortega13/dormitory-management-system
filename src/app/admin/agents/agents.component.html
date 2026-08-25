@@ -4,7 +4,9 @@
       <h1>Staff Management</h1>
       <p class="subtitle">Manage administrators, security guards, and deans</p>
     </div>
-    <button class="btn-primary" (click)="openAddModal()"><span>➕</span> Add New Staff</button>
+    @if (isAdmin()) {
+      <button class="btn-primary" (click)="openAddModal()"><span>➕</span> Add New Staff</button>
+    }
   </header>
 
   <!-- Stats Overview -->
@@ -122,7 +124,9 @@
           </div>
           <div class="col-actions" data-label="Actions">
             <button class="btn-icon view" title="View" (click)="openViewModal(agent)">👁️</button>
-            <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
+            @if (isAdmin()) {
+              <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
+            }
             @if (canResetAgent()) {
               <button
                 class="btn-icon reset-pwd"
