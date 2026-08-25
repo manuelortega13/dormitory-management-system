@@ -109,7 +109,7 @@
           </div>
           <div class="info-row">
             <span class="label">Rent:</span>
-            <span class="value rent">${{ room.monthlyRent }}/mo</span>
+            <span class="value rent">{{ formatCurrency(room.monthlyRent) }}/mo</span>
           </div>
         </div>
 
@@ -278,7 +278,7 @@
           </div>
 
           <div class="form-group">
-            <label for="pricePerMonth">Monthly Rent ($)</label>
+            <label for="pricePerMonth">Monthly Rent (₱)</label>
             <input
               type="number"
               id="pricePerMonth"
@@ -361,7 +361,7 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">Monthly Rent:</span>
-              <span class="detail-value rent">${{ selectedRoom()!.monthlyRent }}/mo</span>
+              <span class="detail-value rent">{{ formatCurrency(selectedRoom()!.monthlyRent) }}/mo</span>
             </div>
           </div>
 

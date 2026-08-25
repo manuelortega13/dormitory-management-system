@@ -6,6 +6,7 @@ import { Room, RoomStatus, RoomType, RoomGender } from './data/room.model';
 import { ResidentsService } from '../residents/data/residents.service';
 import { ToastService } from '../../services/toast.service';
 import { AuthService } from '../../auth/auth.service';
+import { PaymentService } from '../../services/payment.service';
 import { Resident } from '../residents/data/resident.model';
 
 interface RoomFormData {
@@ -31,6 +32,7 @@ export class RoomsComponent implements OnInit {
   private readonly residentsService = inject(ResidentsService);
   private readonly toast = inject(ToastService);
   private readonly authService = inject(AuthService);
+  private readonly paymentService = inject(PaymentService);
 
   // A home dean runs one wing, so every room they add or edit belongs to it and the choice
   // is theirs to see, not to make. Null for the admin and the VP, who pick per room.
@@ -264,6 +266,11 @@ export class RoomsComponent implements OnInit {
         );
       }
     });
+  }
+
+  /** Rent in pesos, formatted the same way money is shown on the Payments page. */
+  protected formatCurrency(amount: number | null | undefined): string {
+    return this.paymentService.formatCurrency(amount ?? 0);
   }
 
   /** How a room's wing reads on screen, worded to match the "Room For" picker. */
