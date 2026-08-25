@@ -1,7 +1,6 @@
 export type GatepassStatus =
   | 'pending_parent'
   | 'pending_dean'
-  | 'pending_vpsas'
   | 'approved'
   | 'active'
   | 'completed'
@@ -34,6 +33,8 @@ export interface Gatepass {
   dean_reviewed_at?: string | null;
   dean_notes?: string | null;
 
+  // Historical only: the VPSAS left the approval chain, but past passes carry their decision
+  // and the reports still read it.
   vpsas_status: 'pending' | 'approved' | 'declined';
   vpsas_reviewed_at?: string | null;
   vpsas_notes?: string | null;

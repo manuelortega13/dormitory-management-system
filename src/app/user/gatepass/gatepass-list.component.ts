@@ -68,15 +68,6 @@ import { NotificationService } from '../../services/notification.service';
                   <span class="timeline-label">Home Dean</span>
                 </div>
                 <div class="timeline-line" [class.completed]="g.dean_status === 'approved'"></div>
-                <div class="timeline-item" [class.completed]="g.vpsas_status === 'approved'" [class.declined]="g.vpsas_status === 'declined'">
-                  <span class="timeline-icon">
-                    @if (g.vpsas_status === 'approved') { ✓ }
-                    @else if (g.vpsas_status === 'declined') { ✗ }
-                    @else { ○ }
-                  </span>
-                  <span class="timeline-label">VPSAS</span>
-                </div>
-                <div class="timeline-line" [class.completed]="g.qr_code"></div>
                 <div class="timeline-item" [class.completed]="g.qr_code">
                   <span class="timeline-icon">@if (g.qr_code) { ✓ } @else { ○ }</span>
                   <span class="timeline-label">QR Code</span>
@@ -199,7 +190,7 @@ export class GatepassListComponent implements OnInit {
     return s;
   }
   canCancel(g: Gatepass): boolean {
-    return ['pending_parent', 'pending_dean', 'pending_vpsas', 'approved'].includes(g.status);
+    return ['pending_parent', 'pending_dean', 'approved'].includes(g.status);
   }
 
   open(g: Gatepass): void {

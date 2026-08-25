@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const gatepassController = require('../controllers/gatepass.controller');
-const { authMiddleware, roleMiddleware } = require('../middleware/auth.middleware');
+const {
+  authMiddleware,
+  roleMiddleware,
+  exactRoleMiddleware,
+} = require('../middleware/auth.middleware');
 
 // All gatepass routes require authentication
 router.use(authMiddleware);
@@ -10,7 +14,6 @@ router.use(authMiddleware);
 router.get('/', gatepassController.getAll);
 router.get('/pending-parent', roleMiddleware('parent'), gatepassController.getPendingParent);
 router.get('/pending-dean', roleMiddleware('admin', 'home_dean'), gatepassController.getPendingDean);
-router.get('/pending-vpsas', roleMiddleware('admin', 'vpsas'), gatepassController.getPendingVpsas);
 router.get('/my-qr', gatepassController.getMyQR);
 
 // Guard scan validation
@@ -34,13 +37,13 @@ router.post('/:id/extend', gatepassController.extend);
 router.post('/:id/assign-task', roleMiddleware('admin', 'home_dean'), gatepassController.assignDisciplinaryTask);
 router.post('/:id/waive', roleMiddleware('admin', 'home_dean'), gatepassController.waiveDisciplinary);
 
-// Approval chain
+// Approval chain: parent -> home dean -> QR. The dean has the final say, so exactRoleMiddleware
+// is required here - plain roleMiddleware would admit vpsas as an admin equivalent and put the
+// VP back in a chain they were removed from.
 router.post('/:id/parent-approve', roleMiddleware('parent'), gatepassController.parentApprove);
 router.post('/:id/parent-decline', roleMiddleware('parent'), gatepassController.parentDecline);
-router.post('/:id/dean-approve', roleMiddleware('admin', 'home_dean'), gatepassController.deanApprove);
-router.post('/:id/dean-decline', roleMiddleware('admin', 'home_dean'), gatepassController.deanDecline);
-router.post('/:id/vpsas-approve', roleMiddleware('admin', 'vpsas'), gatepassController.vpsasApprove);
-router.post('/:id/vpsas-decline', roleMiddleware('admin', 'vpsas'), gatepassController.vpsasDecline);
+router.post('/:id/dean-approve', exactRoleMiddleware('admin', 'home_dean'), gatepassController.deanApprove);
+router.post('/:id/dean-decline', exactRoleMiddleware('admin', 'home_dean'), gatepassController.deanDecline);
 
 // Guard exit/return
 router.post('/:id/record-exit', roleMiddleware('admin', 'security_guard'), gatepassController.recordExit);

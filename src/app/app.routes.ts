@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import {
   adminGuard,
   staffGuard,
+  gatepassGuard,
   residentGuard,
   securityGuard,
   parentGuard,
@@ -160,7 +161,7 @@ export const routes: Routes = [
       },
       {
         path: 'gatepass',
-        canActivate: [adminGuard],
+        canActivate: [gatepassGuard],
         loadComponent: () =>
           import('./admin/gatepass/gatepass.component').then((m) => m.AdminGatepassComponent),
       },

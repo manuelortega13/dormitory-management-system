@@ -35,14 +35,13 @@ export class AdminGatepassComponent implements OnInit {
   }
 
   protected readonly role = signal(this.auth.getCurrentUser()?.role ?? '');
+  // The dean has the final say on a gatepass; the VPSAS is no longer in the chain.
   protected readonly isDean = computed(() => ['admin', 'home_dean'].includes(this.role()));
-  protected readonly isVpsas = computed(() => ['admin', 'vpsas'].includes(this.role()));
 
   protected readonly activeTab = signal<'approvals' | 'reviews' | 'passes' | 'tasks'>('approvals');
   protected readonly loading = signal(false);
 
   protected readonly deanQueue = signal<Gatepass[]>([]);
-  protected readonly vpsasQueue = signal<Gatepass[]>([]);
   protected readonly reviews = signal<DisciplinaryReview[]>([]);
   protected readonly tasks = signal<Task[]>([]);
   // Approved / active / completed gatepasses (they have a QR to print)
@@ -94,12 +93,6 @@ export class AdminGatepassComponent implements OnInit {
 
   protected readonly filteredDeanQueue = computed(() =>
     this.deanQueue().filter(
-      (g) =>
-        this.matchesSearch(g.occupant_name, g.student_resident_id) && this.matchesGatepassDates(g),
-    ),
-  );
-  protected readonly filteredVpsasQueue = computed(() =>
-    this.vpsasQueue().filter(
       (g) =>
         this.matchesSearch(g.occupant_name, g.student_resident_id) && this.matchesGatepassDates(g),
     ),
@@ -291,8 +284,6 @@ export class AdminGatepassComponent implements OnInit {
       const jobs: Promise<any>[] = [];
       if (this.isDean())
         jobs.push(this.service.getPendingDean().then((d) => this.deanQueue.set(d)));
-      if (this.isVpsas())
-        jobs.push(this.service.getPendingVpsas().then((d) => this.vpsasQueue.set(d)));
       if (this.isDean())
         jobs.push(this.service.getPendingDisciplinary().then((d) => this.reviews.set(d)));
       jobs.push(this.taskService.getAllTasks().then((d) => this.tasks.set(d)));
@@ -315,9 +306,8 @@ export class AdminGatepassComponent implements OnInit {
   // ---- Approvals ----
   async approve(g: Gatepass): Promise<void> {
     try {
-      if (g.status === 'pending_dean') await this.service.deanApprove(g.id);
-      else await this.service.vpsasApprove(g.id);
-      this.toast.success('Approved', 'Gatepass approved.');
+      await this.service.deanApprove(g.id);
+      this.toast.success('Approved', 'Gatepass approved. The QR code is ready.');
       await this.loadAll();
     } catch (e: any) {
       this.toast.error('Error', e?.error?.error || 'Failed to approve');
@@ -332,9 +322,7 @@ export class AdminGatepassComponent implements OnInit {
     if (!g) return;
     this.saving.set(true);
     try {
-      if (g.status === 'pending_dean')
-        await this.service.deanDecline(g.id, this.declineNotes.trim() || undefined);
-      else await this.service.vpsasDecline(g.id, this.declineNotes.trim() || undefined);
+      await this.service.deanDecline(g.id, this.declineNotes.trim() || undefined);
       this.toast.info('Declined', 'Gatepass declined.');
       this.declineTarget.set(null);
       await this.loadAll();

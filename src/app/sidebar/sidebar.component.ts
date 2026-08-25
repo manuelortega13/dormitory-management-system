@@ -130,7 +130,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           route: '/manage/leave-requests',
           roles: this.adminRoles,
         },
-        { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: this.adminRoles },
+        { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: ['admin', 'home_dean'] },
         {
           label: 'Parent Approvals',
           icon: '👨‍👩‍👦',
@@ -246,20 +246,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
     );
   }
 
-  // Count of gatepasses awaiting the current admin's approval (dean/vpsas queues).
+  // Count of gatepasses awaiting the dean's approval - the only approval step left.
   private async loadPendingGatepassCount(): Promise<void> {
     try {
       const role = this.currentUser()?.role;
-      const jobs: Promise<any[]>[] = [];
-      if (role === 'admin' || role === 'home_dean') {
-        jobs.push(this.gatepassService.getPendingDean());
-      }
-      if (role === 'admin' || role === 'vpsas') {
-        jobs.push(this.gatepassService.getPendingVpsas());
-      }
-      if (jobs.length === 0) return;
-      const results = await Promise.all(jobs);
-      const count = results.reduce((sum, arr) => sum + arr.length, 0);
+      if (role !== 'admin' && role !== 'home_dean') return;
+      const pending = await this.gatepassService.getPendingDean();
+      const count = pending.length;
       this.pendingGatepassCount.set(count);
       this.updateGatepassBadge(count);
     } catch (error) {

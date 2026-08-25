@@ -44,13 +44,6 @@ export class AdminGatepassService {
     return res.data ?? [];
   }
 
-  async getPendingVpsas(): Promise<Gatepass[]> {
-    const res = await firstValueFrom(
-      this.http.get<ApiResponse<Gatepass[]>>(`${this.apiUrl}/pending-vpsas`),
-    );
-    return res.data ?? [];
-  }
-
   async deanApprove(id: number, notes?: string): Promise<void> {
     await firstValueFrom(
       this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/dean-approve`, { notes }),
@@ -60,18 +53,6 @@ export class AdminGatepassService {
   async deanDecline(id: number, notes?: string): Promise<void> {
     await firstValueFrom(
       this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/dean-decline`, { notes }),
-    );
-    this.notify();
-  }
-  async vpsasApprove(id: number, notes?: string): Promise<void> {
-    await firstValueFrom(
-      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/vpsas-approve`, { notes }),
-    );
-    this.notify();
-  }
-  async vpsasDecline(id: number, notes?: string): Promise<void> {
-    await firstValueFrom(
-      this.http.post<ApiResponse<void>>(`${this.apiUrl}/${id}/vpsas-decline`, { notes }),
     );
     this.notify();
   }

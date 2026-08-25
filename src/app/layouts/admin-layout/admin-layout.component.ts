@@ -50,7 +50,7 @@ export class AdminLayoutComponent {
   private readonly allMoreItems: NavItem[] = [
     { label: 'Rooms', icon: '🛏️', route: '/manage/rooms', roles: this.adminRoles },
     { label: 'Staff', icon: '👮', route: '/manage/agents', roles: ['admin', 'vpsas'] },
-    { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: this.adminRoles },
+    { label: 'Gatepass', icon: '🎫', route: '/manage/gatepass', roles: ['admin', 'home_dean'] },
     {
       label: 'Parent Approvals',
       icon: '👨‍👩‍👦',

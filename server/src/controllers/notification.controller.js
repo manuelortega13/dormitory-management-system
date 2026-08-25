@@ -479,27 +479,6 @@ exports.notifyDeanGatepassNeeded = async (childName, gatepassId, residentGender 
   }
 };
 
-// Notify VPSAS that a gatepass needs final approval (third approver)
-exports.notifyVpsasGatepassNeeded = async (childName, gatepassId) => {
-  try {
-    const [vpsasUsers] = await pool.execute(
-      "SELECT id FROM users WHERE role = 'vpsas' AND status = 'active'"
-    );
-    for (const vpsas of vpsasUsers) {
-      await exports.createNotification(
-        vpsas.id,
-        'gatepass_dean_approved',
-        'Gatepass Approval Required',
-        `${childName}'s gatepass needs your final approval`,
-        gatepassId,
-        'gatepass'
-      );
-    }
-  } catch (error) {
-    console.error('Notify vpsas gatepass needed error:', error);
-  }
-};
-
 // Notify the occupant of an intermediate approval step
 exports.notifyOccupantGatepassProgress = async (occupantId, type, message, gatepassId) => {
   try {

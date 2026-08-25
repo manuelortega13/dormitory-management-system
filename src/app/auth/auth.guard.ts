@@ -79,6 +79,8 @@ export const adminGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas
 // The VP oversees staff and may read the roster; only the administrator may change it, which
 // the API enforces. The home dean has no business on this page at all.
 export const staffGuard: CanActivateFn = roleGuard(['admin', 'vpsas']);
+// The gatepass chain ends with the home dean, so the VP has nothing to do on that page.
+export const gatepassGuard: CanActivateFn = roleGuard(['admin', 'home_dean']);
 export const residentGuard: CanActivateFn = roleGuard(['resident']);
 export const securityGuard: CanActivateFn = roleGuard(['security_guard']);
 export const parentGuard: CanActivateFn = roleGuard(['parent']);

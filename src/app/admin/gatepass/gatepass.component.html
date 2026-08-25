@@ -110,33 +110,6 @@
           }
         }
       }
-      @if (isVpsas()) {
-        <h3 class="section">Awaiting VPSAS</h3>
-        @if (filteredVpsasQueue().length === 0) {
-          <div class="state empty">
-            {{ searchQuery() ? 'No matches.' : 'Nothing awaiting VPSAS approval.' }}
-          </div>
-        } @else {
-          @for (g of filteredVpsasQueue(); track g.id) {
-            <div class="row">
-              <div class="row-main">
-                <span class="name"
-                  >{{ g.occupant_name }}
-                  @if (g.student_resident_id) {
-                    <span class="sid">· {{ g.student_resident_id }}</span>
-                  }
-                </span>
-                <span class="meta">📍 {{ g.destination }} · {{ g.reason }}</span>
-                <span class="date">{{ g.created_at | date: 'medium' }}</span>
-              </div>
-              <div class="row-actions">
-                <button class="approve" (click)="approve(g)">Approve</button>
-                <button class="decline" (click)="openDecline(g)">Decline</button>
-              </div>
-            </div>
-          }
-        }
-      }
     }
 
     <!-- DISCIPLINARY REVIEWS -->

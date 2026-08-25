@@ -288,20 +288,18 @@ exports.deanApprove = async (req, res) => {
       return res.status(400).json({ error: 'Gatepass is not pending Home Dean approval' });
     }
 
-    const childName = `${gp.first_name} ${gp.last_name}`;
+    // The dean is the last approver in the chain, so this is where the pass becomes usable
+    // and gets its QR code.
+    const qrCode = generateQRCode();
     await pool.execute(
       `UPDATE gatepasses SET dean_status = 'approved', dean_reviewed_by = ?, dean_reviewed_at = NOW(),
-       dean_notes = ?, status = 'pending_vpsas' WHERE id = ?`,
-      [deanId, notes || null, id]
+       dean_notes = ?, status = 'approved', qr_code = ?, qr_generated_at = NOW() WHERE id = ?`,
+      [deanId, notes || null, qrCode, id]
     );
 
-    await notificationController.notifyVpsasGatepassNeeded(childName, id);
-    await notificationController.notifyOccupantGatepassProgress(
-      gp.user_id, 'gatepass_dean_approved',
-      'The Home Dean approved your gatepass. Awaiting VPSAS approval.', id
-    );
+    await notificationController.notifyOccupantGatepassApproved(gp.user_id, id);
 
-    res.json({ success: true, message: 'Home Dean approved. Awaiting VPSAS approval.' });
+    res.json({ success: true, message: 'Gatepass approved. The QR code is ready.' });
   } catch (error) {
     console.error('Dean approve gatepass error:', error);
     res.status(500).json({ error: 'Failed to approve gatepass' });
@@ -338,62 +336,6 @@ exports.deanDecline = async (req, res) => {
   }
 };
 
-// POST /:id/vpsas-approve — final approval, generates QR
-exports.vpsasApprove = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { notes } = req.body;
-    const vpsasId = req.user.id;
-
-    const gp = await loadGatepass(id);
-    if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
-    if (gp.status !== 'pending_vpsas') {
-      return res.status(400).json({ error: 'Gatepass is not pending VPSAS approval' });
-    }
-
-    const qrCode = generateQRCode();
-    await pool.execute(
-      `UPDATE gatepasses SET vpsas_status = 'approved', vpsas_reviewed_by = ?, vpsas_reviewed_at = NOW(),
-       vpsas_notes = ?, status = 'approved', qr_code = ?, qr_generated_at = NOW() WHERE id = ?`,
-      [vpsasId, notes || null, qrCode, id]
-    );
-
-    await notificationController.notifyOccupantGatepassApproved(gp.user_id, id);
-
-    res.json({ success: true, message: 'Gatepass fully approved. QR code generated.', qrCode });
-  } catch (error) {
-    console.error('VPSAS approve gatepass error:', error);
-    res.status(500).json({ error: 'Failed to approve gatepass' });
-  }
-};
-
-// POST /:id/vpsas-decline
-exports.vpsasDecline = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { notes } = req.body;
-    const vpsasId = req.user.id;
-
-    const gp = await loadGatepass(id);
-    if (!gp) return res.status(404).json({ error: 'Gatepass not found' });
-    if (gp.status !== 'pending_vpsas') {
-      return res.status(400).json({ error: 'Gatepass is not pending VPSAS approval' });
-    }
-
-    await pool.execute(
-      `UPDATE gatepasses SET vpsas_status = 'declined', vpsas_reviewed_by = ?, vpsas_reviewed_at = NOW(),
-       vpsas_notes = ?, status = 'declined' WHERE id = ?`,
-      [vpsasId, notes || null, id]
-    );
-    await notificationController.notifyOccupantGatepassDeclined(gp.user_id, 'VPSAS', id);
-
-    res.json({ success: true, message: 'Gatepass declined by VPSAS' });
-  } catch (error) {
-    console.error('VPSAS decline gatepass error:', error);
-    res.status(500).json({ error: 'Failed to decline gatepass' });
-  }
-};
-
 // GET /pending-parent
 exports.getPendingParent = async (req, res) => {
   try {
@@ -426,20 +368,6 @@ exports.getPendingDean = async (req, res) => {
   }
 };
 
-// GET /pending-vpsas
-exports.getPendingVpsas = async (req, res) => {
-  try {
-    const [rows] = await pool.execute(
-      SELECT_WITH_USER + " WHERE g.status = 'pending_vpsas' ORDER BY g.created_at DESC"
-    );
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    console.error('Get pending vpsas gatepasses error:', error);
-    res.status(500).json({ error: 'Failed to fetch gatepasses' });
-  }
-};
-
-// GET /my-qr — occupant's current approved/active gatepass
 exports.getMyQR = async (req, res) => {
   try {
     const [rows] = await pool.execute(
