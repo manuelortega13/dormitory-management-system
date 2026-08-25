@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RoomsService } from './data/rooms.service';
 import { Room, RoomStatus, RoomType } from './data/room.model';
 import { ResidentsService } from '../residents/data/residents.service';
+import { ToastService } from '../../services/toast.service';
 import { Resident } from '../residents/data/resident.model';
 
 interface RoomFormData {
@@ -25,6 +26,7 @@ interface RoomFormData {
 export class RoomsComponent implements OnInit {
   private readonly roomsService = inject(RoomsService);
   private readonly residentsService = inject(ResidentsService);
+  private readonly toast = inject(ToastService);
 
   protected readonly searchQuery = signal('');
   protected readonly selectedStatus = signal<RoomStatus | 'all'>('all');
@@ -49,6 +51,12 @@ export class RoomsComponent implements OnInit {
   // View Details Modal state
   protected readonly showDetailsModal = signal(false);
   protected readonly selectedRoom = signal<Room | null>(null);
+
+  // Delete Room Modal state
+  protected readonly showDeleteModal = signal(false);
+  protected readonly deletingRoom = signal<Room | null>(null);
+  protected readonly deleting = signal(false);
+  protected readonly deleteError = signal('');
 
   // Assign Modal state
   protected readonly showAssignModal = signal(false);
@@ -294,6 +302,44 @@ export class RoomsComponent implements OnInit {
       error: (err) => {
         console.error('Failed to remove occupant:', err);
         alert('Failed to remove occupant. Please try again.');
+      }
+    });
+  }
+
+  openDeleteModal(room: Room): void {
+    this.deleteError.set('');
+    this.deleting.set(false);
+    this.deletingRoom.set(room);
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.deletingRoom.set(null);
+    this.deleteError.set('');
+  }
+
+  confirmDeleteRoom(): void {
+    const room = this.deletingRoom();
+    if (!room) return;
+
+    this.deleting.set(true);
+    this.deleteError.set('');
+    this.roomsService.delete(room.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.closeDeleteModal();
+        // The details modal may be open on the room that just went away.
+        if (this.selectedRoom()?.id === room.id) {
+          this.closeDetailsModal();
+        }
+        this.toast.success('Room deleted', `Room ${room.roomNumber} has been deleted.`);
+        this.loadRooms();
+      },
+      error: (err) => {
+        this.deleting.set(false);
+        // The server refuses to delete an occupied room; show its reason in place.
+        this.deleteError.set(err?.error?.error || 'Failed to delete the room. Please try again.');
       }
     });
   }

@@ -164,6 +164,18 @@
           @if (room.status === 'available' || room.occupants.length < room.capacity) {
             <button class="btn-primary" (click)="openAssignModal(room)">Assign</button>
           }
+          <button
+            class="btn-danger-outline"
+            (click)="openDeleteModal(room)"
+            [disabled]="room.occupants.length > 0"
+            [title]="
+              room.occupants.length > 0
+                ? 'Remove the occupants before deleting this room'
+                : 'Delete room ' + room.roomNumber
+            "
+          >
+            🗑️ Delete
+          </button>
         </div>
       </article>
     } @empty {
@@ -456,6 +468,38 @@
           [disabled]="assigning() || !selectedResidentId() || availableResidents().length === 0"
         >
           {{ assigning() ? 'Assigning...' : 'Assign Occupant' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Room Modal -->
+@if (showDeleteModal() && deletingRoom()) {
+  <div class="modal-overlay" (click)="closeDeleteModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>🗑️ Delete Room {{ deletingRoom()!.roomNumber }}</h2>
+        <button class="close-btn" (click)="closeDeleteModal()" [disabled]="deleting()">×</button>
+      </div>
+      <div class="modal-body">
+        @if (deleteError()) {
+          <div class="alert-error">{{ deleteError() }}</div>
+        }
+        <p class="confirm-message">
+          Delete <strong>Room {{ deletingRoom()!.roomNumber }}</strong> on floor
+          {{ deletingRoom()!.floor }}?
+        </p>
+        <p class="info-text">
+          This removes the room and its past assignment records. It cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeDeleteModal()" [disabled]="deleting()">
+          Cancel
+        </button>
+        <button class="btn-danger" (click)="confirmDeleteRoom()" [disabled]="deleting()">
+          {{ deleting() ? 'Deleting...' : 'Delete Room' }}
         </button>
       </div>
     </div>

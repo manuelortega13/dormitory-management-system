@@ -137,6 +137,24 @@ exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const [rooms] = await pool.execute('SELECT id FROM rooms WHERE id = ?', [id]);
+    if (rooms.length === 0) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    // room_assignments cascades on room delete, so deleting an occupied room would quietly
+    // take its occupants' assignments with it. Make emptying the room a deliberate step.
+    const [active] = await pool.execute(
+      "SELECT COUNT(*) as count FROM room_assignments WHERE room_id = ? AND status = 'active'",
+      [id]
+    );
+    if (active[0].count > 0) {
+      const { count } = active[0];
+      return res.status(400).json({
+        error: `This room still has ${count} occupant${count === 1 ? '' : 's'}. Remove them before deleting the room.`
+      });
+    }
+
     await pool.execute('DELETE FROM rooms WHERE id = ?', [id]);
 
     res.json({ message: 'Room deleted successfully' });
