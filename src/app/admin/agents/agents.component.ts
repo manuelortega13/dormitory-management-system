@@ -17,13 +17,26 @@ export class AgentsComponent implements OnInit {
   private readonly agentsService = inject(AgentsService);
   private readonly authService = inject(AuthService);
 
-  // The VP may read this page; every change to a staff account is the administrator's, so
-  // isAdmin() gates each write action here and the API refuses them regardless.
-  protected readonly isAdmin = signal(this.authService.getCurrentUser()?.role === 'admin');
-  // Password resets are the administrator's alone, matching the API. The page itself is
-  // admin-only now, so this is the last line rather than the first.
+  // The administrator and the VPSAS both manage staff, so they share every action here.
+  protected readonly canManageStaff = signal(
+    ['admin', 'vpsas'].includes(this.authService.getCurrentUser()?.role ?? '')
+  );
+
+  // Resetting a password is the one action reserved for the administrator, matching the API.
   protected canResetAgent(): boolean {
     return this.authService.getCurrentUser()?.role === 'admin';
+  }
+
+  /**
+   * Suspending or deleting an account can lock someone out for good, so two accounts are off
+   * limits: an administrator's, to anyone who is not one, and the viewer's own. The API
+   * refuses both regardless; this keeps the buttons from being offered at all.
+   */
+  protected canLockAccount(agent: Agent): boolean {
+    const user = this.authService.getCurrentUser();
+    if (!user) return false;
+    if (user.id === agent.id) return false;
+    return agent.role !== 'admin' || user.role === 'admin';
   }
 
   protected readonly searchQuery = signal('');

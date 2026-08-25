@@ -8,6 +8,20 @@ const { pool } = require('../config/database');
 const isOutsideDeanWing = (user, gender) =>
   user.role === 'home_dean' && !!user.deanType && gender !== user.deanType;
 
+/**
+ * Whether `actor` may suspend or delete the staff account `target`. Two accounts are off
+ * limits whatever the role: an administrator's, to anyone who is not one - a VPSAS taking the
+ * last admin out would leave nobody able to reset a password or add staff - and the actor's
+ * own, which would lock them out of the system they are working in.
+ */
+const staffAccountLockReason = (actor, target) => {
+  if (actor.id === Number(target.id)) return 'You cannot do this to your own account';
+  if (target.role === 'admin' && actor.role !== 'admin') {
+    return "Only another administrator can suspend or delete an administrator's account";
+  }
+  return null;
+};
+
 exports.getAll = async (req, res) => {
   try {
     const { role, status, search } = req.query;
@@ -163,8 +177,8 @@ exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Deleting a staff member (agent role) requires a true admin.
-    // roleMiddleware treats vpsas/home_dean as admin, so enforce it explicitly here.
+    // Deleting a staff member (agent role) is the administrator's or the VPSAS's call.
+    // roleMiddleware treats home_dean as an admin equivalent, so enforce it explicitly here.
     const [target] = await pool.execute('SELECT role FROM users WHERE id = ?', [id]);
 
     if (target.length === 0) {
@@ -172,8 +186,14 @@ exports.delete = async (req, res) => {
     }
 
     const agentRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
-    if (agentRoles.includes(target[0].role) && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only administrators can delete staff members' });
+    if (agentRoles.includes(target[0].role)) {
+      if (!['admin', 'vpsas'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Only administrators can delete staff members' });
+      }
+      const deleteBlocked = staffAccountLockReason(req.user, { id, role: target[0].role });
+      if (deleteBlocked) {
+        return res.status(403).json({ error: deleteBlocked });
+      }
     }
 
     await pool.execute('DELETE FROM users WHERE id = ?', [id]);
@@ -644,9 +664,10 @@ exports.suspendAgent = async (req, res) => {
     const { reason } = req.body;
     const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
 
-    // Only true admins may deactivate staff (roleMiddleware treats vpsas/home_dean as admin)
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only administrators can suspend staff members' });
+    // Staff management belongs to the administrator and the VPSAS; the home dean is admitted
+    // by roleMiddleware as an admin equivalent, so it is spelled out here as well.
+    if (!['admin', 'vpsas'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Only the administrator or the VPSAS can suspend staff members' });
     }
 
     if (!reason || reason.trim().length < 10) {
@@ -665,6 +686,11 @@ exports.suspendAgent = async (req, res) => {
 
     if (!allowedRoles.includes(users[0].role)) {
       return res.status(400).json({ error: 'Only staff members can be suspended with this endpoint' });
+    }
+
+    const suspendBlocked = staffAccountLockReason(req.user, users[0]);
+    if (suspendBlocked) {
+      return res.status(403).json({ error: suspendBlocked });
     }
 
     if (users[0].status === 'suspended') {
@@ -689,9 +715,8 @@ exports.reactivateAgent = async (req, res) => {
     const { id } = req.params;
     const allowedRoles = ['admin', 'security_guard', 'home_dean', 'vpsas', 'business_officer'];
 
-    // Only true admins may reactivate staff (roleMiddleware treats vpsas/home_dean as admin)
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only administrators can reactivate staff members' });
+    if (!['admin', 'vpsas'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Only the administrator or the VPSAS can reactivate staff members' });
     }
 
     // Check if user exists and is an agent

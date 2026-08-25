@@ -4,7 +4,7 @@
       <h1>Staff Management</h1>
       <p class="subtitle">Manage administrators, security guards, and deans</p>
     </div>
-    @if (isAdmin()) {
+    @if (canManageStaff()) {
       <button class="btn-primary" (click)="openAddModal()"><span>➕</span> Add New Staff</button>
     }
   </header>
@@ -124,7 +124,7 @@
           </div>
           <div class="col-actions" data-label="Actions">
             <button class="btn-icon view" title="View" (click)="openViewModal(agent)">👁️</button>
-            @if (isAdmin()) {
+            @if (canManageStaff()) {
               <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
             }
             @if (canResetAgent()) {
@@ -136,11 +136,17 @@
                 🔑
               </button>
             }
-            @if (isAdmin()) {
+            @if (canManageStaff()) {
               @if (agent.status !== 'suspended') {
-                <button class="btn-icon suspend" title="Suspend" (click)="openSuspendModal(agent)">
-                  🚫
-                </button>
+                @if (canLockAccount(agent)) {
+                  <button
+                    class="btn-icon suspend"
+                    title="Suspend"
+                    (click)="openSuspendModal(agent)"
+                  >
+                    🚫
+                  </button>
+                }
               } @else {
                 <button
                   class="btn-icon reactivate"
@@ -150,9 +156,11 @@
                   ✅
                 </button>
               }
-              <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(agent)">
-                🗑️
-              </button>
+              @if (canLockAccount(agent)) {
+                <button class="btn-icon delete" title="Delete" (click)="openDeleteModal(agent)">
+                  🗑️
+                </button>
+              }
             }
           </div>
         </div>

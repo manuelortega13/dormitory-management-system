@@ -37,22 +37,23 @@ router.get('/:id/room', authMiddleware, userController.getUserRoom);
 // plain roleMiddleware would admit as an admin equivalent.
 router.get('/agents/list', authMiddleware, exactRoleMiddleware('admin', 'vpsas'), userController.getAgents);
 
-// Every staff write below is administrator-only, matching the Staff page's guard.
-// exactRoleMiddleware is required: roleMiddleware would admit home_dean and vpsas.
+// The administrator and the VPSAS manage staff; resetting a password stays with the
+// administrator alone. exactRoleMiddleware throughout: plain roleMiddleware would admit
+// home_dean as an admin equivalent, and the dean has no business on this page.
 
 // POST /api/users/agents - Create agent
-router.post('/agents', authMiddleware, exactRoleMiddleware('admin'), userController.createAgent);
+router.post('/agents', authMiddleware, exactRoleMiddleware('admin', 'vpsas'), userController.createAgent);
 
 // PUT /api/users/agents/:id - Update agent
-router.put('/agents/:id', authMiddleware, exactRoleMiddleware('admin'), userController.updateAgent);
+router.put('/agents/:id', authMiddleware, exactRoleMiddleware('admin', 'vpsas'), userController.updateAgent);
 
-// POST /api/users/agents/:id/reset-password - Reset a staff member's password
+// POST /api/users/agents/:id/reset-password - Reset a staff member's password (admin only)
 router.post('/agents/:id/reset-password', authMiddleware, exactRoleMiddleware('admin'), userController.resetAgentPassword);
 
 // PATCH /api/users/agents/:id/suspend - Suspend a staff member
-router.patch('/agents/:id/suspend', authMiddleware, exactRoleMiddleware('admin'), userController.suspendAgent);
+router.patch('/agents/:id/suspend', authMiddleware, exactRoleMiddleware('admin', 'vpsas'), userController.suspendAgent);
 
 // PATCH /api/users/agents/:id/reactivate - Reactivate a suspended staff member
-router.patch('/agents/:id/reactivate', authMiddleware, exactRoleMiddleware('admin'), userController.reactivateAgent);
+router.patch('/agents/:id/reactivate', authMiddleware, exactRoleMiddleware('admin', 'vpsas'), userController.reactivateAgent);
 
 module.exports = router;
