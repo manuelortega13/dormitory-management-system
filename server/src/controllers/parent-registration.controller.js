@@ -1,8 +1,30 @@
 const { pool } = require('../config/database');
 
+/**
+ * A home dean reviews only the parents of their own wing's occupants, the same way the
+ * occupants list and the leave queue are scoped. Returns the SQL fragment and params that
+ * narrow a registration query for the signed-in reviewer; the admin and the VP get an empty
+ * scope and keep seeing everything.
+ *
+ * A registration with no linked student (or a student whose gender is unset) has no wing,
+ * so it stays with the admin and the VP rather than landing in one dean's queue.
+ */
+const deanScope = (user) =>
+  user.role === 'home_dean' && user.deanType
+    ? { sql: ' AND s.gender = ?', params: [user.deanType] }
+    : { sql: '', params: [] };
+
+/** True when a home dean is acting on a registration outside their wing. */
+const isOutsideDeanWing = async (user, studentId) => {
+  if (user.role !== 'home_dean' || !user.deanType) return false;
+  const [students] = await pool.execute('SELECT gender FROM users WHERE id = ?', [studentId || null]);
+  return students.length === 0 || students[0].gender !== user.deanType;
+};
+
 // Get all pending parent registrations
 exports.getPendingRegistrations = async (req, res) => {
   try {
+    const scope = deanScope(req.user);
     const [registrations] = await pool.execute(`
       SELECT 
         u.id,
@@ -20,9 +42,9 @@ exports.getPendingRegistrations = async (req, res) => {
         s.email as student_email
       FROM users u
       LEFT JOIN users s ON u.parent_id = s.id
-      WHERE u.role = 'parent' AND u.registration_status = 'pending'
+      WHERE u.role = 'parent' AND u.registration_status = 'pending'${scope.sql}
       ORDER BY u.created_at DESC
-    `);
+    `, scope.params);
 
     res.json(registrations);
   } catch (error) {
@@ -60,7 +82,11 @@ exports.getAllRegistrations = async (req, res) => {
     `;
     
     const params = [];
-    
+
+    const scope = deanScope(req.user);
+    query += scope.sql;
+    params.push(...scope.params);
+
     if (status && status !== 'all') {
       query += ' AND u.registration_status = ?';
       params.push(status);
@@ -81,6 +107,7 @@ exports.getAllRegistrations = async (req, res) => {
 exports.getRegistrationById = async (req, res) => {
   try {
     const { id } = req.params;
+    const scope = deanScope(req.user);
 
     const [registrations] = await pool.execute(`
       SELECT 
@@ -105,8 +132,8 @@ exports.getRegistrationById = async (req, res) => {
       FROM users u
       LEFT JOIN users s ON u.parent_id = s.id
       LEFT JOIN users r ON u.registration_reviewed_by = r.id
-      WHERE u.id = ? AND u.role = 'parent'
-    `, [id]);
+      WHERE u.id = ? AND u.role = 'parent'${scope.sql}
+    `, [id, ...scope.params]);
 
     if (registrations.length === 0) {
       return res.status(404).json({ error: 'Registration not found' });
@@ -136,6 +163,10 @@ exports.approveRegistration = async (req, res) => {
     }
 
     const parent = registrations[0];
+
+    if (await isOutsideDeanWing(req.user, parent.parent_id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
     // Update registration status
     await pool.execute(
@@ -193,6 +224,10 @@ exports.declineRegistration = async (req, res) => {
       return res.status(404).json({ error: 'Pending registration not found' });
     }
 
+    if (await isOutsideDeanWing(req.user, registrations[0].parent_id)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     // Update registration status
     await pool.execute(
       `UPDATE users 
@@ -227,8 +262,13 @@ exports.declineRegistration = async (req, res) => {
 // Get pending registration count (for dashboard/badge)
 exports.getPendingCount = async (req, res) => {
   try {
+    const scope = deanScope(req.user);
     const [result] = await pool.execute(
-      'SELECT COUNT(*) as count FROM users WHERE role = "parent" AND registration_status = "pending"'
+      `SELECT COUNT(*) as count
+       FROM users u
+       LEFT JOIN users s ON u.parent_id = s.id
+       WHERE u.role = 'parent' AND u.registration_status = 'pending'${scope.sql}`,
+      scope.params
     );
 
     res.json({ count: result[0].count });

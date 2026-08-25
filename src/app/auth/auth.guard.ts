@@ -76,6 +76,8 @@ export const roleGuard = (allowedRoles: User['role'][]): CanActivateFn => {
 
 // Pre-configured role guards
 export const adminGuard: CanActivateFn = roleGuard(['admin', 'home_dean', 'vpsas']);
+// Staff management is administrator-only; the dean and VP have no business editing accounts.
+export const staffGuard: CanActivateFn = roleGuard(['admin']);
 export const residentGuard: CanActivateFn = roleGuard(['resident']);
 export const securityGuard: CanActivateFn = roleGuard(['security_guard']);
 export const parentGuard: CanActivateFn = roleGuard(['parent']);

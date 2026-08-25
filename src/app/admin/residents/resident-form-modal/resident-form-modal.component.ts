@@ -99,6 +99,12 @@ export class ResidentFormModalComponent implements OnChanges {
         this.localError.set('Please fill in all required fields');
         return;
       }
+
+      // Gender places the occupant in a wing; without it neither home dean can see them.
+      if (!form.gender) {
+        this.localError.set('Please select a gender');
+        return;
+      }
       
       this.localError.set('');
       const data: CreateResidentDto = {
@@ -118,6 +124,11 @@ export class ResidentFormModalComponent implements OnChanges {
     } else {
       if (!form.firstName || !form.lastName) {
         this.localError.set('First name and last name are required');
+        return;
+      }
+
+      if (!form.gender) {
+        this.localError.set('Please select a gender');
         return;
       }
 

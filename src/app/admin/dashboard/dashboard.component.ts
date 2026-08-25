@@ -2,6 +2,7 @@ import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DashboardService, DashboardSummary, RecentActivity } from './data';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,6 +13,7 @@ import { DashboardService, DashboardSummary, RecentActivity } from './data';
 })
 export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
+  private readonly authService = inject(AuthService);
 
   protected readonly isLoading = signal(true);
 
@@ -33,12 +35,21 @@ export class DashboardComponent implements OnInit {
 
   protected readonly recentActivities = signal<RecentActivity[]>([]);
 
-  protected readonly quickActions = [
-    { label: 'Add Occupant', icon: '👤', route: '/manage/residents' },
-    { label: 'Room Assignment', icon: '🛏️', route: '/manage/rooms' },
-    { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' },
-    { label: 'Manage Staff', icon: '👷', route: '/manage/agents' }
-  ];
+  // Manage Staff is administrator-only, so the shortcut is dropped for the dean and the VP
+  // rather than sending them to a page their guard bounces them off.
+  protected readonly quickActions = computed(() => {
+    const actions = [
+      { label: 'Add Occupant', icon: '👤', route: '/manage/residents' },
+      { label: 'Room Assignment', icon: '🛏️', route: '/manage/rooms' },
+      { label: 'Leave Requests', icon: '🚪', route: '/manage/leave-requests' }
+    ];
+
+    if (this.authService.getCurrentUser()?.role === 'admin') {
+      actions.push({ label: 'Manage Staff', icon: '👷', route: '/manage/agents' });
+    }
+
+    return actions;
+  });
 
   ngOnInit(): void {
     this.loadDashboardData();

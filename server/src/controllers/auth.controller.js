@@ -37,6 +37,8 @@ const generateStudentResidentId = async () => {
   return studentResidentId;
 };
 
+const VALID_GENDERS = ['male', 'female'];
+
 exports.register = async (req, res) => {
   try {
     const { email, password, firstName, lastName, role, phone, parentId, gender, address, course, yearLevel, faceImage, studentResidentId } = req.body;
@@ -44,6 +46,13 @@ exports.register = async (req, res) => {
     // Only allow certain roles for self-registration
     const allowedRoles = ['resident', 'parent'];
     const userRole = allowedRoles.includes(role) ? role : 'resident';
+
+    // Gender decides which wing an occupant belongs to, and therefore which home dean sees
+    // them at all. An occupant without one falls out of every dean's queue, so it is
+    // enforced here rather than trusted from the two forms that post to this endpoint.
+    if (userRole === 'resident' && !VALID_GENDERS.includes(gender)) {
+      return res.status(400).json({ error: 'Gender is required and must be male or female' });
+    }
 
     // Check if user exists
     const [existingUsers] = await pool.execute(

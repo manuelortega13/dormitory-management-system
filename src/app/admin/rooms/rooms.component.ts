@@ -89,7 +89,7 @@ export class RoomsComponent implements OnInit {
       const query = this.searchQuery().toLowerCase();
       filtered = filtered.filter(room =>
         room.roomNumber.toLowerCase().includes(query) ||
-        room.occupants.some(o => o.name.toLowerCase().includes(query))
+        room.occupants.some(o => !o.restricted && o.name.toLowerCase().includes(query))
       );
     }
 

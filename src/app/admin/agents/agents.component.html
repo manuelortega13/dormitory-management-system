@@ -123,7 +123,7 @@
           <div class="col-actions" data-label="Actions">
             <button class="btn-icon view" title="View" (click)="openViewModal(agent)">👁️</button>
             <button class="btn-icon edit" title="Edit" (click)="openEditModal(agent)">✏️</button>
-            @if (canResetAgent(agent)) {
+            @if (canResetAgent()) {
               <button
                 class="btn-icon reset-pwd"
                 title="Reset Password"

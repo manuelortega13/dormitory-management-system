@@ -67,6 +67,6 @@ export class ResidentsService {
   }
 
   getParents(): Observable<Parent[]> {
-    return this.http.get<Parent[]>(`${this.apiUrl}?role=parent`);
+    return this.http.get<Parent[]>(`${this.apiUrl}/parents/list`);
   }
 }

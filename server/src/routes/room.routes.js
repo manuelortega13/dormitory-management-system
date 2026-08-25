@@ -28,7 +28,7 @@ router.delete('/:id', authMiddleware, roleMiddleware('admin'), roomController.de
 router.post('/:id/assign', authMiddleware, roleMiddleware('admin'), roomController.assignResident);
 
 // GET /api/rooms/:id/occupants - Get room occupants
-router.get('/:id/occupants', authMiddleware, roomController.getOccupants);
+router.get('/:id/occupants', authMiddleware, roleMiddleware('admin'), roomController.getOccupants);
 
 // DELETE /api/rooms/:id/occupants/:userId - Unassign resident from room (admin only)
 router.delete('/:id/occupants/:userId', authMiddleware, roleMiddleware('admin'), roomController.unassignResident);

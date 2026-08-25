@@ -15,6 +15,12 @@ exports.getAll = async (req, res) => {
     `;
     const params = [];
 
+    // Home deans only see their own wing, matching the occupants list and the leave queue.
+    if (req.user.role === 'home_dean' && req.user.deanType) {
+      query += ' AND u.gender = ?';
+      params.push(req.user.deanType);
+    }
+
     if (type) {
       query += ' AND cl.type = ?';
       params.push(type);

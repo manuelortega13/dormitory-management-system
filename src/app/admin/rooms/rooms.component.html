@@ -122,9 +122,11 @@
                   <div class="occupant-avatar">{{ occupant.name.charAt(0) }}</div>
                   <div class="occupant-details">
                     <span class="occupant-name">{{ occupant.name }}</span>
-                    <span class="occupant-contact">
-                      <span class="contact-icon">📧</span> {{ occupant.email }}
-                    </span>
+                    @if (!occupant.restricted) {
+                      <span class="occupant-contact">
+                        <span class="contact-icon">📧</span> {{ occupant.email }}
+                      </span>
+                    }
                     @if (occupant.phone) {
                       <span class="occupant-contact">
                         <span class="contact-icon">📱</span> {{ occupant.phone }}
@@ -348,18 +350,22 @@
                   @for (occupant of selectedRoom()!.occupants; track occupant.id) {
                     <tr>
                       <td>{{ occupant.name }}</td>
-                      <td>{{ occupant.email }}</td>
+                      <td>{{ occupant.email || '-' }}</td>
                       <td>{{ occupant.phone || '-' }}</td>
                       <td>{{ occupant.checkInDate | date:'mediumDate' }}</td>
                       <td>{{ occupant.expectedCheckOut ? (occupant.expectedCheckOut | date:'mediumDate') : '-' }}</td>
                       <td>
-                        <button 
-                          class="btn-remove" 
-                          (click)="removeOccupant(selectedRoom()!.id, occupant.id, occupant.name)"
-                          title="Remove from room"
-                        >
-                          ✕
-                        </button>
+                        @if (occupant.restricted) {
+                          -
+                        } @else {
+                          <button 
+                            class="btn-remove" 
+                            (click)="removeOccupant(selectedRoom()!.id, occupant.id, occupant.name)"
+                            title="Remove from room"
+                          >
+                            ✕
+                          </button>
+                        }
                       </td>
                     </tr>
                   }

@@ -1,5 +1,13 @@
 const { pool } = require('../config/database');
 
+/**
+ * A home dean is bound to one wing by `dean_type`, so an occupant of the other wing is
+ * neither theirs to see nor theirs to move. False for the admin, the VP and a dean with
+ * no wing set, who are all unrestricted.
+ */
+const isOutsideDeanWing = (user, gender) =>
+  user.role === 'home_dean' && !!user.deanType && gender !== user.deanType;
+
 exports.getAll = async (req, res) => {
   try {
     const { status, floor, roomType } = req.query;
@@ -158,6 +166,16 @@ exports.assignResident = async (req, res) => {
       return res.status(400).json({ error: 'Room is at full capacity' });
     }
 
+    // A dean may only place their own wing's occupants. The picker is already filtered;
+    // this closes the same gap on the API.
+    const [targets] = await pool.execute('SELECT gender FROM users WHERE id = ?', [userId || null]);
+    if (targets.length === 0) {
+      return res.status(404).json({ error: 'Resident not found' });
+    }
+    if (isOutsideDeanWing(req.user, targets[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     // Create assignment
     const [result] = await pool.execute(
       'INSERT INTO room_assignments (user_id, room_id, start_date, end_date) VALUES (?, ?, ?, ?)',
@@ -184,7 +202,7 @@ exports.getOccupants = async (req, res) => {
     const { id } = req.params;
 
     const [occupants] = await pool.execute(
-      `SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url,
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.photo_url, u.gender,
               ra.id as assignment_id, ra.start_date, ra.end_date
        FROM room_assignments ra
        JOIN users u ON ra.user_id = u.id
@@ -192,7 +210,20 @@ exports.getOccupants = async (req, res) => {
       [id]
     );
 
-    res.json(occupants);
+    // Strip the identity of occupants outside a home dean's wing, but keep the row: the bed
+    // is genuinely taken, and dropping it would show a phantom vacancy and offer an
+    // assignment the capacity check would reject anyway.
+    res.json(occupants.map(({ gender, ...occupant }) =>
+      isOutsideDeanWing(req.user, gender)
+        ? {
+            id: occupant.id,
+            assignment_id: occupant.assignment_id,
+            start_date: occupant.start_date,
+            end_date: occupant.end_date,
+            restricted: true
+          }
+        : occupant
+    ));
   } catch (error) {
     console.error('Get occupants error:', error);
     res.status(500).json({ error: 'Failed to fetch occupants' });
@@ -202,6 +233,12 @@ exports.getOccupants = async (req, res) => {
 exports.unassignResident = async (req, res) => {
   try {
     const { id, userId } = req.params;
+
+    // Removing an occupant of the other wing is not a dean's call.
+    const [targets] = await pool.execute('SELECT gender FROM users WHERE id = ?', [userId]);
+    if (targets.length > 0 && isOutsideDeanWing(req.user, targets[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
     // Update the assignment status to 'ended'
     const [result] = await pool.execute(

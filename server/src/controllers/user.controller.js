@@ -113,8 +113,15 @@ exports.update = async (req, res) => {
 
     // Handle additional resident fields
     if (gender !== undefined) {
+      const validGender = ['male', 'female'].includes(gender);
+      // An occupant's wing may be corrected but never blanked: clearing it would hide them
+      // from both home deans. Staff carry no gender, and an occupant who never had one can
+      // still save the rest of their profile, so only an actual erasure is refused.
+      if (target.role === 'resident' && !validGender && target.gender) {
+        return res.status(400).json({ error: 'Gender is required and must be male or female' });
+      }
       query += ', gender = ?';
-      params.push(gender || null);
+      params.push(validGender ? gender : null);
     }
     if (address !== undefined) {
       query += ', address = ?';
@@ -248,6 +255,37 @@ exports.getUserRoom = async (req, res) => {
   } catch (error) {
     console.error('Get user room error:', error);
     res.status(500).json({ error: 'Failed to fetch user room' });
+  }
+};
+
+// Parent picker for the occupants form. A home dean gets their own wing's parents plus any
+// parent not yet linked to a student - exactly the ones they may still need to link - rather
+// than the unfiltered user list this used to read from.
+exports.getParents = async (req, res) => {
+  try {
+    const { role, deanType } = req.user;
+
+    let query = `
+      SELECT u.id, u.email, u.first_name, u.last_name, u.phone
+      FROM users u
+      LEFT JOIN users s ON u.parent_id = s.id
+      WHERE u.role = 'parent'
+    `;
+    const params = [];
+
+    if (role === 'home_dean' && deanType) {
+      query += ' AND (s.gender = ? OR s.gender IS NULL)';
+      params.push(deanType);
+    }
+
+    query += ' ORDER BY u.first_name, u.last_name';
+
+    const [parents] = await pool.execute(query, params);
+
+    res.json(parents);
+  } catch (error) {
+    console.error('Get parents error:', error);
+    res.status(500).json({ error: 'Failed to fetch parents' });
   }
 };
 
@@ -547,8 +585,9 @@ exports.updateAgent = async (req, res) => {
 // Reset a staff member's password (admin & home_dean only)
 exports.resetAgentPassword = async (req, res) => {
   try {
-    // roleMiddleware treats vpsas/home_dean as admin; restrict to admin + home_dean explicitly.
-    if (!['admin', 'home_dean'].includes(req.user.role)) {
+    // Belt and braces behind the route's exactRoleMiddleware: staff passwords are the
+    // administrator's to reset, nobody else's.
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
     }
 
@@ -568,11 +607,6 @@ exports.resetAgentPassword = async (req, res) => {
     const STAFF_ROLES = ['admin', 'home_dean', 'vpsas', 'business_officer', 'security_guard'];
     if (!STAFF_ROLES.includes(rows[0].role)) {
       return res.status(400).json({ error: 'Can only reset staff member passwords' });
-    }
-
-    // An admin's password may only be reset by another admin (not the Home Dean).
-    if (rows[0].role === 'admin' && req.user.role !== 'admin') {
-      return res.status(403).json({ error: "Only an administrator can reset an admin's password" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

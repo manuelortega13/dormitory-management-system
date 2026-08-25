@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import {
   adminGuard,
+  staffGuard,
   residentGuard,
   securityGuard,
   parentGuard,
@@ -173,7 +174,7 @@ export const routes: Routes = [
       },
       {
         path: 'agents',
-        canActivate: [adminGuard],
+        canActivate: [staffGuard],
         loadComponent: () =>
           import('./admin/agents/agents.component').then((m) => m.AgentsComponent),
       },

@@ -100,7 +100,7 @@
     <section class="quick-actions-section">
       <h2>Quick Actions</h2>
       <div class="actions-grid">
-        @for (action of quickActions; track action.label) {
+        @for (action of quickActions(); track action.label) {
           <a [routerLink]="action.route" class="action-btn">
             <span class="action-icon">{{ action.icon }}</span>
             <span class="action-label">{{ action.label }}</span>

@@ -137,10 +137,25 @@ export class RoomsService {
   }
 
   private mapOccupant(o: OccupantResponse): Occupant {
+    // The API strips the identity of occupants outside a home dean's wing but still returns
+    // the assignment, so the room's occupancy count stays truthful.
+    if (o.restricted) {
+      return {
+        id: o.id,
+        name: 'Occupant (other wing)',
+        email: '',
+        phone: '',
+        checkInDate: new Date(o.start_date),
+        expectedCheckOut: o.end_date ? new Date(o.end_date) : null,
+        assignmentId: o.assignment_id,
+        restricted: true
+      };
+    }
+
     return {
       id: o.id,
       name: `${o.first_name} ${o.last_name}`,
-      email: o.email,
+      email: o.email ?? '',
       phone: o.phone || '',
       checkInDate: new Date(o.start_date),
       expectedCheckOut: o.end_date ? new Date(o.end_date) : null,

@@ -19,13 +19,10 @@ export class AgentsComponent implements OnInit {
 
   // Only admins can deactivate (suspend/reactivate) or delete staff
   protected readonly isAdmin = signal(this.authService.getCurrentUser()?.role === 'admin');
-  // Who can reset a specific staff member: admin can reset anyone; Home Dean can
-  // reset everyone except admin accounts (only an admin resets an admin).
-  protected canResetAgent(agent: Agent): boolean {
-    const role = this.authService.getCurrentUser()?.role;
-    if (role === 'admin') return true;
-    if (role === 'home_dean') return agent.role !== 'admin';
-    return false;
+  // Password resets are the administrator's alone, matching the API. The page itself is
+  // admin-only now, so this is the last line rather than the first.
+  protected canResetAgent(): boolean {
+    return this.authService.getCurrentUser()?.role === 'admin';
   }
 
   protected readonly searchQuery = signal('');

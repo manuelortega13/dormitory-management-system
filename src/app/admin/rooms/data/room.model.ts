@@ -10,6 +10,8 @@ export interface Occupant {
   expectedCheckOut: Date | null;
   photo?: string;
   assignmentId?: number;
+  /** Occupant of the other wing: the bed is counted, the person is not named. */
+  restricted?: boolean;
 }
 
 export interface Room {
@@ -37,12 +39,14 @@ export interface RoomResponse {
 
 export interface OccupantResponse {
   id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  photo_url: string | null;
+  // Absent on restricted rows - the API withholds the identity, not the assignment.
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  photo_url?: string | null;
   assignment_id?: number;
   start_date: string;
   end_date: string | null;
+  restricted?: boolean;
 }
