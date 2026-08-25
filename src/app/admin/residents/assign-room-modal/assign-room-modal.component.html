@@ -51,7 +51,7 @@
             <option value="">-- Select a room --</option>
             @for (room of availableRooms(); track room.id) {
               <option [value]="room.id">
-                Room {{ room.roomNumber }} - Floor {{ room.floor }} - {{ getRoomTypeLabel(room.type) }} ({{ room.capacity }} capacity)@if (room.monthlyRent) { - ₱{{ room.monthlyRent }}/mo}
+                Room {{ room.roomNumber }} - Floor {{ room.floor }} - {{ getRoomTypeLabel(room.type) }} ({{ room.capacity }} capacity)@if (room.monthlyRent) { - {{ settings.format(room.monthlyRent) }}/mo}
               </option>
             }
           </select>

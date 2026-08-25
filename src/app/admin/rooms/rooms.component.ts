@@ -8,6 +8,7 @@ import { ToastService } from '../../services/toast.service';
 import { AuthService } from '../../auth/auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { Resident } from '../residents/data/resident.model';
+import { SettingsService } from '../../services/settings.service';
 
 interface RoomFormData {
   roomNumber: string;
@@ -28,6 +29,7 @@ interface RoomFormData {
   styleUrl: './rooms.component.scss'
 })
 export class RoomsComponent implements OnInit {
+  protected readonly settings = inject(SettingsService);
   private readonly roomsService = inject(RoomsService);
   private readonly residentsService = inject(ResidentsService);
   private readonly toast = inject(ToastService);

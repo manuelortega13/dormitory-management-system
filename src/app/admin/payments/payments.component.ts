@@ -6,6 +6,7 @@ import { ToastService } from '../../services/toast.service';
 import { decodeQrFromImage } from '../../shared/utils/qr-decode.util';
 import { resolveQrImage } from '../../shared/utils/qr-render.util';
 import { NotificationService } from '../../services/notification.service';
+import { SettingsService } from '../../services/settings.service';
 
 interface QrCheck {
   ok: boolean;
@@ -21,6 +22,7 @@ interface QrCheck {
 })
 export class PaymentsComponent implements OnInit {
   private paymentService = inject(PaymentService);
+  protected readonly displaySettings = inject(SettingsService);
   private toastService = inject(ToastService);
   private notificationService = inject(NotificationService);
 
@@ -746,7 +748,7 @@ export class PaymentsComponent implements OnInit {
 
   // Utility functions
   formatCurrency(amount: number | undefined): string {
-    if (amount === undefined) return '₱0.00';
+    if (amount === undefined) return this.displaySettings.format(0);
     return this.paymentService.formatCurrency(amount);
   }
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Resident } from '../data';
 import { RoomsService, Room } from '../../rooms/data/rooms.service';
+import { SettingsService } from '../../../services/settings.service';
 
 export interface AssignRoomData {
   roomId: number;
@@ -21,6 +22,7 @@ export interface AssignRoomData {
 })
 export class AssignRoomModalComponent implements OnInit {
   private readonly roomsService = inject(RoomsService);
+  protected readonly settings = inject(SettingsService);
 
   @Input() resident: Resident | null = null;
   @Input() errorMessage: string = '';

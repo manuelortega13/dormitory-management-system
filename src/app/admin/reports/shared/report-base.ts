@@ -1,5 +1,7 @@
+import { inject } from '@angular/core';
 import { downloadCsv } from '../../../shared/utils/csv.util';
 import { barPath, barPathH, niceScale } from './chart-geometry';
+import { SettingsService } from '../../../services/settings.service';
 
 /**
  * Chart primitives shared by every report view.
@@ -70,6 +72,7 @@ export interface Sparkline {
  * rather than free functions so templates can call them directly.
  */
 export abstract class ReportBase {
+  protected readonly settings = inject(SettingsService);
   protected readonly palette = PALETTE;
 
   // Geometry lives in chart-geometry.ts so the builders and the components share one
@@ -133,13 +136,14 @@ export abstract class ReportBase {
   }
 
   protected fmtPeso(value: number): string {
-    return `₱${Math.round(value).toLocaleString('en-PH')}`;
+    return `${this.settings.currencySymbol()}${Math.round(value).toLocaleString('en-PH')}`;
   }
 
   protected compactPeso(value: number): string {
-    if (value >= 1_000_000) return `₱${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `₱${Math.round(value / 1_000)}K`;
-    return `₱${Math.round(value)}`;
+    const symbol = this.settings.currencySymbol();
+    if (value >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `${symbol}${Math.round(value / 1_000)}K`;
+    return `${symbol}${Math.round(value)}`;
   }
 
   protected fmtPct(value: number): string {

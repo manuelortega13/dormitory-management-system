@@ -618,7 +618,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Amount (₱) *</label>
+            <label>Amount ({{ displaySettings.currencySymbol() }}) *</label>
             <input type="number" [ngModel]="formAmount()" (ngModelChange)="formAmount.set($event)" min="0" step="0.01" [disabled]="editingBillPaid()" />
             @if (editingBillPaid()) {
               <span class="form-hint">Amount can't be changed once the bill has been paid.</span>

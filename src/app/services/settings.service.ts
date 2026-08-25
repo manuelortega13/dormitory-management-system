@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -15,6 +15,9 @@ export interface SystemSetting {
 export interface SettingsResponse {
   [category: string]: SystemSetting[];
 }
+
+/** The currencies Payment Settings offers. */
+export type CurrencyCode = 'PHP' | 'USD' | 'EUR';
 
 export interface SettingUpdate {
   category: string;
@@ -36,6 +39,29 @@ export class SettingsService {
   systemLogo = signal<string | null>(null);
   systemName = signal('PAC DMS');
   maintenanceMode = signal(false);
+
+  // Settings > Payment Settings > Currency. Cosmetic: it decides how amounts are printed,
+  // it does not convert them. Loaded with the branding so every portal has it, including the
+  // ones that may not read the settings table.
+  currency = signal<CurrencyCode>('PHP');
+
+  /** Just the symbol, for form labels like "Amount (₱)". */
+  readonly currencySymbol = computed(() => {
+    const parts = new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: this.currency(),
+      currencyDisplay: 'narrowSymbol',
+    }).formatToParts(0);
+    return parts.find((p) => p.type === 'currency')?.value ?? '₱';
+  });
+
+  /** An amount printed in the configured currency. */
+  format(amount: number | null | undefined): string {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: this.currency(),
+    }).format(amount ?? 0);
+  }
 
   /**
    * Read the public maintenance-mode flag. Always fetches fresh so the guard
@@ -127,8 +153,13 @@ export class SettingsService {
   async loadBranding(): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ logo: string; name: string }>(`${this.apiUrl}/public/branding`),
+        this.http.get<{ logo: string; name: string; currency?: CurrencyCode }>(
+          `${this.apiUrl}/public/branding`,
+        ),
       );
+      if (response?.currency) {
+        this.currency.set(response.currency);
+      }
       if (response?.logo) {
         this.systemLogo.set(response.logo);
         this.applyPwaIcon(response.logo, response.name);

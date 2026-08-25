@@ -237,21 +237,32 @@ exports.getPublicMaintenance = async (req, res) => {
   }
 };
 
+// Display settings every portal needs before, or without, reading the settings table itself:
+// GET /api/settings is admin-only, but an occupant's payment page still has to know which
+// currency to print. Nothing here is sensitive.
+const CURRENCIES = ['PHP', 'USD', 'EUR'];
+
 exports.getPublicBranding = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT setting_key, setting_value FROM system_settings WHERE category = 'general' AND setting_key IN ('system_logo', 'dorm_name')`
+      `SELECT category, setting_key, setting_value FROM system_settings
+       WHERE (category = 'general' AND setting_key IN ('system_logo', 'dorm_name'))
+          OR (category = 'payments' AND setting_key = 'currency')`
     );
 
-    const result = { logo: '', name: 'PAC DMS' };
+    const result = { logo: '', name: 'PAC DMS', currency: 'PHP' };
     for (const row of rows) {
       if (row.setting_key === 'system_logo') result.logo = row.setting_value || '';
       if (row.setting_key === 'dorm_name') result.name = row.setting_value || 'PAC DMS';
+      // An unknown code would make Intl throw in every browser, so it is checked here.
+      if (row.setting_key === 'currency' && CURRENCIES.includes(row.setting_value)) {
+        result.currency = row.setting_value;
+      }
     }
     res.json(result);
   } catch (error) {
     console.error('Error fetching public branding:', error);
-    res.json({ logo: '', name: 'PAC DMS' });
+    res.json({ logo: '', name: 'PAC DMS', currency: 'PHP' });
   }
 };
 

@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { SettingsService } from './settings.service';
 
 export interface Bill {
   id: number;
@@ -108,6 +109,7 @@ interface ApiResponse<T> {
 })
 export class PaymentService {
   private http = inject(HttpClient);
+  private settingsService = inject(SettingsService);
   private apiUrl = `${environment.apiUrl}/payments`;
 
   bills = signal<Bill[]>([]);
@@ -346,12 +348,10 @@ export class PaymentService {
     }
   }
 
-  // Format currency in PHP
+  // Format money in whatever Settings > Payment Settings says. One place, so the Payments,
+  // Rooms and occupant pages that call this can never disagree with each other.
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP'
-    }).format(amount);
+    return this.settingsService.format(amount);
   }
 
   // Get status badge class

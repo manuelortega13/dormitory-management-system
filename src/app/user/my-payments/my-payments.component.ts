@@ -7,6 +7,7 @@ import { ToastService } from '../../services/toast.service';
 import { downloadImage } from '../../shared/utils/image.util';
 import { composeQrCard } from '../../shared/utils/qr-card.util';
 import { resolveQrImage } from '../../shared/utils/qr-render.util';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-my-payments',
@@ -16,6 +17,7 @@ import { resolveQrImage } from '../../shared/utils/qr-render.util';
   styleUrl: './my-payments.component.scss'
 })
 export class MyPaymentsComponent implements OnInit, OnDestroy {
+  protected readonly displaySettings = inject(SettingsService);
   private paymentService = inject(PaymentService);
   private notificationService = inject(NotificationService);
   private toastService = inject(ToastService);

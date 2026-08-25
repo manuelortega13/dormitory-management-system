@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { PaymentService, Bill, Payment, MakePaymentRequest, PaymentSettings, PaginationMeta } from '../../services/payment.service';
 import { ParentService } from '../data/parent.service';
 import { resolveQrImage } from '../../shared/utils/qr-render.util';
+import { SettingsService } from '../../services/settings.service';
 
 interface ChildBills {
   child_name: string;
@@ -20,6 +21,7 @@ interface ChildBills {
   styleUrl: './parent-payments.component.scss'
 })
 export class ParentPaymentsComponent implements OnInit {
+  protected readonly displaySettings = inject(SettingsService);
   private paymentService = inject(PaymentService);
   private parentService = inject(ParentService);
 
