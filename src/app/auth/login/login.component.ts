@@ -1,5 +1,5 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -28,10 +28,54 @@ export class LoginComponent implements OnInit {
   logoUrl = signal<string | null>(null);
   systemName = signal('PAC DMS');
 
+  // "Add to home screen" help, shown as a bottom sheet: someone who does not know the app can
+  // be installed will never go looking for instructions, but a modal would stand between them
+  // and signing in. Phones only, hidden once installed, and gone for good once closed.
+  showInstallSheet = signal(false);
+  installTab = signal<'android' | 'iphone'>('android');
+  private readonly installDismissedKey = 'pwaInstallHelpDismissed';
+
+  private platformId = inject(PLATFORM_ID);
+
   constructor() {
     // If already logged in, redirect
     if (this.authService.isLoggedIn()) {
       this.authService.redirectBasedOnRole();
+    }
+
+    if (isPlatformBrowser(this.platformId)) {
+      const ua = navigator.userAgent;
+      const isIos = /iPad|iPhone|iPod/.test(ua);
+      // Show the steps that match the phone in the reader's hand.
+      if (isIos) {
+        this.installTab.set('iphone');
+      }
+
+      const installed =
+        window.matchMedia?.('(display-mode: standalone)').matches ||
+        (window.navigator as { standalone?: boolean }).standalone === true;
+
+      this.showInstallSheet.set(
+        (isIos || /Android/.test(ua)) && !installed && !this.installHelpDismissed()
+      );
+    }
+  }
+
+  /** Closing it sticks, so the sheet is never in the way twice. */
+  dismissInstallSheet(): void {
+    this.showInstallSheet.set(false);
+    try {
+      localStorage.setItem(this.installDismissedKey, '1');
+    } catch {
+      // Private browsing can refuse storage; the sheet simply returns next visit.
+    }
+  }
+
+  private installHelpDismissed(): boolean {
+    try {
+      return localStorage.getItem(this.installDismissedKey) === '1';
+    } catch {
+      return false;
     }
   }
 

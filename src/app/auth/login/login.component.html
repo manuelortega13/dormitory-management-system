@@ -93,3 +93,46 @@
     </div>
   </div>
 </div>
+
+<!-- Install help: a bottom sheet rather than a modal, so it never stands between someone
+     and signing in. Phones only, once, and only until they close it. -->
+@if (showInstallSheet()) {
+  <div class="install-sheet" role="dialog" aria-label="Add this app to your phone">
+    <div class="sheet-handle"></div>
+    <button type="button" class="sheet-close" (click)="dismissInstallSheet()" aria-label="Close">
+      ✕
+    </button>
+
+    <h3>📲 Add this app to your phone</h3>
+    <p class="sheet-sub">Then open it like any other app, straight from your home screen.</p>
+
+    @if (installTab() === 'android') {
+      <ol>
+        <li>Open this page in <strong>Chrome</strong>.</li>
+        <li>Tap the <strong>⋮</strong> button at the top.</li>
+        <li>Tap <strong>Add to Home screen</strong>.</li>
+        <li>Tap <strong>Install</strong>.</li>
+      </ol>
+    } @else {
+      <ol>
+        <li>Open this page in <strong>Safari</strong>.</li>
+        <li>Tap the <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="m8 7 4-4 4 4"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg> <strong>Share</strong> button at the bottom.</li>
+        <li>Tap <strong>Add to Home Screen</strong>.</li>
+        <li>Tap <strong>Add</strong>.</li>
+      </ol>
+    }
+
+    <div class="sheet-actions">
+      @if (installTab() === 'android') {
+        <button type="button" class="sheet-switch" (click)="installTab.set('iphone')">
+          <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.05 12.54c-.02-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.75-2.05-1.6-.13-2.95.9-3.72.9-.78 0-1.94-.88-3.19-.86-1.64.02-3.15.95-3.99 2.42-1.7 2.95-.44 7.31 1.22 9.71.81 1.17 1.78 2.48 3.06 2.44 1.22-.05 1.69-.79 3.17-.79 1.47 0 1.9.79 3.19.77 1.32-.02 2.15-1.19 2.96-2.37.93-1.36 1.31-2.67 1.33-2.74-.03-.01-2.55-.98-2.5-3.52zM14.9 4.9c.67-.81.56-1.94.53-2.35-.7.03-1.55.44-2.05 1.03-.45.52-.78 1.35-.68 2.14.78.06 1.57-.4 2.2-1.16z"/></svg> I'm on an iPhone
+        </button>
+      } @else {
+        <button type="button" class="sheet-switch" (click)="installTab.set('android')">
+          I'm on Android
+        </button>
+      }
+      <button type="button" class="sheet-done" (click)="dismissInstallSheet()">Got it</button>
+    </div>
+  </div>
+}
