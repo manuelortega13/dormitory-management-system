@@ -1,6 +1,13 @@
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 
+/**
+ * A home dean is bound to one wing by `dean_type`, so an occupant of the other wing is not
+ * theirs to act on. False for the admin, the VP and a dean with no wing set.
+ */
+const isOutsideDeanWing = (user, gender) =>
+  user.role === 'home_dean' && !!user.deanType && gender !== user.deanType;
+
 exports.getAll = async (req, res) => {
   try {
     const { role, status, search } = req.query;
@@ -354,7 +361,7 @@ exports.suspendResident = async (req, res) => {
 
     // Check if user exists and is a resident
     const [users] = await pool.execute(
-      'SELECT id, role, status FROM users WHERE id = ?',
+      'SELECT id, role, status, gender FROM users WHERE id = ?',
       [id]
     );
 
@@ -364,6 +371,12 @@ exports.suspendResident = async (req, res) => {
 
     if (users[0].role !== 'resident') {
       return res.status(400).json({ error: 'Only residents can be suspended' });
+    }
+
+    // Suspending an occupant of the other wing is not a dean's call. Checked before the
+    // status test so the reply says nothing about an occupant they may not see.
+    if (isOutsideDeanWing(req.user, users[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     if (users[0].status === 'suspended') {
@@ -389,7 +402,7 @@ exports.reactivateResident = async (req, res) => {
 
     // Check if user exists and is suspended
     const [users] = await pool.execute(
-      'SELECT id, role, status FROM users WHERE id = ?',
+      'SELECT id, role, status, gender FROM users WHERE id = ?',
       [id]
     );
 
@@ -399,6 +412,11 @@ exports.reactivateResident = async (req, res) => {
 
     if (users[0].role !== 'resident') {
       return res.status(400).json({ error: 'Only residents can be reactivated' });
+    }
+
+    // Reactivating an occupant of the other wing is not a dean's call either.
+    if (isOutsideDeanWing(req.user, users[0].gender)) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     if (users[0].status !== 'suspended') {
