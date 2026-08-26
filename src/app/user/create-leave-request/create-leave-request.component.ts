@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { LeaveRequestService } from '../data/leave-request.service';
 
 interface GoOutRequestForm {
-  leaveType: 'errand' | 'overnight' | 'weekend' | 'emergency' | 'other';
+  leaveType: 'special_pass' | 'campus_leave';
   startDate: string;
   startTime: string;
   endDate: string;
@@ -55,7 +55,7 @@ export class CreateLeaveRequestComponent implements OnInit {
   });
 
   form: GoOutRequestForm = {
-    leaveType: 'errand',
+    leaveType: 'special_pass',
     startDate: this.getInitialStartDate(),
     startTime: this.getInitialStartTime(),
     endDate: this.getInitialEndDate(),
@@ -68,11 +68,16 @@ export class CreateLeaveRequestComponent implements OnInit {
   };
 
   leaveTypes = [
-    { value: 'errand', label: 'Errand', description: 'Quick trip (shopping, appointments, etc.)' },
-    { value: 'overnight', label: 'Overnight', description: 'Staying overnight outside campus' },
-    { value: 'weekend', label: 'Weekend', description: 'Weekend trip home or elsewhere' },
-    { value: 'emergency', label: 'Emergency', description: 'Urgent family or personal matter' },
-    { value: 'other', label: 'Other', description: 'Other reasons' }
+    {
+      value: 'special_pass',
+      label: 'Special Pass',
+      description: 'Short trip out, back the same day.',
+    },
+    {
+      value: 'campus_leave',
+      label: 'Campus Leave',
+      description: 'Leaving campus overnight or longer.',
+    }
   ];
 
   ngOnInit(): void {
@@ -339,7 +344,7 @@ export class CreateLeaveRequestComponent implements OnInit {
       
       // Reset form
       this.form = {
-        leaveType: 'errand',
+        leaveType: 'special_pass',
         startDate: this.getTodayDate(),
         startTime: this.getCurrentTime(),
         endDate: this.getTodayDate(),

@@ -95,11 +95,8 @@ export class LeavePassComponent implements OnInit {
 
   getLeaveTypeLabel(type: string): string {
     const types: Record<string, string> = {
-      'errand': 'Errand Leave',
-      'overnight': 'Overnight Leave',
-      'weekend': 'Weekend Leave',
-      'emergency': 'Emergency Leave',
-      'other': 'Other Leave'
+      'special_pass': 'Special Pass',
+      'campus_leave': 'Campus Leave'
     };
     return types[type] || type;
   }

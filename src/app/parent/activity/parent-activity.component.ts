@@ -44,11 +44,8 @@ export class ParentActivityComponent implements OnInit {
 
   getLeaveTypeLabel(type: string): string {
     const types: Record<string, string> = {
-      'errand': 'Errand',
-      'overnight': 'Overnight',
-      'weekend': 'Weekend',
-      'emergency': 'Emergency',
-      'other': 'Other'
+      'special_pass': 'Special Pass',
+      'campus_leave': 'Campus Leave'
     };
     return types[type] || type || 'Leave';
   }

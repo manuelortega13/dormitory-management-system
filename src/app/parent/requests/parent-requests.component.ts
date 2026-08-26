@@ -112,22 +112,16 @@ export class ParentRequestsComponent implements OnInit, OnDestroy {
 
   private getLeaveTypeLabel(type?: string): string {
     const map: Record<string, string> = {
-      errand: 'Errand',
-      overnight: 'Overnight',
-      weekend: 'Weekend',
-      emergency: 'Emergency',
-      other: 'Other',
+      special_pass: 'Special Pass',
+      campus_leave: 'Campus Leave',
     };
     return type ? map[type] ?? type : '';
   }
 
   private getLeaveTypeIcon(type?: string): string {
     const map: Record<string, string> = {
-      errand: '🏃',
-      overnight: '🌙',
-      weekend: '📅',
-      emergency: '🚨',
-      other: '📋',
+      special_pass: '🏃',
+      campus_leave: '🌙',
     };
     return type ? map[type] ?? '📋' : '📋';
   }

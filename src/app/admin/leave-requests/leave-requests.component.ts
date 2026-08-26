@@ -60,7 +60,7 @@ export class LeaveRequestsComponent implements OnInit {
   adminNotes = signal('');
 
   // ---- Create-for-occupant modal ----
-  readonly leaveTypes = ['errand', 'overnight', 'weekend', 'emergency', 'other'];
+  readonly leaveTypes = ['special_pass', 'campus_leave'];
   showCreateModal = signal(false);
   createSaving = signal(false);
   createError = signal('');
@@ -81,7 +81,7 @@ export class LeaveRequestsComponent implements OnInit {
       .slice(0, 25);
   });
   // form fields
-  cLeaveType = signal('errand');
+  cLeaveType = signal('special_pass');
   cReason = signal('');
   cDestination = signal('');
   cStart = signal('');
@@ -137,7 +137,7 @@ export class LeaveRequestsComponent implements OnInit {
     this.createError.set('');
     this.selectedOccupant.set(null);
     this.occupantQuery.set('');
-    this.cLeaveType.set('errand');
+    this.cLeaveType.set('special_pass');
     this.cReason.set('');
     this.cDestination.set('');
     this.cStart.set('');
@@ -378,11 +378,8 @@ export class LeaveRequestsComponent implements OnInit {
 
   getLeaveTypeLabel(type: string): string {
     const types: Record<string, string> = {
-      errand: 'Errand',
-      overnight: 'Overnight',
-      weekend: 'Weekend',
-      emergency: 'Emergency',
-      other: 'Other',
+      special_pass: 'Special Pass',
+      campus_leave: 'Campus Leave',
     };
     return types[type] || type;
   }

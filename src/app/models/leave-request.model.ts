@@ -12,7 +12,7 @@ export interface LeaveRequest {
   parent_phone?: string;
   admin_reviewer_name?: string;
   vpsas_reviewer_name?: string;
-  leave_type: 'errand' | 'overnight' | 'weekend' | 'emergency' | 'other';
+  leave_type: 'special_pass' | 'campus_leave';
   start_date: string;
   end_date: string;
   destination: string;
