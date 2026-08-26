@@ -29,7 +29,8 @@ export class ResidentsComponent implements OnInit {
   protected readonly showEditModal = signal(false);
   protected readonly selectedResident = signal<Resident | null>(null);
   protected readonly editingResident = signal<Resident | null>(null);
-  protected readonly isLoading = signal(false);
+  // Starts true so the first paint is the spinner, not a flash of "No occupants found".
+  protected readonly isLoading = signal(true);
   protected readonly modalError = signal('');
   protected readonly modalSaving = signal(false);
   protected readonly showSuspendModal = signal(false);

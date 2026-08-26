@@ -47,7 +47,9 @@ export class RoomsComponent implements OnInit {
   protected readonly selectedStatus = signal<RoomStatus | 'all'>('all');
   protected readonly selectedFloor = signal<number | 'all'>('all');
   protected readonly viewMode = signal<'grid' | 'list'>('grid');
-  protected readonly loading = signal(false);
+  // Starts true so the first paint is the spinner, not an empty grid that flashes
+  // "No rooms found" before the data lands.
+  protected readonly loading = signal(true);
 
   protected readonly rooms = signal<Room[]>([]);
 

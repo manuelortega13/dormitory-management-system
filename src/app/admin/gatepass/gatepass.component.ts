@@ -39,7 +39,8 @@ export class AdminGatepassComponent implements OnInit {
   protected readonly isDean = computed(() => ['admin', 'home_dean'].includes(this.role()));
 
   protected readonly activeTab = signal<'approvals' | 'reviews' | 'passes' | 'tasks'>('approvals');
-  protected readonly loading = signal(false);
+  // Starts true so the first paint is the spinner, matching the Leave Requests page.
+  protected readonly loading = signal(true);
 
   protected readonly deanQueue = signal<Gatepass[]>([]);
   protected readonly reviews = signal<DisciplinaryReview[]>([]);

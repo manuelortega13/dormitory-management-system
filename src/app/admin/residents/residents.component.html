@@ -80,8 +80,15 @@
     </div>
   </section>
 
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading occupants...</p>
+    </div>
+  }
+
   <!-- Residents List View -->
-  @if (viewMode() === 'list') {
+  @if (!isLoading() && viewMode() === 'list') {
     <section class="residents-table">
       <div class="table-header">
         <span class="col-name">Name</span>
@@ -170,7 +177,7 @@
   }
 
   <!-- Residents Grid View -->
-  @if (viewMode() === 'grid') {
+  @if (!isLoading() && viewMode() === 'grid') {
     <section class="residents-grid">
       @for (resident of filteredResidents(); track resident.id) {
         <article class="resident-card" [class]="getStatusClass(resident.status)">
