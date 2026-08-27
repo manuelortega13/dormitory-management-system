@@ -192,11 +192,21 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  // Eight columns need more width than a smaller laptop leaves once the sidebar has taken
+  // its share. `overflow: hidden` clipped the last of them - Status, Registered and the
+  // Actions buttons - with no way to reach them, since the page itself cannot scroll
+  // sideways either (body carries overflow-x: hidden). Scroll inside the table instead.
+  overflow-x: auto;
 }
 
 .registrations-table {
   width: 100%;
+  // A floor, not a target: below this the eight columns crush into unreadable slivers, so
+  // the container scrolls instead. 780px clears the 792px available at a 1100px window
+  // (1100 - 260 sidebar - 48 page padding), so the common laptop widths show the table whole
+  // and only genuinely narrow desktops get a scrollbar. Safe unconditionally: the table is
+  // display:none under 768px, where the card layout takes over.
+  min-width: 780px;
   border-collapse: collapse;
 
   th,

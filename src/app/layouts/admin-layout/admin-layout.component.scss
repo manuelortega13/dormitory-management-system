@@ -5,11 +5,20 @@
 
 .admin-content {
   flex: 1;
+  // No `width: 100%` here. A percentage width on a flex item resolves against the flex
+  // container - the viewport - so the box became viewport-wide and `margin-left` then pushed
+  // it 260px further right. body carries overflow-x: hidden, so that 260px was not scrolled
+  // to, it was cut off: at a 1200px window the rightmost fifth of every admin page was gone.
+  // `flex: 1` already fills the space the sidebar leaves.
+  //
+  // A flex item also defaults to min-width: auto, refusing to shrink below its widest child,
+  // so one wide table would stretch this column past the viewport again and defeat that
+  // table's own horizontal scroll. Let it shrink instead.
+  min-width: 0;
   margin-left: 260px;
   transition: margin-left 0.3s ease;
   min-height: 100vh;
   background: #f5f6fa;
-  width: 100%;
   position: relative;
 }
 
