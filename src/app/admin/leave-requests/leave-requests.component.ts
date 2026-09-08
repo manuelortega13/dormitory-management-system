@@ -9,13 +9,15 @@ import { Resident } from '../residents/data/resident.model';
 // isDateInRange goes back in with the commented-out "Submitted" range below.
 import { doesRangeOverlap } from '../../shared/utils/date-filter.util';
 import { ToastService } from '../../services/toast.service';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { paginate } from '../../shared/utils/paginate.util';
 
 type TabFilter = 'pending' | 'all';
 
 @Component({
   selector: 'app-leave-requests',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationComponent],
   templateUrl: './leave-requests.component.html',
   styleUrl: './leave-requests.component.scss',
 })
@@ -327,77 +329,12 @@ export class LeaveRequestsComponent implements OnInit {
     });
   });
 
-  // --- Pagination ---
-  // Client-side: the search and date filters run over the whole result set, so the
-  // page slice comes after filtering rather than from the API like the Payments page.
-  readonly pageSize = signal(10);
-  currentPage = signal(1);
-
-  totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredRequests().length / this.pageSize())),
-  );
-
-  // Clamped, so a filter that shrinks the result set can't leave us on an empty page.
-  activePage = computed(() => Math.min(this.currentPage(), this.totalPages()));
-
-  pagination = computed(() => {
-    const page = this.activePage();
-    const pages = this.totalPages();
-    return {
-      page,
-      pages,
-      total: this.filteredRequests().length,
-      hasPrevPage: page > 1,
-      hasNextPage: page < pages,
-    };
-  });
-
-  pagedRequests = computed(() => {
-    const start = (this.activePage() - 1) * this.pageSize();
-    return this.filteredRequests().slice(start, start + this.pageSize());
-  });
+  // Client-side, like the other admin list pages: the search box and the date range
+  // above filter the whole result set, so the page slice comes after filtering.
+  protected readonly paginator = paginate(this.filteredRequests);
 
   resetPage(): void {
-    this.currentPage.set(1);
-  }
-
-  nextPage(): void {
-    if (this.pagination().hasNextPage) this.currentPage.set(this.activePage() + 1);
-  }
-
-  prevPage(): void {
-    if (this.pagination().hasPrevPage) this.currentPage.set(this.activePage() - 1);
-  }
-
-  goToPage(page: number): void {
-    if (page > 0 && page <= this.totalPages()) this.currentPage.set(page);
-  }
-
-  getPageNumbers(): number[] {
-    const totalPages = this.totalPages();
-    const currentPage = this.activePage();
-    const maxPagesToShow = 5;
-    const pages: number[] = [];
-
-    if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const halfWindow = Math.floor(maxPagesToShow / 2);
-      let startPage = Math.max(1, currentPage - halfWindow);
-      const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-      if (endPage - startPage + 1 < maxPagesToShow) {
-        startPage = Math.max(1, endPage - maxPagesToShow + 1);
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-    }
-
-    return pages;
+    this.paginator.reset();
   }
 
   getStatusClass(status: string): string {

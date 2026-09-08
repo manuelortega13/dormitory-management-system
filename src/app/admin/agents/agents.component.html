@@ -92,7 +92,7 @@
         <span class="col-created">Created</span>
         <span class="col-actions">Actions</span>
       </div>
-      @for (agent of filteredAgents(); track agent.id) {
+      @for (agent of paginator.items(); track agent.id) {
         <div class="table-row" [class]="getStatusClass(agent.status)">
           <div class="col-name" data-label="Staff">
             <div class="agent-avatar" [style.background]="getAvatarColor(agent.first_name)">
@@ -167,6 +167,8 @@
       }
     }
   </section>
+
+  <app-pagination [state]="paginator" itemLabel="staff" />
 </main>
 
 <!-- Add Agent Modal -->

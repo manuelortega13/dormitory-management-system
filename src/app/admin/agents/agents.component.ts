@@ -5,11 +5,13 @@ import { AgentsService } from './data/agents.service';
 import { Agent, CreateAgentDto, UpdateAgentDto } from './data/agent.model';
 import { AgentEditModalComponent } from './agent-edit-modal/agent-edit-modal.component';
 import { AuthService } from '../../auth/auth.service';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { paginate } from '../../shared/utils/paginate.util';
 
 @Component({
   selector: 'app-agents',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgentEditModalComponent],
+  imports: [CommonModule, FormsModule, AgentEditModalComponent, PaginationComponent],
   templateUrl: './agents.component.html',
   styleUrl: './agents.component.scss',
 })
@@ -152,9 +154,12 @@ export class AgentsComponent implements OnInit {
     return filtered;
   });
 
+  protected readonly paginator = paginate(this.filteredAgents);
+
   updateSearch(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.searchQuery.set(input.value);
+    this.paginator.reset();
   }
 
   updateRole(event: Event): void {
@@ -163,11 +168,13 @@ export class AgentsComponent implements OnInit {
       select.value as
         'admin' | 'security_guard' | 'home_dean' | 'vpsas' | 'business_officer' | 'all',
     );
+    this.paginator.reset();
   }
 
   updateStatus(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.selectedStatus.set(select.value as 'active' | 'suspended' | 'all');
+    this.paginator.reset();
   }
 
   getRoleLabel(role: string, deanType?: 'male' | 'female' | null): string {

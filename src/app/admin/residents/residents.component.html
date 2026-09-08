@@ -99,7 +99,7 @@
         <span class="col-dates">Check-in / Check-out</span>
         <span class="col-actions">Actions</span>
       </div>
-      @for (resident of filteredResidents(); track resident.id) {
+      @for (resident of paginator.items(); track resident.id) {
         <div class="table-row" [class]="getStatusClass(resident.status)">
           <div class="col-name">
             @if (resident.photo_url) {
@@ -174,12 +174,14 @@
         </div>
       }
     </section>
+
+    <app-pagination [state]="paginator" itemLabel="occupants" />
   }
 
   <!-- Residents Grid View -->
   @if (!isLoading() && viewMode() === 'grid') {
     <section class="residents-grid">
-      @for (resident of filteredResidents(); track resident.id) {
+      @for (resident of paginator.items(); track resident.id) {
         <article class="resident-card" [class]="getStatusClass(resident.status)">
           <div class="card-header">
             @if (resident.photo_url) {
@@ -249,6 +251,8 @@
         </div>
       }
     </section>
+
+    <app-pagination [state]="paginator" itemLabel="occupants" />
   }
 
   <!-- Resident Detail Modal -->

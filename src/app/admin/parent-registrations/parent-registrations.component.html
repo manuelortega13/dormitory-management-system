@@ -39,7 +39,7 @@
         type="text"
         placeholder="Search by name, email, or student ID..."
         [ngModel]="searchQuery()"
-        (ngModelChange)="searchQuery.set($event)"
+        (ngModelChange)="onSearchChange($event)"
       />
     </div>
     <div class="filter-group">
@@ -92,7 +92,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (reg of filteredRegistrations(); track reg.id) {
+          @for (reg of paginator.items(); track reg.id) {
             <tr>
               <td class="name-cell">
                 <span class="name">{{ reg.first_name }} {{ reg.last_name }}</span>
@@ -135,7 +135,7 @@
 
       <!-- Mobile Card View -->
       <div class="mobile-cards">
-        @for (reg of filteredRegistrations(); track reg.id) {
+        @for (reg of paginator.items(); track reg.id) {
           <div class="registration-card">
             <div class="card-header">
               <h4 class="parent-name">{{ reg.first_name }} {{ reg.last_name }}</h4>
@@ -186,6 +186,8 @@
         }
       </div>
     </div>
+
+    <app-pagination [state]="paginator" itemLabel="registrations" />
   }
 </div>
 

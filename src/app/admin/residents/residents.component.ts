@@ -9,11 +9,13 @@ import { ReactivateModalComponent } from './reactivate-modal/reactivate-modal.co
 import { DeleteModalComponent } from './delete-modal/delete-modal.component';
 import { AssignRoomModalComponent, AssignRoomData } from './assign-room-modal/assign-room-modal.component';
 import { RoomsService } from '../rooms/data/rooms.service';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { paginate } from '../../shared/utils/paginate.util';
 
 @Component({
   selector: 'app-residents',
   standalone: true,
-  imports: [CommonModule, FormsModule, ResidentFormModalComponent, ResidentDetailModalComponent, SuspendModalComponent, ReactivateModalComponent, DeleteModalComponent, AssignRoomModalComponent],
+  imports: [CommonModule, FormsModule, ResidentFormModalComponent, ResidentDetailModalComponent, SuspendModalComponent, ReactivateModalComponent, DeleteModalComponent, AssignRoomModalComponent, PaginationComponent],
   templateUrl: './residents.component.html',
   styleUrl: './residents.component.scss'
 })
@@ -120,19 +122,25 @@ export class ResidentsComponent implements OnInit {
     return filtered;
   });
 
+  // One paginator for both views: the grid and the list show the same filtered occupants.
+  protected readonly paginator = paginate(this.filteredResidents);
+
   updateSearch(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.searchQuery.set(input.value);
+    this.paginator.reset();
   }
 
   updateStatus(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.selectedStatus.set(select.value as ResidentStatus | 'all');
+    this.paginator.reset();
   }
 
   updateFloor(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.selectedFloor.set(select.value === 'all' ? 'all' : parseInt(select.value));
+    this.paginator.reset();
   }
 
   setViewMode(mode: 'grid' | 'list'): void {

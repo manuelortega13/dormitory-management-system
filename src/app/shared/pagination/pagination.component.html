@@ -1,0 +1,29 @@
+@if (state().total() > 0) {
+  <div class="pagination-container">
+    <div class="pagination-info">
+      <span>
+        Page {{ state().page() }} of {{ state().totalPages() }} • Total: {{ state().total() }}
+        {{ itemLabel() }}
+      </span>
+    </div>
+    <div class="pagination-controls">
+      <button class="pagination-btn" (click)="state().prev()" [disabled]="!state().hasPrev()">
+        ← Previous
+      </button>
+      <div class="page-numbers">
+        @for (pageNum of state().pageNumbers(); track pageNum) {
+          <button
+            class="page-number"
+            [class.active]="pageNum === state().page()"
+            (click)="state().goToPage(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+        }
+      </div>
+      <button class="pagination-btn" (click)="state().next()" [disabled]="!state().hasNext()">
+        Next →
+      </button>
+    </div>
+  </div>
+}

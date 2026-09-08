@@ -9,6 +9,8 @@ import { AuthService } from '../../auth/auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { Resident } from '../residents/data/resident.model';
 import { SettingsService } from '../../services/settings.service';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { paginate } from '../../shared/utils/paginate.util';
 
 interface RoomFormData {
   roomNumber: string;
@@ -24,7 +26,7 @@ interface RoomFormData {
 @Component({
   selector: 'app-rooms',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationComponent],
   templateUrl: './rooms.component.html',
   styleUrl: './rooms.component.scss'
 })
@@ -132,6 +134,9 @@ export class RoomsComponent implements OnInit {
     return filtered;
   });
 
+  // One paginator for both views: the grid and the list show the same filtered rooms.
+  protected readonly paginator = paginate(this.filteredRooms);
+
   protected readonly stats = computed(() => {
     const all = this.rooms();
     return {
@@ -146,17 +151,20 @@ export class RoomsComponent implements OnInit {
   updateSearch(event: Event) {
     const input = event.target as HTMLInputElement;
     this.searchQuery.set(input.value);
+    this.paginator.reset();
   }
 
   updateStatus(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.selectedStatus.set(select.value as RoomStatus | 'all');
+    this.paginator.reset();
   }
 
   updateFloor(event: Event) {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
     this.selectedFloor.set(value === 'all' ? 'all' : parseInt(value, 10));
+    this.paginator.reset();
   }
 
   setViewMode(mode: 'grid' | 'list') {

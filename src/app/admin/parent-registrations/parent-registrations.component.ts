@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ParentRegistrationService, ParentRegistration, ParentRegistrationDetail } from './data';
 import { NotificationService } from '../../services/notification.service';
+import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { paginate } from '../../shared/utils/paginate.util';
 
 @Component({
   selector: 'app-parent-registrations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationComponent],
   templateUrl: './parent-registrations.component.html',
   styleUrl: './parent-registrations.component.scss'
 })
@@ -113,7 +115,15 @@ export class ParentRegistrationsComponent implements OnInit, OnDestroy {
     return filtered;
   });
 
+  protected readonly paginator = paginate(this.filteredRegistrations);
+
+  onSearchChange(query: string): void {
+    this.searchQuery.set(query);
+    this.paginator.reset();
+  }
+
   onStatusChange(): void {
+    this.paginator.reset();
     this.loadRegistrations();
   }
 

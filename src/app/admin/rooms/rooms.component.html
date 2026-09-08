@@ -88,7 +88,7 @@
     </div>
   } @else {
     <section class="rooms-container" [class]="viewMode()">
-    @for (room of filteredRooms(); track room.id) {
+    @for (room of paginator.items(); track room.id) {
       <article class="room-card" [class]="getStatusClass(room.status)">
         <div class="room-header">
           <div class="room-number">
@@ -198,6 +198,8 @@
       </div>
       }
     </section>
+
+    <app-pagination [state]="paginator" itemLabel="rooms" />
   }
 </main>
 <!-- Add Room Modal -->
