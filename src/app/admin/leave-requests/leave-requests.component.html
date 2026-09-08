@@ -26,7 +26,7 @@
         type="text"
         placeholder="Search by name, destination, room..."
         [ngModel]="searchQuery()"
-        (ngModelChange)="searchQuery.set($event)"
+        (ngModelChange)="searchQuery.set($event); resetPage()"
       />
     </div>
   </div>
@@ -36,11 +36,19 @@
       <span class="date-filter-label">Leave dates</span>
       <label class="date-field">
         From
-        <input type="date" [ngModel]="leaveFrom()" (ngModelChange)="leaveFrom.set($event)" />
+        <input
+          type="date"
+          [ngModel]="leaveFrom()"
+          (ngModelChange)="leaveFrom.set($event); resetPage()"
+        />
       </label>
       <label class="date-field">
         To
-        <input type="date" [ngModel]="leaveTo()" (ngModelChange)="leaveTo.set($event)" />
+        <input
+          type="date"
+          [ngModel]="leaveTo()"
+          (ngModelChange)="leaveTo.set($event); resetPage()"
+        />
       </label>
     </div>
 
@@ -101,7 +109,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (request of filteredRequests(); track request.id) {
+          @for (request of pagedRequests(); track request.id) {
             <tr
               class="request-row"
               [class.expanded]="isExpanded(request.id)"
@@ -292,6 +300,43 @@
           }
         </tbody>
       </table>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-container">
+        <div class="pagination-info">
+          <span>
+            Page {{ pagination().page }} of {{ pagination().pages }} • Total:
+            {{ pagination().total }} requests
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <button
+            class="pagination-btn"
+            (click)="prevPage()"
+            [disabled]="!pagination().hasPrevPage"
+          >
+            ← Previous
+          </button>
+          <div class="page-numbers">
+            @for (pageNum of getPageNumbers(); track pageNum) {
+              <button
+                class="page-number"
+                [class.active]="pageNum === pagination().page"
+                (click)="goToPage(pageNum)"
+              >
+                {{ pageNum }}
+              </button>
+            }
+          </div>
+          <button
+            class="pagination-btn"
+            (click)="nextPage()"
+            [disabled]="!pagination().hasNextPage"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
     </div>
   }
 
