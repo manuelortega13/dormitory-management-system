@@ -119,7 +119,7 @@ export class MyRoomComponent implements OnInit {
 
   getYearLabel(year: number | null): string {
     if (!year) return '';
-    const labels: Record<number, string> = { 1: '1st Year', 2: '2nd Year', 3: '3rd Year', 4: '4th Year', 5: '5th Year' };
+    const labels: Record<number, string> = { 1: '1st Year', 2: '2nd Year', 3: '3rd Year', 4: '4th Year', 5: 'K-11', 6: 'K-12' };
     return labels[year] || `${year}th Year`;
   }
 
