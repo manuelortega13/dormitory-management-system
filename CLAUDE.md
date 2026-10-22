@@ -91,7 +91,7 @@ Configured in root `package.json`: `printWidth: 100`, `singleQuote: true`, Angul
 ## Deployment
 - **Frontend**: Vercel — `vercel.json` rewrites `/api/*` to Railway backend
 - **Backend**: Railway — env vars configured in dashboard
-- **Database**: AWS RDS MySQL
+- **Database**: Railway MySQL
 
 ## Rules
 - **No co-author in commits**: Never include `Co-Authored-By` lines in git commit messages.
